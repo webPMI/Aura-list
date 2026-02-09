@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter:*)",
+      "Bash(dart:*)",
+      "Bash(firebase:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(timeout:*)",
+      "Bash(powershell:*)",
+      "Bash(./gradlew signingReport:*)"
+    ]
+  }
+}

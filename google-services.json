@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "759264872546",
+    "project_id": "aura-list",
+    "storage_bucket": "aura-list.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:759264872546:android:759cc9f754fc74b493a93b",
+        "android_client_info": {
+          "package_name": "com.example.checklist_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "759264872546-nmeajdq53e82m4bugs1h0vu7h4dngcdf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCUmL_Z4qj1uAmbbpwWlCFtZgDRGJy03Qw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "759264872546-nmeajdq53e82m4bugs1h0vu7h4dngcdf.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "759264872546-3i9clp6siu3vub7mphiqpfjemuqars6d.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.checklistApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

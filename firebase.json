@@ -1,0 +1,58 @@
+{
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(js|css)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "max-age=31536000"
+          }
+        ]
+      },
+      {
+        "source": "**/*.@(jpg|jpeg|gif|png|svg|webp|ico)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "max-age=31536000"
+          }
+        ]
+      }
+    ]
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "aura-list",
+          "appId": "1:759264872546:android:759cc9f754fc74b493a93b",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "aura-list",
+          "configurations": {
+            "android": "1:759264872546:android:759cc9f754fc74b493a93b",
+            "ios": "1:759264872546:ios:5cb1655051db5d4f93a93b",
+            "web": "1:759264872546:web:b745b92062ed735f93a93b",
+            "windows": "1:759264872546:web:6162752f920d4b7793a93b"
+          }
+        }
+      }
+    }
+  }
+}

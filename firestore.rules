@@ -1,0 +1,85 @@
+rules_version = '2';
+
+// Firestore Security Rules for AuraList
+// Deploy with: firebase deploy --only firestore:rules
+//
+// Structure:
+// - users/{userId}/tasks/{taskId}
+// - users/{userId}/notes/{noteId}
+// - users/{userId}/preferences/{prefId}
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if user owns the document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Helper function to validate task data
+    function isValidTask() {
+      let data = request.resource.data;
+      return data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 500
+        && data.type in ['daily', 'weekly', 'monthly', 'yearly', 'once']
+        && data.isCompleted is bool
+        && data.priority in [0, 1, 2]
+        && data.category in ['Personal', 'Trabajo', 'Hogar', 'Salud', 'Otros']
+        // Optional soft delete fields
+        && (!('deleted' in data.keys()) || data.deleted is bool)
+        && (!('deletedAt' in data.keys()) || data.deletedAt is string)
+        && (!('lastUpdatedAt' in data.keys()) || data.lastUpdatedAt is string);
+    }
+
+    // Helper function to validate note data
+    function isValidNote() {
+      let data = request.resource.data;
+      return data.title is string
+        && data.title.size() <= 500
+        && data.content is string
+        && data.content.size() <= 10000
+        && data.isPinned is bool
+        // Optional soft delete fields
+        && (!('deleted' in data.keys()) || data.deleted is bool)
+        && (!('deletedAt' in data.keys()) || data.deletedAt is string);
+    }
+
+    // User document rules
+    match /users/{userId} {
+      // Users can only access their own data
+      allow read, write: if isAuthenticated() && isOwner(userId);
+
+      // Tasks subcollection
+      match /tasks/{taskId} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow create: if isAuthenticated() && isOwner(userId) && isValidTask();
+        allow update: if isAuthenticated() && isOwner(userId) && isValidTask();
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
+
+      // Notes subcollection
+      match /notes/{noteId} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow create: if isAuthenticated() && isOwner(userId) && isValidNote();
+        allow update: if isAuthenticated() && isOwner(userId) && isValidNote();
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
+
+      // User preferences subcollection
+      match /preferences/{prefId} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow write: if isAuthenticated() && isOwner(userId);
+      }
+    }
+
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
