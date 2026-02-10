@@ -64,7 +64,8 @@ class ErrorState {
   }
 
   /// Errores de red activos
-  List<NetworkException> get networkErrors => getErrorsByType<NetworkException>();
+  List<NetworkException> get networkErrors =>
+      getErrorsByType<NetworkException>();
 
   /// Errores de autenticacion activos
   List<AuthException> get authErrors => getErrorsByType<AuthException>();
@@ -95,7 +96,8 @@ class ErrorState {
   }
 
   @override
-  String toString() => 'ErrorState(errors: ${errors.length}, hasErrors: $hasErrors)';
+  String toString() =>
+      'ErrorState(errors: ${errors.length}, hasErrors: $hasErrors)';
 }
 
 // =============================================================================
@@ -239,38 +241,41 @@ typedef VoidCallback = void Function();
 /// ```dart
 /// final hasErrors = ref.watch(errorStateProvider).hasErrors;
 /// ```
-final errorStateProvider = StateNotifierProvider<ErrorStateNotifier, ErrorState>((ref) {
-  final errorHandler = ref.watch(errorHandlerProvider);
-  return ErrorStateNotifier(errorHandler);
-});
+final errorStateProvider =
+    StateNotifierProvider<ErrorStateNotifier, ErrorState>((ref) {
+      final errorHandler = ref.watch(errorHandlerProvider);
+      return ErrorStateNotifier(errorHandler);
+    });
 
 /// Provider para verificar si hay errores activos.
-final hasErrorsProvider = Provider<bool>((ref) {
+final hasErrorsProvider = Provider.autoDispose<bool>((ref) {
   return ref.watch(errorStateProvider).hasErrors;
 });
 
 /// Provider para el error actual.
-final currentErrorProvider = Provider<AppException?>((ref) {
+final currentErrorProvider = Provider.autoDispose<AppException?>((ref) {
   return ref.watch(errorStateProvider).currentError;
 });
 
 /// Provider para errores de red.
-final networkErrorsProvider = Provider<List<NetworkException>>((ref) {
+final networkErrorsProvider = Provider.autoDispose<List<NetworkException>>((
+  ref,
+) {
   return ref.watch(errorStateProvider).networkErrors;
 });
 
 /// Provider para verificar si hay errores de red.
-final hasNetworkErrorProvider = Provider<bool>((ref) {
+final hasNetworkErrorProvider = Provider.autoDispose<bool>((ref) {
   return ref.watch(networkErrorsProvider).isNotEmpty;
 });
 
 /// Provider para errores de sincronizacion.
-final syncErrorsProvider = Provider<List<SyncException>>((ref) {
+final syncErrorsProvider = Provider.autoDispose<List<SyncException>>((ref) {
   return ref.watch(errorStateProvider).syncErrors;
 });
 
 /// Provider para el conteo de errores.
-final errorCountProvider = Provider<int>((ref) {
+final errorCountProvider = Provider.autoDispose<int>((ref) {
   return ref.watch(errorStateProvider).errorCount;
 });
 
@@ -304,8 +309,10 @@ class AsyncOperationState<T> {
       AsyncOperationState._(data: data);
 
   /// Estado de error
-  factory AsyncOperationState.failure(AppException error, {int attemptCount = 1}) =>
-      AsyncOperationState._(error: error, attemptCount: attemptCount);
+  factory AsyncOperationState.failure(
+    AppException error, {
+    int attemptCount = 1,
+  }) => AsyncOperationState._(error: error, attemptCount: attemptCount);
 
   bool get isIdle => !isLoading && data == null && error == null;
   bool get isSuccess => data != null && error == null;
@@ -345,7 +352,8 @@ class AsyncOperationState<T> {
 class AsyncOperationNotifier<T> extends StateNotifier<AsyncOperationState<T>> {
   final ErrorHandler _errorHandler;
 
-  AsyncOperationNotifier(this._errorHandler) : super(AsyncOperationState.idle());
+  AsyncOperationNotifier(this._errorHandler)
+    : super(AsyncOperationState.idle());
 
   /// Ejecuta una operacion asincrona con manejo de errores.
   ///
@@ -398,13 +406,15 @@ class AsyncOperationNotifier<T> extends StateNotifier<AsyncOperationState<T>> {
 ///
 /// Util para mostrar banners/toasts de error globales.
 /// Retorna el ultimo error en el stream.
-final globalErrorListenerProvider = StreamProvider<AppException>((ref) {
+final globalErrorListenerProvider = StreamProvider.autoDispose<AppException>((
+  ref,
+) {
   final errorHandler = ref.watch(errorHandlerProvider);
   return errorHandler.appExceptionStream;
 });
 
 /// Provider para el ultimo error global.
-final lastGlobalErrorProvider = Provider<AppException?>((ref) {
+final lastGlobalErrorProvider = Provider.autoDispose<AppException?>((ref) {
   final asyncError = ref.watch(globalErrorListenerProvider);
   return asyncError.when(
     data: (error) => error,
@@ -465,10 +475,7 @@ class ConnectivityErrorNotifier extends StateNotifier<ConnectivityErrorState> {
   }
 
   void setNetworkError(NetworkException? error) {
-    state = state.copyWith(
-      lastNetworkError: error,
-      isOffline: error != null,
-    );
+    state = state.copyWith(lastNetworkError: error, isOffline: error != null);
   }
 
   void clearNetworkError() {
@@ -478,16 +485,18 @@ class ConnectivityErrorNotifier extends StateNotifier<ConnectivityErrorState> {
 
 /// Provider para estado de conectividad.
 final connectivityErrorProvider =
-    StateNotifierProvider<ConnectivityErrorNotifier, ConnectivityErrorState>((ref) {
-  return ConnectivityErrorNotifier();
-});
+    StateNotifierProvider<ConnectivityErrorNotifier, ConnectivityErrorState>((
+      ref,
+    ) {
+      return ConnectivityErrorNotifier();
+    });
 
 /// Provider para verificar si esta offline.
-final isOfflineProvider = Provider<bool>((ref) {
+final isOfflineProvider = Provider.autoDispose<bool>((ref) {
   return ref.watch(connectivityErrorProvider).isOffline;
 });
 
 /// Provider para conteo de sync pendiente.
-final pendingSyncCountProvider = Provider<int>((ref) {
+final pendingSyncCountProvider = Provider.autoDispose<int>((ref) {
   return ref.watch(connectivityErrorProvider).pendingSyncCount;
 });

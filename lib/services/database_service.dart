@@ -15,14 +15,14 @@ import 'hive_integrity_checker.dart';
 import 'firebase_quota_manager.dart';
 
 final databaseServiceProvider = Provider<DatabaseService>((ref) {
-  final errorHandler = ref.watch(errorHandlerProvider);
+  final errorHandler = ref.read(errorHandlerProvider);
   return DatabaseService(errorHandler);
 });
 
 /// Provider for cloud sync enabled preference
 /// Returns a stream that watches the cloudSyncEnabled preference
-final cloudSyncEnabledProvider = FutureProvider<bool>((ref) async {
-  final db = ref.watch(databaseServiceProvider);
+final cloudSyncEnabledProvider = FutureProvider.autoDispose<bool>((ref) async {
+  final db = ref.read(databaseServiceProvider);
   final prefs = await db.getUserPreferences();
   return prefs.cloudSyncEnabled;
 });
@@ -712,10 +712,31 @@ class DatabaseService {
               onTimeout: () => throw TimeoutException('Firebase timeout'),
             );
 
-        // Actualizar ID de Firestore localmente
-        task.firestoreId = docRef.id;
-        await task.save();
-        debugPrint('✅ Tarea sincronizada con Firebase (nueva)');
+        // Actualizar ID de Firestore localmente - CRITICAL FIX
+        final newFirestoreId = docRef.id;
+
+        // Si la tarea está en Hive, actualizar directamente
+        if (task.isInBox) {
+          task.firestoreId = newFirestoreId;
+          await task.save();
+        } else {
+          // Si no está en Hive, buscar la instancia correcta
+          final existingTask = await _findExistingTask(task);
+          if (existingTask != null && existingTask.isInBox) {
+            existingTask.firestoreId = newFirestoreId;
+            await existingTask.save();
+            debugPrint(
+              '✅ [SYNC] firestoreId guardado en tarea existente: $newFirestoreId',
+            );
+          } else {
+            debugPrint(
+              '⚠️ [SYNC] No se pudo guardar firestoreId - tarea no encontrada en Hive',
+            );
+          }
+        }
+        debugPrint(
+          '✅ Tarea sincronizada con Firebase (nueva) - ID: $newFirestoreId',
+        );
       } else {
         // Actualizar tarea existente
         await docRef
@@ -765,6 +786,8 @@ class DatabaseService {
         'task': task,
         'userId': userId,
         'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'retryCount': 0, // NUEVO - tracking de reintentos
+        'lastRetryAt': null, // NUEVO - timestamp del último intento
       });
     } catch (e, stack) {
       _errorHandler.handle(
@@ -778,6 +801,15 @@ class DatabaseService {
   }
 
   Future<void> _processSyncQueue() async {
+    // Check if cloud sync is enabled - FIX 4
+    final syncEnabled = await isCloudSyncEnabled();
+    if (!syncEnabled) {
+      debugPrint(
+        '⚠️ [SYNC QUEUE] Cloud sync deshabilitado, saltando procesamiento de cola',
+      );
+      return;
+    }
+
     try {
       final queue = await _syncQueue;
       if (queue.isEmpty) return;
@@ -787,6 +819,8 @@ class DatabaseService {
       );
       final box = await _box;
       final keysToRemove = <dynamic>[];
+      final keysToUpdate = <dynamic, Map<String, dynamic>>{};
+      final now = DateTime.now().millisecondsSinceEpoch;
 
       for (var entry in queue.toMap().entries) {
         try {
@@ -794,6 +828,8 @@ class DatabaseService {
           final queuedTask = data['task'] as Task;
           final userId = data['userId'] as String;
           final timestamp = data['timestamp'] as int?;
+          final retryCount = data['retryCount'] as int? ?? 0;
+          final lastRetryAt = data['lastRetryAt'] as int?;
 
           // Verificar si el item es muy viejo (mas de 7 dias)
           if (timestamp != null) {
@@ -804,6 +840,29 @@ class DatabaseService {
               debugPrint('🗑️ [SYNC QUEUE] Item muy viejo, eliminando');
               keysToRemove.add(entry.key);
               continue;
+            }
+          }
+
+          // Verificar si excede máximo de reintentos
+          if (retryCount >= _maxRetries) {
+            debugPrint(
+              '❌ [SYNC QUEUE] Item excede max reintentos ($_maxRetries), eliminando',
+            );
+            keysToRemove.add(entry.key);
+            continue;
+          }
+
+          // Implementar backoff exponencial: 2s, 4s, 8s
+          if (lastRetryAt != null && retryCount > 0) {
+            final timeSinceLastRetry = now - lastRetryAt;
+            final backoffDelay = Duration(
+              seconds: 2 * (1 << retryCount),
+            ); // 2s, 4s, 8s
+            if (timeSinceLastRetry < backoffDelay.inMilliseconds) {
+              debugPrint(
+                '⏸️ [SYNC QUEUE] Item en backoff (intento ${retryCount + 1}/$_maxRetries), saltando',
+              );
+              continue; // Saltar este item, todavía no es tiempo
             }
           }
 
@@ -830,20 +889,34 @@ class DatabaseService {
             continue;
           }
 
-          // Usar la tarea actual (con posibles actualizaciones) para sincronizar
-          await _syncTaskWithRetry(currentTask, userId);
+          // Intentar sincronizar
+          try {
+            await _syncTaskWithRetry(currentTask, userId);
 
-          // Guardar el firestoreId actualizado si cambio
-          if (currentTask.isInBox && currentTask.firestoreId.isNotEmpty) {
-            await currentTask.save();
+            // Guardar el firestoreId actualizado si cambio
+            if (currentTask.isInBox && currentTask.firestoreId.isNotEmpty) {
+              await currentTask.save();
+            }
+
+            keysToRemove.add(entry.key);
+            debugPrint(
+              '✅ [SYNC QUEUE] Tarea "${currentTask.title}" sincronizada desde cola (intento ${retryCount + 1})',
+            );
+          } catch (e) {
+            // Incrementar contador de reintentos y actualizar lastRetryAt
+            debugPrint(
+              '❌ [SYNC QUEUE] Error al procesar item (intento ${retryCount + 1}/$_maxRetries): $e',
+            );
+            keysToUpdate[entry.key] = {
+              'task': queuedTask,
+              'userId': userId,
+              'timestamp': timestamp,
+              'retryCount': retryCount + 1,
+              'lastRetryAt': now,
+            };
           }
-
-          keysToRemove.add(entry.key);
-          debugPrint(
-            '✅ [SYNC QUEUE] Tarea "${currentTask.title}" sincronizada desde cola',
-          );
         } catch (e) {
-          debugPrint('❌ [SYNC QUEUE] Error al procesar item: $e');
+          debugPrint('❌ [SYNC QUEUE] Error inesperado al procesar item: $e');
           // Mantener en la cola para reintentar despues
         }
       }
@@ -853,8 +926,18 @@ class DatabaseService {
         await queue.delete(key);
       }
 
+      // Actualizar items con retry count incrementado
+      for (var entry in keysToUpdate.entries) {
+        await queue.put(entry.key, entry.value);
+      }
+
       if (keysToRemove.isNotEmpty) {
         debugPrint('✅ [SYNC QUEUE] ${keysToRemove.length} items procesados');
+      }
+      if (keysToUpdate.isNotEmpty) {
+        debugPrint(
+          '🔄 [SYNC QUEUE] ${keysToUpdate.length} items reintentarán más tarde',
+        );
       }
     } catch (e, stack) {
       _errorHandler.handle(
@@ -984,50 +1067,58 @@ class DatabaseService {
 
   /// Flush all pending syncs (called after debounce delay or on app close)
   Future<void> _flushPendingSyncs() async {
-    // Check if cloud sync is enabled
-    final syncEnabled = await isCloudSyncEnabled();
-    if (!syncEnabled) {
+    try {
+      // Check if cloud sync is enabled
+      final syncEnabled = await isCloudSyncEnabled();
+      if (!syncEnabled) {
+        _pendingSyncTaskKeys.clear();
+        _pendingSyncNoteKeys.clear();
+        return;
+      }
+
+      final userId = _pendingSyncUserId;
+      if (userId == null || userId.isEmpty) {
+        debugPrint('⚠️ [SYNC] No hay userId para flush pending syncs');
+        return;
+      }
+
+      // Copy and clear pending sets
+      final taskKeys = Set<int>.from(_pendingSyncTaskKeys);
+      final noteKeys = Set<int>.from(_pendingSyncNoteKeys);
       _pendingSyncTaskKeys.clear();
       _pendingSyncNoteKeys.clear();
-      return;
-    }
 
-    final userId = _pendingSyncUserId;
-    if (userId == null || userId.isEmpty) {
-      debugPrint('⚠️ [SYNC] No hay userId para flush pending syncs');
-      return;
-    }
+      if (taskKeys.isEmpty && noteKeys.isEmpty) {
+        debugPrint('⏱️ [SYNC] No hay elementos pendientes para sincronizar');
+        return;
+      }
 
-    // Copy and clear pending sets
-    final taskKeys = Set<int>.from(_pendingSyncTaskKeys);
-    final noteKeys = Set<int>.from(_pendingSyncNoteKeys);
-    _pendingSyncTaskKeys.clear();
-    _pendingSyncNoteKeys.clear();
+      debugPrint(
+        '🔄 [SYNC] Flushing ${taskKeys.length} tareas y ${noteKeys.length} notas pendientes',
+      );
 
-    if (taskKeys.isEmpty && noteKeys.isEmpty) {
-      debugPrint('⏱️ [SYNC] No hay elementos pendientes para sincronizar');
-      return;
-    }
-
-    debugPrint(
-      '🔄 [SYNC] Flushing ${taskKeys.length} tareas y ${noteKeys.length} notas pendientes',
-    );
-
-    try {
       // Collect tasks to sync
       final box = await _box;
       final tasksToSync = <Task>[];
       for (final key in taskKeys) {
-        final task = box.get(key);
-        if (task != null) tasksToSync.add(task);
+        try {
+          final task = box.get(key);
+          if (task != null && !task.deleted) tasksToSync.add(task);
+        } catch (e) {
+          debugPrint('⚠️ [SYNC] Error obteniendo tarea $key: $e');
+        }
       }
 
       // Collect notes to sync
       final notesBox = await _notes;
       final notesToSync = <Note>[];
       for (final key in noteKeys) {
-        final note = notesBox.get(key);
-        if (note != null) notesToSync.add(note);
+        try {
+          final note = notesBox.get(key);
+          if (note != null && !note.deleted) notesToSync.add(note);
+        } catch (e) {
+          debugPrint('⚠️ [SYNC] Error obteniendo nota $key: $e');
+        }
       }
 
       // Batch sync
@@ -1063,6 +1154,13 @@ class DatabaseService {
     List<Note> notes,
     String userId,
   ) async {
+    // Check if cloud sync is enabled - FIX 4
+    final syncEnabled = await isCloudSyncEnabled();
+    if (!syncEnabled) {
+      debugPrint('⚠️ [BATCH SYNC] Cloud sync deshabilitado, saltando sincronización por lotes');
+      return;
+    }
+
     final fs = firestore;
     if (fs == null) return;
 
@@ -1102,12 +1200,36 @@ class DatabaseService {
         onTimeout: () => throw TimeoutException('Batch sync timeout'),
       );
 
-      // Save updated firestoreIds locally
+      // Save updated firestoreIds locally - CRITICAL FIX
       for (final task in tasks) {
-        if (task.isInBox) await task.save();
+        if (task.isInBox) {
+          await task.save();
+        } else {
+          // Si no está en Hive, buscar la instancia correcta
+          final existingTask = await _findExistingTask(task);
+          if (existingTask != null && existingTask.isInBox) {
+            existingTask.firestoreId = task.firestoreId;
+            await existingTask.save();
+            debugPrint(
+              '✅ [BATCH] firestoreId guardado en tarea: ${task.firestoreId}',
+            );
+          }
+        }
       }
       for (final note in notes) {
-        if (note.isInBox) await note.save();
+        if (note.isInBox) {
+          await note.save();
+        } else {
+          // Si no está en Hive, buscar la instancia correcta
+          final existingNote = await _findExistingNote(note);
+          if (existingNote != null && existingNote.isInBox) {
+            existingNote.firestoreId = note.firestoreId;
+            await existingNote.save();
+            debugPrint(
+              '✅ [BATCH] firestoreId guardado en nota: ${note.firestoreId}',
+            );
+          }
+        }
       }
 
       debugPrint(
@@ -1913,9 +2035,32 @@ class DatabaseService {
               const Duration(seconds: 10),
               onTimeout: () => throw TimeoutException('Firebase timeout'),
             );
-        note.firestoreId = docRef.id;
-        await note.save();
-        debugPrint('Nota sincronizada con Firebase (nueva)');
+
+        // Actualizar ID de Firestore localmente - CRITICAL FIX
+        final newFirestoreId = docRef.id;
+
+        // Si la nota está en Hive, actualizar directamente
+        if (note.isInBox) {
+          note.firestoreId = newFirestoreId;
+          await note.save();
+        } else {
+          // Si no está en Hive, buscar la instancia correcta
+          final existingNote = await _findExistingNote(note);
+          if (existingNote != null && existingNote.isInBox) {
+            existingNote.firestoreId = newFirestoreId;
+            await existingNote.save();
+            debugPrint(
+              '✅ [SYNC] firestoreId guardado en nota existente: $newFirestoreId',
+            );
+          } else {
+            debugPrint(
+              '⚠️ [SYNC] No se pudo guardar firestoreId - nota no encontrada en Hive',
+            );
+          }
+        }
+        debugPrint(
+          'Nota sincronizada con Firebase (nueva) - ID: $newFirestoreId',
+        );
       } else {
         await docRef
             .update(note.toFirestore())
@@ -1948,6 +2093,8 @@ class DatabaseService {
         'note': note,
         'userId': userId,
         'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'retryCount': 0, // NUEVO - tracking de reintentos
+        'lastRetryAt': null, // NUEVO - timestamp del último intento
       });
     } catch (e, stack) {
       _errorHandler.handle(
@@ -2012,6 +2159,13 @@ class DatabaseService {
 
   /// Process pending notes sync queue
   Future<void> _processNotesSyncQueue() async {
+    // Check if cloud sync is enabled - FIX 4
+    final syncEnabled = await isCloudSyncEnabled();
+    if (!syncEnabled) {
+      debugPrint('⚠️ [SYNC QUEUE] Cloud sync deshabilitado, saltando procesamiento de cola de notas');
+      return;
+    }
+
     try {
       final queue = await _notesSyncQueue;
       if (queue.isEmpty) return;
@@ -2019,6 +2173,8 @@ class DatabaseService {
       debugPrint('🔄 [SYNC QUEUE] Procesando ${queue.length} notas pendientes');
       final notesBox = await _notes;
       final keysToRemove = <dynamic>[];
+      final keysToUpdate = <dynamic, Map<String, dynamic>>{};
+      final now = DateTime.now().millisecondsSinceEpoch;
 
       for (var entry in queue.toMap().entries) {
         try {
@@ -2026,6 +2182,8 @@ class DatabaseService {
           final queuedNote = data['note'] as Note;
           final userId = data['userId'] as String;
           final timestamp = data['timestamp'] as int?;
+          final retryCount = data['retryCount'] as int? ?? 0;
+          final lastRetryAt = data['lastRetryAt'] as int?;
 
           // Verificar si el item es muy viejo (mas de 7 dias)
           if (timestamp != null) {
@@ -2036,6 +2194,29 @@ class DatabaseService {
               debugPrint('🗑️ [SYNC QUEUE] Nota muy vieja, eliminando');
               keysToRemove.add(entry.key);
               continue;
+            }
+          }
+
+          // Verificar si excede máximo de reintentos
+          if (retryCount >= _maxRetries) {
+            debugPrint(
+              '❌ [SYNC QUEUE] Nota excede max reintentos ($_maxRetries), eliminando',
+            );
+            keysToRemove.add(entry.key);
+            continue;
+          }
+
+          // Implementar backoff exponencial: 2s, 4s, 8s
+          if (lastRetryAt != null && retryCount > 0) {
+            final timeSinceLastRetry = now - lastRetryAt;
+            final backoffDelay = Duration(
+              seconds: 2 * (1 << retryCount),
+            ); // 2s, 4s, 8s
+            if (timeSinceLastRetry < backoffDelay.inMilliseconds) {
+              debugPrint(
+                '⏸️ [SYNC QUEUE] Nota en backoff (intento ${retryCount + 1}/$_maxRetries), saltando',
+              );
+              continue; // Saltar este item, todavía no es tiempo
             }
           }
 
@@ -2062,20 +2243,34 @@ class DatabaseService {
             continue;
           }
 
-          // Usar la nota actual (con posibles actualizaciones) para sincronizar
-          await _syncNoteWithRetry(currentNote, userId);
+          // Intentar sincronizar
+          try {
+            await _syncNoteWithRetry(currentNote, userId);
 
-          // Guardar el firestoreId actualizado si cambio
-          if (currentNote.isInBox && currentNote.firestoreId.isNotEmpty) {
-            await currentNote.save();
+            // Guardar el firestoreId actualizado si cambio
+            if (currentNote.isInBox && currentNote.firestoreId.isNotEmpty) {
+              await currentNote.save();
+            }
+
+            keysToRemove.add(entry.key);
+            debugPrint(
+              '✅ [SYNC QUEUE] Nota "${currentNote.title}" sincronizada desde cola (intento ${retryCount + 1})',
+            );
+          } catch (e) {
+            // Incrementar contador de reintentos y actualizar lastRetryAt
+            debugPrint(
+              '❌ [SYNC QUEUE] Error al procesar nota (intento ${retryCount + 1}/$_maxRetries): $e',
+            );
+            keysToUpdate[entry.key] = {
+              'note': queuedNote,
+              'userId': userId,
+              'timestamp': timestamp,
+              'retryCount': retryCount + 1,
+              'lastRetryAt': now,
+            };
           }
-
-          keysToRemove.add(entry.key);
-          debugPrint(
-            '✅ [SYNC QUEUE] Nota "${currentNote.title}" sincronizada desde cola',
-          );
         } catch (e) {
-          debugPrint('❌ [SYNC QUEUE] Error al procesar nota: $e');
+          debugPrint('❌ [SYNC QUEUE] Error inesperado al procesar nota: $e');
           // Mantener en la cola para reintentar despues
         }
       }
@@ -2085,8 +2280,18 @@ class DatabaseService {
         await queue.delete(key);
       }
 
+      // Actualizar items con retry count incrementado
+      for (var entry in keysToUpdate.entries) {
+        await queue.put(entry.key, entry.value);
+      }
+
       if (keysToRemove.isNotEmpty) {
         debugPrint('✅ [SYNC QUEUE] ${keysToRemove.length} notas procesadas');
+      }
+      if (keysToUpdate.isNotEmpty) {
+        debugPrint(
+          '🔄 [SYNC QUEUE] ${keysToUpdate.length} notas reintentarán más tarde',
+        );
       }
     } catch (e, stack) {
       _errorHandler.handle(
@@ -2623,10 +2828,58 @@ class DatabaseService {
     }
   }
 
-  /// Dispose resources
-  void dispose() {
-    _syncDebounceTimer?.cancel();
-    _quotaManager?.printSummary();
+  /// Dispose resources and cleanup
+  /// Should be called when the service is no longer needed
+  Future<void> dispose() async {
+    try {
+      debugPrint('[DatabaseService] Disposing resources...');
+
+      // Cancel pending timers
+      _syncDebounceTimer?.cancel();
+      _syncDebounceTimer = null;
+
+      // Flush any pending syncs before disposing
+      await flushPendingSyncs().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          debugPrint(
+            '[DatabaseService] Timeout flushing pending syncs on dispose',
+          );
+        },
+      );
+
+      // Clear pending sync sets
+      _pendingSyncTaskKeys.clear();
+      _pendingSyncNoteKeys.clear();
+      _pendingSyncUserId = null;
+
+      // Print quota summary
+      _quotaManager?.printSummary();
+
+      // Close all boxes gracefully
+      try {
+        if (_taskBox?.isOpen ?? false) await _taskBox!.close();
+        if (_syncQueueBox?.isOpen ?? false) await _syncQueueBox!.close();
+        if (_historyBox?.isOpen ?? false) await _historyBox!.close();
+        if (_notesBox?.isOpen ?? false) await _notesBox!.close();
+        if (_notesSyncQueueBox?.isOpen ?? false)
+          await _notesSyncQueueBox!.close();
+        if (_userPrefsBox?.isOpen ?? false) await _userPrefsBox!.close();
+      } catch (e) {
+        debugPrint('[DatabaseService] Error closing boxes: $e');
+      }
+
+      _initialized = false;
+      debugPrint('[DatabaseService] Disposed successfully');
+    } catch (e, stack) {
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        severity: ErrorSeverity.warning,
+        message: 'Error disposing DatabaseService',
+        stackTrace: stack,
+      );
+    }
   }
 
   /// Run a manual integrity check

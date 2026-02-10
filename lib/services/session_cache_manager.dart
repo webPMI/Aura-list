@@ -71,12 +71,17 @@ class SessionCacheManager {
   /// [preservePreferences] - Si es true, mantiene configuraciones como tema
   Future<void> clearUserData({bool preservePreferences = false}) async {
     try {
-      debugPrint('Limpiando datos de usuario...');
+      debugPrint('[SessionCache] Limpiando datos de usuario...');
 
       // Guardar preferencias si se debe preservar
       UserPreferences? savedPrefs;
       if (preservePreferences) {
-        savedPrefs = await _databaseService.getUserPreferences();
+        try {
+          savedPrefs = await _databaseService.getUserPreferences();
+        } catch (e) {
+          debugPrint('[SessionCache] No se pudieron obtener preferencias: $e');
+          // Continuar sin guardar preferencias
+        }
       }
 
       // Limpiar todos los datos locales
@@ -84,15 +89,23 @@ class SessionCacheManager {
 
       // Restaurar preferencias si se guardaron
       if (savedPrefs != null) {
-        await _databaseService.saveUserPreferences(savedPrefs);
+        try {
+          await _databaseService.saveUserPreferences(savedPrefs);
+        } catch (e) {
+          debugPrint('[SessionCache] No se pudieron restaurar preferencias: $e');
+        }
       }
 
       // Limpiar SharedPreferences relacionadas con la sesion
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_currentUserKey);
-      await prefs.remove(_lastSessionKey);
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(_currentUserKey);
+        await prefs.remove(_lastSessionKey);
+      } catch (e) {
+        debugPrint('[SessionCache] Error limpiando SharedPreferences: $e');
+      }
 
-      debugPrint('Datos de usuario limpiados exitosamente');
+      debugPrint('[SessionCache] Datos de usuario limpiados exitosamente');
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -185,13 +198,13 @@ class SessionCacheManager {
   /// Retorna un objeto con todos los datos exportables.
   Future<DataExport> exportBeforeClear() async {
     try {
-      debugPrint('Exportando datos de usuario...');
+      debugPrint('[SessionCache] Exportando datos de usuario...');
 
       final data = await _databaseService.exportAllData();
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString(_currentUserKey);
 
-      // Contar registros
+      // Contar registros de forma segura
       final tasks = (data['tasks'] as List?) ?? [];
       final notes = (data['notes'] as List?) ?? [];
 
@@ -203,8 +216,10 @@ class SessionCacheManager {
         noteCount: notes.length,
       );
 
-      debugPrint('Exportacion completada: ${export.taskCount} tareas, '
-          '${export.noteCount} notas, ${export.readableSize}');
+      debugPrint(
+        '[SessionCache] Exportacion completada: ${export.taskCount} tareas, '
+        '${export.noteCount} notas, ${export.readableSize}',
+      );
 
       return export;
     } catch (e, stack) {
@@ -352,23 +367,54 @@ class SessionCacheManager {
       final types = ['daily', 'weekly', 'monthly', 'yearly', 'once'];
 
       for (final type in types) {
-        final tasks = await _databaseService.getLocalTasks(type);
-        for (final task in tasks) {
-          task.lastUpdatedAt = DateTime.now();
-          if (task.isInBox) await task.save();
+        try {
+          final tasks = await _databaseService.getLocalTasks(type);
+          for (final task in tasks) {
+            try {
+              task.lastUpdatedAt = DateTime.now();
+              if (task.isInBox) await task.save();
+            } catch (e) {
+              debugPrint('[SessionCache] Error actualizando tarea: $e');
+            }
+          }
+        } catch (e) {
+          debugPrint('[SessionCache] Error obteniendo tareas de tipo $type: $e');
         }
       }
 
-      final notes = await _databaseService.getAllNotes();
-      for (final note in notes) {
-        note.updatedAt = DateTime.now();
-        if (note.isInBox) await note.save();
+      try {
+        final notes = await _databaseService.getAllNotes();
+        for (final note in notes) {
+          try {
+            note.updatedAt = DateTime.now();
+            if (note.isInBox) await note.save();
+          } catch (e) {
+            debugPrint('[SessionCache] Error actualizando nota: $e');
+          }
+        }
+      } catch (e) {
+        debugPrint('[SessionCache] Error obteniendo notas: $e');
       }
 
-      debugPrint('Todos los registros marcados para re-sincronizacion');
-    } catch (e) {
-      debugPrint('Error marcando registros para re-sync: $e');
+      debugPrint('[SessionCache] Todos los registros marcados para re-sincronizacion');
+    } catch (e, stack) {
+      debugPrint('[SessionCache] Error marcando registros para re-sync: $e');
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        severity: ErrorSeverity.warning,
+        message: 'Error marcando registros para re-sync',
+        stackTrace: stack,
+      );
     }
+  }
+
+  /// Dispose resources and cleanup
+  /// Should be called when the service is no longer needed
+  void dispose() {
+    debugPrint('[SessionCache] Service disposed');
+    // No resources to dispose in this service
+    // Database service and error handler are managed elsewhere
   }
 }
 

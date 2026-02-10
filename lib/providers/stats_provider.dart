@@ -49,9 +49,12 @@ class TaskStats {
       totalThisWeek: map['totalThisWeek'] as int? ?? 0,
       completedThisMonth: map['completedThisMonth'] as int? ?? 0,
       totalThisMonth: map['totalThisMonth'] as int? ?? 0,
-      completionRateWeek: (map['completionRateWeek'] as num?)?.toDouble() ?? 0.0,
-      completionRateMonth: (map['completionRateMonth'] as num?)?.toDouble() ?? 0.0,
-      last7Days: (map['last7Days'] as List?)?.cast<bool?>() ?? List.filled(7, null),
+      completionRateWeek:
+          (map['completionRateWeek'] as num?)?.toDouble() ?? 0.0,
+      completionRateMonth:
+          (map['completionRateMonth'] as num?)?.toDouble() ?? 0.0,
+      last7Days:
+          (map['last7Days'] as List?)?.cast<bool?>() ?? List.filled(7, null),
     );
   }
 
@@ -116,21 +119,24 @@ class TaskStats {
 }
 
 /// Provider to fetch task stats for a specific task
-final taskStatsProvider = FutureProvider.family<TaskStats, String>((ref, taskId) async {
-  final dbService = ref.watch(databaseServiceProvider);
+final taskStatsProvider = FutureProvider.autoDispose.family<TaskStats, String>((
+  ref,
+  taskId,
+) async {
+  final dbService = ref.read(databaseServiceProvider);
   final statsMap = await dbService.getCompletionStats(taskId);
   return TaskStats.fromMap(statsMap);
 });
 
 /// Provider to refresh stats (invalidates the cache)
-final refreshStatsProvider = Provider((ref) {
+final refreshStatsProvider = Provider.autoDispose((ref) {
   return (String taskId) {
     ref.invalidate(taskStatsProvider(taskId));
   };
 });
 
 /// Provider to record task completion and refresh stats
-final recordCompletionProvider = Provider((ref) {
+final recordCompletionProvider = Provider.autoDispose((ref) {
   return (String taskId, bool completed) async {
     final dbService = ref.read(databaseServiceProvider);
     await dbService.recordTaskCompletion(taskId, completed);

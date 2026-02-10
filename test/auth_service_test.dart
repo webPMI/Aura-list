@@ -118,8 +118,10 @@ void main() {
 
       final result = await authService.linkWithGoogle();
 
-      // Should return null when Firebase unavailable
-      expect(result, isNull);
+      // Should return error record when Firebase unavailable
+      expect(result.credential, isNull);
+      expect(result.error, isNotNull);
+      expect(result.error, contains('Servicio no disponible'));
     });
 
     test('signInWithEmailPassword handles Firebase unavailability', () async {

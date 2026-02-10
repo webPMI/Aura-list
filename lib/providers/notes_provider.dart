@@ -8,41 +8,44 @@ import '../services/error_handler.dart';
 
 /// Provider for independent notes (not linked to tasks)
 final independentNotesProvider =
-    StateNotifierProvider<IndependentNotesNotifier, List<Note>>((ref) {
-  final dbService = ref.watch(databaseServiceProvider);
-  final authService = ref.watch(authServiceProvider);
-  final errorHandler = ref.watch(errorHandlerProvider);
-  return IndependentNotesNotifier(dbService, authService, errorHandler);
-});
+    StateNotifierProvider.autoDispose<IndependentNotesNotifier, List<Note>>((
+      ref,
+    ) {
+      final dbService = ref.read(databaseServiceProvider);
+      final authService = ref.read(authServiceProvider);
+      final errorHandler = ref.read(errorHandlerProvider);
+      return IndependentNotesNotifier(dbService, authService, errorHandler);
+    });
 
 /// Provider for notes linked to a specific task (family provider)
-final taskNotesProvider =
-    StateNotifierProvider.family<TaskNotesNotifier, List<Note>, String>(
-        (ref, taskId) {
-  final dbService = ref.watch(databaseServiceProvider);
-  final authService = ref.watch(authServiceProvider);
-  final errorHandler = ref.watch(errorHandlerProvider);
-  return TaskNotesNotifier(dbService, authService, errorHandler, taskId);
-});
+final taskNotesProvider = StateNotifierProvider.autoDispose
+    .family<TaskNotesNotifier, List<Note>, String>((ref, taskId) {
+      final dbService = ref.read(databaseServiceProvider);
+      final authService = ref.read(authServiceProvider);
+      final errorHandler = ref.read(errorHandlerProvider);
+      return TaskNotesNotifier(dbService, authService, errorHandler, taskId);
+    });
 
 /// Provider for task notes count (for showing badge on task)
-final taskNotesCountProvider =
-    FutureProvider.family<int, String>((ref, taskId) async {
-  final dbService = ref.watch(databaseServiceProvider);
+final taskNotesCountProvider = FutureProvider.autoDispose.family<int, String>((
+  ref,
+  taskId,
+) async {
+  final dbService = ref.read(databaseServiceProvider);
   return dbService.getTaskNotesCount(taskId);
 });
 
 /// Provider for note search results
-final noteSearchProvider =
-    FutureProvider.family<List<Note>, String>((ref, query) async {
-  if (query.isEmpty) return [];
-  final dbService = ref.watch(databaseServiceProvider);
-  return dbService.searchNotes(query);
-});
+final noteSearchProvider = FutureProvider.autoDispose
+    .family<List<Note>, String>((ref, query) async {
+      if (query.isEmpty) return [];
+      final dbService = ref.read(databaseServiceProvider);
+      return dbService.searchNotes(query);
+    });
 
 /// Provider for all notes count (for dashboard)
-final totalNotesCountProvider = FutureProvider<int>((ref) async {
-  final dbService = ref.watch(databaseServiceProvider);
+final totalNotesCountProvider = FutureProvider.autoDispose<int>((ref) async {
+  final dbService = ref.read(databaseServiceProvider);
   final notes = await dbService.getAllNotes();
   return notes.length;
 });
@@ -54,15 +57,15 @@ class IndependentNotesNotifier extends StateNotifier<List<Note>> {
   StreamSubscription? _subscription;
 
   IndependentNotesNotifier(this._db, this._auth, this._errorHandler)
-      : super([]) {
+    : super([]) {
     _init();
   }
 
   void _init() {
     _subscription = _db.watchIndependentNotes().listen(
-          (notes) => state = notes,
-          onError: (e) => debugPrint('Error watching notes: $e'),
-        );
+      (notes) => state = notes,
+      onError: (e) => debugPrint('Error watching notes: $e'),
+    );
   }
 
   @override
@@ -190,12 +193,14 @@ class TaskNotesNotifier extends StateNotifier<List<Note>> {
   StreamSubscription? _subscription;
 
   TaskNotesNotifier(this._db, this._auth, this._errorHandler, this._taskId)
-      : super([]) {
+    : super([]) {
     _init();
   }
 
   void _init() {
-    _subscription = _db.watchNotesForTask(_taskId).listen(
+    _subscription = _db
+        .watchNotesForTask(_taskId)
+        .listen(
           (notes) => state = notes,
           onError: (e) => debugPrint('Error watching task notes: $e'),
         );
@@ -329,7 +334,7 @@ class TaskNotesNotifier extends StateNotifier<List<Note>> {
 }
 
 /// Quick note provider - for adding notes with minimal UI
-final quickNoteProvider = Provider((ref) {
+final quickNoteProvider = Provider.autoDispose((ref) {
   return (String content, {String? taskId}) async {
     final dbService = ref.read(databaseServiceProvider);
     final authService = ref.read(authServiceProvider);
@@ -346,7 +351,7 @@ final quickNoteProvider = Provider((ref) {
 });
 
 /// Provider to refresh notes count for a task
-final refreshTaskNotesCountProvider = Provider((ref) {
+final refreshTaskNotesCountProvider = Provider.autoDispose((ref) {
   return (String taskId) {
     ref.invalidate(taskNotesCountProvider(taskId));
   };

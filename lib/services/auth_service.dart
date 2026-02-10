@@ -8,9 +8,9 @@ import 'google_sign_in_service.dart';
 import 'session_cache_manager.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) {
-  final errorHandler = ref.watch(errorHandlerProvider);
-  final googleSignIn = ref.watch(googleSignInServiceProvider);
-  final sessionCache = ref.watch(sessionCacheProvider);
+  final errorHandler = ref.read(errorHandlerProvider);
+  final googleSignIn = ref.read(googleSignInServiceProvider);
+  final sessionCache = ref.read(sessionCacheProvider);
   return AuthService(errorHandler, googleSignIn, sessionCache);
 });
 
@@ -19,7 +19,7 @@ final authStateProvider = StreamProvider<User?>((ref) {
 });
 
 /// Provider to check if user is linked (not anonymous)
-final isLinkedAccountProvider = Provider<bool>((ref) {
+final isLinkedAccountProvider = Provider.autoDispose<bool>((ref) {
   final authService = ref.watch(authServiceProvider);
   return authService.isLinkedAccount;
 });
@@ -71,6 +71,9 @@ class AuthService {
   FirebaseAuth? _auth;
   bool _firebaseAvailable = false;
   bool _initialized = false;
+
+  /// Track if dispose has been called
+  bool _disposed = false;
 
   AuthService(this._errorHandler, this._googleSignIn, this._sessionCache);
 
@@ -141,16 +144,21 @@ class AuthService {
 
       switch (e.code) {
         case 'operation-not-allowed':
-          debugPrint('ERROR: Autenticación anónima no está habilitada en Firebase Console');
-          userMessage = 'Autenticación anónima no habilitada. Contacta al administrador.';
+          debugPrint(
+            'ERROR: Autenticación anónima no está habilitada en Firebase Console',
+          );
+          userMessage =
+              'Autenticación anónima no habilitada. Contacta al administrador.';
           break;
         case 'network-request-failed':
           debugPrint('ERROR: No hay conexión a Internet');
-          userMessage = 'Sin conexión a Internet. La app funcionará en modo local.';
+          userMessage =
+              'Sin conexión a Internet. La app funcionará en modo local.';
           break;
         default:
           debugPrint('ERROR Firebase Auth: ${e.code} - ${e.message}');
-          userMessage = 'Error de autenticación. La app funcionará en modo local.';
+          userMessage =
+              'Error de autenticación. La app funcionará en modo local.';
       }
 
       _errorHandler.handle(
@@ -347,7 +355,10 @@ class AuthService {
         severity: ErrorSeverity.error,
         userMessage: 'Servicio no disponible',
       );
-      return (credential: null, error: 'Servicio no disponible. Intenta mas tarde.');
+      return (
+        credential: null,
+        error: 'Servicio no disponible. Intenta mas tarde.',
+      );
     }
 
     final user = currentUser;
@@ -386,11 +397,16 @@ class AuthService {
       }
 
       if (result.credential == null) {
-        return (credential: null, error: 'No se pudo obtener credencial de Google');
+        return (
+          credential: null,
+          error: 'No se pudo obtener credencial de Google',
+        );
       }
 
       final userCredential = await user.linkWithCredential(result.credential!);
-      debugPrint('Cuenta vinculada exitosamente con Google: ${userCredential.user?.email}');
+      debugPrint(
+        'Cuenta vinculada exitosamente con Google: ${userCredential.user?.email}',
+      );
       return (credential: userCredential, error: null);
     } on FirebaseAuthException catch (e, stack) {
       String userMessage = 'No se pudo vincular con Google';
@@ -497,7 +513,8 @@ class AuthService {
           type: ErrorType.auth,
           severity: ErrorSeverity.error,
           message: 'Se requiere reautenticacion',
-          userMessage: 'Por seguridad, cierra sesion y vuelve a entrar antes de eliminar tu cuenta',
+          userMessage:
+              'Por seguridad, cierra sesion y vuelve a entrar antes de eliminar tu cuenta',
           stackTrace: stack,
         );
       } else {
@@ -630,4 +647,25 @@ class AuthService {
   Future<Map<String, dynamic>> getCacheStats() async {
     return await _sessionCache.getCacheStats();
   }
+
+  /// Dispose resources and cleanup
+  /// Should be called when the service is no longer needed
+  Future<void> dispose() async {
+    if (_disposed) return;
+
+    try {
+      debugPrint('[AuthService] Disposing resources...');
+      _disposed = true;
+
+      // No need to close streams or sign out - just mark as disposed
+      // Firebase Auth manages its own lifecycle
+
+      debugPrint('[AuthService] Disposed successfully');
+    } catch (e) {
+      debugPrint('[AuthService] Error during dispose: $e');
+    }
+  }
+
+  /// Check if the service has been disposed
+  bool get isDisposed => _disposed;
 }

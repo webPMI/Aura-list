@@ -77,7 +77,11 @@ extension LoggerRefExtension on Ref {
   }
 
   /// Log de warning rapido
-  void logWarning(String tag, String message, {Map<String, dynamic>? metadata}) {
+  void logWarning(
+    String tag,
+    String message, {
+    Map<String, dynamic>? metadata,
+  }) {
     logger.warning(tag, message, metadata: metadata);
   }
 
@@ -109,7 +113,11 @@ extension LoggerWidgetRefExtension on WidgetRef {
   }
 
   /// Log de warning rapido
-  void logWarning(String tag, String message, {Map<String, dynamic>? metadata}) {
+  void logWarning(
+    String tag,
+    String message, {
+    Map<String, dynamic>? metadata,
+  }) {
     logger.warning(tag, message, metadata: metadata);
   }
 

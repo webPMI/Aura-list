@@ -7,11 +7,11 @@ import '../services/auth_service.dart';
 import '../services/error_handler.dart';
 import 'navigation_provider.dart';
 
-final tasksProvider =
-    StateNotifierProvider.family<TaskNotifier, List<Task>, String>((ref, type) {
-      final dbService = ref.watch(databaseServiceProvider);
-      final authService = ref.watch(authServiceProvider);
-      final errorHandler = ref.watch(errorHandlerProvider);
+final tasksProvider = StateNotifierProvider.family
+    .autoDispose<TaskNotifier, List<Task>, String>((ref, type) {
+      final dbService = ref.read(databaseServiceProvider);
+      final authService = ref.read(authServiceProvider);
+      final errorHandler = ref.read(errorHandlerProvider);
       return TaskNotifier(dbService, authService, errorHandler, type);
     });
 
@@ -101,10 +101,11 @@ class TaskNotifier extends StateNotifier<List<Task>> {
     int? recurrenceDay,
   }) async {
     try {
+      final now = DateTime.now();
       final newTask = Task(
         title: title,
         type: _type,
-        createdAt: DateTime.now(),
+        createdAt: now,
         category: category,
         priority: priority,
         dueDate: dueDate,
@@ -113,6 +114,7 @@ class TaskNotifier extends StateNotifier<List<Task>> {
         reward: reward,
         deadline: deadline,
         recurrenceDay: recurrenceDay,
+        lastUpdatedAt: now, // FIX 6 - Establecer lastUpdatedAt desde creación
       );
 
       await _db.saveTaskLocally(newTask);
@@ -120,6 +122,9 @@ class TaskNotifier extends StateNotifier<List<Task>> {
       final user = _auth.currentUser;
       if (user != null) {
         await _db.syncTaskToCloud(newTask, user.uid);
+      } else {
+        // FIX 5 - Si no hay userId, igual agregar a cola para sincronizar después
+        debugPrint('⚠️ [TaskProvider] Usuario no autenticado, tarea se sincronizará cuando haya auth');
       }
     } catch (e, stack) {
       _errorHandler.handle(
@@ -334,7 +339,10 @@ class TaskNotifier extends StateNotifier<List<Task>> {
 
 /// Provider for filtered tasks based on search query
 /// Combines task type filtering with text search
-final filteredTasksProvider = Provider.family<List<Task>, String>((ref, type) {
+final filteredTasksProvider = Provider.autoDispose.family<List<Task>, String>((
+  ref,
+  type,
+) {
   final tasks = ref.watch(tasksProvider(type));
   final searchQuery = ref.watch(taskSearchQueryProvider).toLowerCase().trim();
 

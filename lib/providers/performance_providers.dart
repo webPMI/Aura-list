@@ -51,7 +51,7 @@ import '../services/connectivity_service.dart';
 // ==================== CONVENIENCE PROVIDERS ====================
 
 /// Provider that combines sync status with connectivity for UI display
-final syncDisplayStatusProvider = Provider<String>((ref) {
+final syncDisplayStatusProvider = Provider.autoDispose<String>((ref) {
   final connectivity = ref.watch(connectivityStreamProvider);
   final syncState = ref.watch(currentSyncStateProvider);
 
@@ -80,8 +80,8 @@ final syncDisplayStatusProvider = Provider<String>((ref) {
 });
 
 /// Provider for database health status
-final databaseHealthProvider = FutureProvider<String>((ref) async {
-  final dbService = ref.watch(databaseServiceProvider);
+final databaseHealthProvider = FutureProvider.autoDispose<String>((ref) async {
+  final dbService = ref.read(databaseServiceProvider);
   await dbService.init();
 
   final report = dbService.lastIntegrityReport;
@@ -101,7 +101,7 @@ final databaseHealthProvider = FutureProvider<String>((ref) async {
 });
 
 /// Provider for quota usage percentage
-final quotaUsagePercentProvider = Provider<double>((ref) {
+final quotaUsagePercentProvider = Provider.autoDispose<double>((ref) {
   final manager = ref.watch(quotaManagerProvider);
   final stats = manager.stats;
 
@@ -111,13 +111,13 @@ final quotaUsagePercentProvider = Provider<double>((ref) {
 });
 
 /// Provider for cache hit rate
-final cacheHitRateProvider = Provider<double>((ref) {
+final cacheHitRateProvider = Provider.autoDispose<double>((ref) {
   final manager = ref.watch(quotaManagerProvider);
   return manager.stats.cacheHitRate;
 });
 
 /// Provider to check if any performance issues exist
-final hasPerformanceIssuesProvider = Provider<bool>((ref) {
+final hasPerformanceIssuesProvider = Provider.autoDispose<bool>((ref) {
   final dbService = ref.watch(databaseServiceProvider);
   final syncState = ref.watch(currentSyncStateProvider);
   final quotaManager = ref.watch(quotaManagerProvider);
@@ -142,8 +142,10 @@ final hasPerformanceIssuesProvider = Provider<bool>((ref) {
 });
 
 /// Provider that auto-starts the sync watcher
-final autoStartSyncWatcherProvider = FutureProvider<void>((ref) async {
-  final watcher = ref.watch(syncWatcherProvider);
+final autoStartSyncWatcherProvider = FutureProvider.autoDispose<void>((
+  ref,
+) async {
+  final watcher = ref.read(syncWatcherProvider);
 
   if (!watcher.isWatching) {
     await watcher.startWatching();
@@ -155,7 +157,9 @@ final autoStartSyncWatcherProvider = FutureProvider<void>((ref) async {
 });
 
 /// Provider for a summary of performance metrics
-final performanceSummaryProvider = Provider<Map<String, dynamic>>((ref) {
+final performanceSummaryProvider = Provider.autoDispose<Map<String, dynamic>>((
+  ref,
+) {
   final dbService = ref.watch(databaseServiceProvider);
   final syncState = ref.watch(currentSyncStateProvider);
   final quotaStats = ref.watch(quotaStatsProvider);

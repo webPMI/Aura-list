@@ -1,13 +1,22 @@
 {
-    "name": "checklist_app",
-    "short_name": "checklist_app",
+    "name": "AuraList - Gestión de Tareas Offline-First",
+    "short_name": "AuraList",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FFFFFF",
+    "theme_color": "#6366F1",
+    "description": "App de gestión de tareas que funciona offline con sincronización opcional en la nube. Organiza tus tareas diarias, semanales, mensuales y anuales sin estrés.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
+    "scope": "/",
+    "lang": "es-ES",
+    "dir": "ltr",
+    "categories": [
+        "productivity",
+        "utilities",
+        "lifestyle"
+    ],
+    "screenshots": [],
     "icons": [
         {
             "src": "icons/Icon-192.png",
@@ -30,6 +39,20 @@
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Nueva Tarea",
+            "short_name": "Nueva",
+            "description": "Crear una nueva tarea rápidamente",
+            "url": "/?action=new-task",
+            "icons": [
+                {
+                    "src": "icons/Icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
         }
     ]
 }

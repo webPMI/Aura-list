@@ -5,28 +5,29 @@ import '../models/wellness_suggestion.dart';
 import '../core/constants/wellness_catalog.dart';
 
 /// Provider para obtener sugerencias por categoria
-final wellnessByCategoryProvider =
-    Provider.family<List<WellnessSuggestion>, String>((ref, category) {
-  return WellnessCatalog.getByCategory(category);
-});
+final wellnessByCategoryProvider = Provider.autoDispose
+    .family<List<WellnessSuggestion>, String>((ref, category) {
+      return WellnessCatalog.getByCategory(category);
+    });
 
 /// Provider para obtener sugerencias por momento del dia
-final wellnessByTimeProvider =
-    Provider.family<List<WellnessSuggestion>, String>((ref, timeOfDay) {
-  return WellnessCatalog.getByTimeOfDay(timeOfDay);
-});
+final wellnessByTimeProvider = Provider.autoDispose
+    .family<List<WellnessSuggestion>, String>((ref, timeOfDay) {
+      return WellnessCatalog.getByTimeOfDay(timeOfDay);
+    });
 
 /// Provider para obtener sugerencias por duracion maxima
-final wellnessByDurationProvider =
-    Provider.family<List<WellnessSuggestion>, int>((ref, maxMinutes) {
-  return WellnessCatalog.getByMaxDuration(maxMinutes);
-});
+final wellnessByDurationProvider = Provider.autoDispose
+    .family<List<WellnessSuggestion>, int>((ref, maxMinutes) {
+      return WellnessCatalog.getByMaxDuration(maxMinutes);
+    });
 
 /// Provider principal para el sistema de bienestar
-final wellnessProvider =
-    StateNotifierProvider<WellnessNotifier, WellnessState>((ref) {
-  return WellnessNotifier();
-});
+final wellnessProvider = StateNotifierProvider<WellnessNotifier, WellnessState>(
+  (ref) {
+    return WellnessNotifier();
+  },
+);
 
 /// Estado del sistema de bienestar
 class WellnessState {
@@ -216,10 +217,7 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      await prefs.setStringList(
-        _triedKey,
-        state.triedSuggestionIds.toList(),
-      );
+      await prefs.setStringList(_triedKey, state.triedSuggestionIds.toList());
       await prefs.setStringList(
         _favoritesKey,
         state.favoriteSuggestionIds.toList(),
@@ -302,9 +300,7 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
   }
 
   /// Genera una lista de recomendaciones diarias variadas
-  List<WellnessSuggestion> _generateDailyRecommendations({
-    String? excludeId,
-  }) {
+  List<WellnessSuggestion> _generateDailyRecommendations({String? excludeId}) {
     final recommendations = <WellnessSuggestion>[];
     final usedCategories = <String>{};
 
@@ -320,9 +316,9 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
     }
 
     // Obtener sugerencias relevantes para el momento del dia
-    final relevantSuggestions = WellnessCatalog.getByTimeOfDay(currentTimeOfDay)
-        .where((s) => s.id != excludeId)
-        .toList();
+    final relevantSuggestions = WellnessCatalog.getByTimeOfDay(
+      currentTimeOfDay,
+    ).where((s) => s.id != excludeId).toList();
 
     // Priorizar sugerencias no probadas
     final untried = relevantSuggestions
@@ -435,8 +431,9 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
     }
     if (timeOfDay != null) {
       pool = pool
-          .where((s) =>
-              s.bestTimeOfDay == timeOfDay || s.bestTimeOfDay == 'anytime')
+          .where(
+            (s) => s.bestTimeOfDay == timeOfDay || s.bestTimeOfDay == 'anytime',
+          )
           .toList();
     }
     if (maxDuration != null) {
@@ -447,8 +444,9 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
 
     // Preferir sugerencias no probadas
     if (preferUntried) {
-      final untried =
-          pool.where((s) => !state.triedSuggestionIds.contains(s.id)).toList();
+      final untried = pool
+          .where((s) => !state.triedSuggestionIds.contains(s.id))
+          .toList();
       if (untried.isNotEmpty) {
         pool = untried;
       }
@@ -493,10 +491,7 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
           .where((s) => state.triedSuggestionIds.contains(s.id))
           .length;
 
-      stats[category] = {
-        'total': categorySuggestions.length,
-        'tried': tried,
-      };
+      stats[category] = {'total': categorySuggestions.length, 'tried': tried};
     }
 
     return stats;
@@ -521,59 +516,69 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
 }
 
 /// Provider para obtener la sugerencia del dia
-final suggestionOfTheDayProvider = Provider<WellnessSuggestion?>((ref) {
+final suggestionOfTheDayProvider = Provider.autoDispose<WellnessSuggestion?>((
+  ref,
+) {
   final state = ref.watch(wellnessProvider);
   return state.suggestionOfTheDay;
 });
 
 /// Provider para obtener las recomendaciones diarias
-final dailyRecommendationsProvider = Provider<List<WellnessSuggestion>>((ref) {
-  final state = ref.watch(wellnessProvider);
-  return state.dailyRecommendations;
-});
+final dailyRecommendationsProvider =
+    Provider.autoDispose<List<WellnessSuggestion>>((ref) {
+      final state = ref.watch(wellnessProvider);
+      return state.dailyRecommendations;
+    });
 
 /// Provider para obtener sugerencias favoritas
-final favoriteSuggestionsProvider = Provider<List<WellnessSuggestion>>((ref) {
-  final state = ref.watch(wellnessProvider);
-  return state.favoriteSuggestions;
-});
+final favoriteSuggestionsProvider =
+    Provider.autoDispose<List<WellnessSuggestion>>((ref) {
+      final state = ref.watch(wellnessProvider);
+      return state.favoriteSuggestions;
+    });
 
 /// Provider para obtener sugerencias probadas
-final triedSuggestionsProvider = Provider<List<WellnessSuggestion>>((ref) {
-  final state = ref.watch(wellnessProvider);
-  return state.triedSuggestions;
-});
+final triedSuggestionsProvider = Provider.autoDispose<List<WellnessSuggestion>>(
+  (ref) {
+    final state = ref.watch(wellnessProvider);
+    return state.triedSuggestions;
+  },
+);
 
 /// Provider para obtener sugerencias no probadas
-final untriedSuggestionsProvider = Provider<List<WellnessSuggestion>>((ref) {
-  final state = ref.watch(wellnessProvider);
-  return state.untriedSuggestions;
-});
+final untriedSuggestionsProvider =
+    Provider.autoDispose<List<WellnessSuggestion>>((ref) {
+      final state = ref.watch(wellnessProvider);
+      return state.untriedSuggestions;
+    });
 
 /// Provider para obtener sugerencias relevantes para el momento actual
-final suggestionsForNowProvider = Provider<List<WellnessSuggestion>>((ref) {
-  final notifier = ref.watch(wellnessProvider.notifier);
-  return notifier.getSuggestionsForNow();
-});
+final suggestionsForNowProvider =
+    Provider.autoDispose<List<WellnessSuggestion>>((ref) {
+      final notifier = ref.read(wellnessProvider.notifier);
+      return notifier.getSuggestionsForNow();
+    });
 
 /// Provider para verificar si una sugerencia ha sido probada
-final hasSuggestionBeenTriedProvider =
-    Provider.family<bool, String>((ref, suggestionId) {
-  final state = ref.watch(wellnessProvider);
-  return state.hasTried(suggestionId);
-});
+final hasSuggestionBeenTriedProvider = Provider.autoDispose
+    .family<bool, String>((ref, suggestionId) {
+      final state = ref.watch(wellnessProvider);
+      return state.hasTried(suggestionId);
+    });
 
 /// Provider para verificar si una sugerencia es favorita
-final isSuggestionFavoriteProvider =
-    Provider.family<bool, String>((ref, suggestionId) {
+final isSuggestionFavoriteProvider = Provider.autoDispose.family<bool, String>((
+  ref,
+  suggestionId,
+) {
   final state = ref.watch(wellnessProvider);
   return state.isFavorite(suggestionId);
 });
 
 /// Provider para obtener estadisticas de bienestar
-final wellnessStatsProvider = Provider<Map<String, dynamic>>((ref) {
+final wellnessStatsProvider = Provider.autoDispose<Map<String, dynamic>>((ref) {
   final state = ref.watch(wellnessProvider);
-  final notifier = ref.watch(wellnessProvider.notifier);
+  final notifier = ref.read(wellnessProvider.notifier);
 
   return {
     'totalSuggestions': WellnessCatalog.totalSuggestions,

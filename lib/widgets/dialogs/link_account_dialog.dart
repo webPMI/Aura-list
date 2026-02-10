@@ -56,9 +56,9 @@ class _LinkAccountDialogContentState extends State<_LinkAccountDialogContent> {
     if (value == null || value.isEmpty) {
       return 'El correo es obligatorio';
     }
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    final emailRegex = RegExp(r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}$');
     if (!emailRegex.hasMatch(value)) {
-      return 'Ingresa un correo valido';
+      return 'Ingresa un correo electronico valido';
     }
     return null;
   }
@@ -69,6 +69,12 @@ class _LinkAccountDialogContentState extends State<_LinkAccountDialogContent> {
     }
     if (value.length < 6) {
       return 'Minimo 6 caracteres';
+    }
+    if (!RegExp(r'[A-Z]').hasMatch(value)) {
+      return 'Debe tener al menos una mayuscula';
+    }
+    if (!RegExp(r'[0-9]').hasMatch(value)) {
+      return 'Debe tener al menos un numero';
     }
     return null;
   }
@@ -484,6 +490,8 @@ class _LinkAccountDialogContentState extends State<_LinkAccountDialogContent> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
+              helperText: 'Debe tener al menos 6 caracteres, una mayuscula y un numero',
+              helperMaxLines: 2,
             ),
             enabled: !_isLoading,
           ),

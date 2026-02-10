@@ -5,7 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'screens/main_scaffold.dart';
+import 'screens/app_router.dart';
 import 'providers/theme_provider.dart';
 import 'services/auth_service.dart';
 import 'services/database_service.dart';
@@ -157,7 +157,7 @@ class _ChecklistAppState extends ConsumerState<ChecklistApp> {
         textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
         cardTheme: const CardThemeData(elevation: 2, margin: EdgeInsets.all(8)),
       ),
-      home: const MainScaffold(),
+      home: const AppRouter(),
     );
   }
 }

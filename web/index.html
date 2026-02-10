@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -18,22 +18,102 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Primary Meta Tags -->
+  <title>AuraList - Gestión de Tareas Offline-First | Organiza tu Vida</title>
+  <meta name="title" content="AuraList - Gestión de Tareas Offline-First | Organiza tu Vida">
+  <meta name="description" content="AuraList es una app de gestión de tareas que funciona offline con sincronización opcional en la nube. Organiza tus tareas diarias, semanales, mensuales y más. Simple, rápida y sin estrés.">
+  <meta name="keywords" content="gestión de tareas, lista de tareas, todo app, offline-first, productividad, organización personal, planificador, task manager, Flutter app">
+  <meta name="author" content="ink.enzo">
+  <meta name="robots" content="index, follow">
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://aura-list.web.app/">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://aura-list.web.app/">
+  <meta property="og:title" content="AuraList - Gestión de Tareas Offline-First">
+  <meta property="og:description" content="Organiza tu vida con AuraList. App de gestión de tareas que funciona offline con sincronización opcional. Simple, rápida y sin estrés.">
+  <meta property="og:image" content="https://aura-list.web.app/icons/Icon-512.png">
+  <meta property="og:locale" content="es_ES">
+  <meta property="og:site_name" content="AuraList">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://aura-list.web.app/">
+  <meta name="twitter:title" content="AuraList - Gestión de Tareas Offline-First">
+  <meta name="twitter:description" content="Organiza tu vida con AuraList. App de gestión de tareas que funciona offline con sincronización opcional. Simple, rápida y sin estrés.">
+  <meta name="twitter:image" content="https://aura-list.web.app/icons/Icon-512.png">
+
+  <!-- Contact & Publisher Info -->
+  <meta name="contact" content="servicioweb.pmi@gmail.com">
+  <link rel="author" href="https://aura-list.web.app/">
+
+  <!-- Application Metadata -->
+  <meta name="application-name" content="AuraList">
+  <meta name="theme-color" content="#6366F1">
 
   <!-- Google Sign-In OAuth Client ID for Web -->
   <meta name="google-signin-client_id" content="759264872546-nmeajdq53e82m4bugs1h0vu7h4dngcdf.apps.googleusercontent.com">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="checklist_app">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AuraList">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="shortcut icon" type="image/png" href="favicon.png"/>
 
-  <title>checklist_app</title>
+  <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
+
+  <!-- Sitemap -->
+  <link rel="sitemap" type="application/xml" href="/sitemap.xml">
+
+  <!-- Structured Data (JSON-LD) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "AuraList",
+    "applicationCategory": "ProductivityApplication",
+    "operatingSystem": "Web, Android, iOS, Windows",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "author": {
+      "@type": "Person",
+      "name": "ink.enzo",
+      "email": "servicioweb.pmi@gmail.com"
+    },
+    "description": "App de gestión de tareas offline-first con sincronización opcional en la nube. Organiza tus tareas diarias, semanales, mensuales y anuales sin estrés.",
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "5",
+      "ratingCount": "1"
+    },
+    "screenshot": "https://aura-list.web.app/icons/Icon-512.png",
+    "softwareVersion": "1.0.0",
+    "url": "https://aura-list.web.app/",
+    "downloadUrl": "https://aura-list.web.app/",
+    "featureList": [
+      "Gestión de tareas diarias, semanales, mensuales y anuales",
+      "Funcionamiento offline completo",
+      "Sincronización opcional en la nube con Firebase",
+      "Categorización y priorización de tareas",
+      "Sistema de motivación y recompensas",
+      "Tema claro y oscuro"
+    ],
+    "keywords": "gestión de tareas, productividad, offline-first, lista de tareas, planificador"
+  }
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

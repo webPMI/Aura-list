@@ -44,15 +44,24 @@ class GoogleSignInService {
 
   late final GoogleSignIn _googleSignIn;
 
+  /// Track if dispose has been called
+  bool _disposed = false;
+
   GoogleSignInService() {
-    _googleSignIn = GoogleSignIn(
-      scopes: ['email', 'profile'],
-      // For web, specify clientId
-      // For Android, specify serverClientId to get idToken
-      // The serverClientId should be the Web client ID
-      clientId: kIsWeb ? _webClientId : null,
-      serverClientId: kIsWeb ? null : _webClientId,
-    );
+    try {
+      _googleSignIn = GoogleSignIn(
+        scopes: ['email', 'profile'],
+        // For web, specify clientId
+        // For Android, specify serverClientId to get idToken
+        // The serverClientId should be the Web client ID
+        clientId: kIsWeb ? _webClientId : null,
+        serverClientId: kIsWeb ? null : _webClientId,
+      );
+      debugPrint('[GoogleSignIn] Servicio inicializado correctamente');
+    } catch (e) {
+      debugPrint('[GoogleSignIn] Error inicializando servicio: $e');
+      rethrow;
+    }
   }
 
   /// Get Google OAuth credential for Firebase Auth
@@ -285,7 +294,9 @@ class GoogleSignInService {
   Future<void> disconnect() async {
     try {
       await _googleSignIn.disconnect();
+      debugPrint('[GoogleSignIn] Desconectado exitosamente');
     } catch (e, stack) {
+      debugPrint('[GoogleSignIn] Error al desconectar: $e');
       ErrorHandler().handle(
         e,
         type: ErrorType.auth,
@@ -295,4 +306,25 @@ class GoogleSignInService {
       );
     }
   }
+
+  /// Dispose resources and cleanup
+  /// Should be called when the service is no longer needed
+  Future<void> dispose() async {
+    if (_disposed) return;
+
+    try {
+      debugPrint('[GoogleSignIn] Disposing resources...');
+      _disposed = true;
+
+      // Sign out to clean up any active sessions
+      await signOut();
+
+      debugPrint('[GoogleSignIn] Disposed successfully');
+    } catch (e) {
+      debugPrint('[GoogleSignIn] Error during dispose: $e');
+    }
+  }
+
+  /// Check if the service has been disposed
+  bool get isDisposed => _disposed;
 }

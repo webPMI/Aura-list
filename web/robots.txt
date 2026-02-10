@@ -1,0 +1,15 @@
+# robots.txt for AuraList
+# https://aura-list.web.app
+
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Disallow crawling of Firebase hosting files
+Disallow: /__/
+
+# Sitemap location
+Sitemap: https://aura-list.web.app/sitemap.xml
+
+# Crawl delay (optional, helps prevent server overload)
+# Crawl-delay: 10

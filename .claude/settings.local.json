@@ -8,7 +8,15 @@
       "Bash(findstr:*)",
       "Bash(timeout:*)",
       "Bash(powershell:*)",
-      "Bash(./gradlew signingReport:*)"
+      "Bash(./gradlew signingReport:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(magick:*)",
+      "Bash(python generate_icons.py:*)",
+      "Bash(copy \"D:\\\\program\\\\checklist-app\\\\logo-aura-list.png\" \"D:\\\\program\\\\checklist-app\\\\assets\\\\images\\\\logo.png\")",
+      "Bash(python generate_ios_icons.py:*)",
+      "Bash(python generate_windows_icon.py:*)",
+      "Bash(git add:*)"
     ]
   }
 }
