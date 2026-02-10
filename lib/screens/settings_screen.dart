@@ -33,7 +33,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
             children: [
               // Profile Section
-              _ProfileTile(),
+              const _ProfileTile(),
 
               const Divider(),
 
@@ -72,7 +72,7 @@ class SettingsScreen extends ConsumerWidget {
 
               // Data Section
               _SectionHeader('Datos'),
-              _SyncStatusTile(),
+              const _SyncStatusTile(),
               ListTile(
                 leading: const Icon(Icons.download_outlined),
                 title: const Text('Exportar datos'),
@@ -96,7 +96,7 @@ class SettingsScreen extends ConsumerWidget {
 
               // Account Section
               _SectionHeader('Cuenta'),
-              _AccountTile(),
+              const _AccountTile(),
 
               const Divider(),
 
@@ -133,7 +133,7 @@ class SettingsScreen extends ConsumerWidget {
     };
   }
 
-  void _showExportDialog(BuildContext context) {
+  Future<void> _showExportDialog(BuildContext context) async {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -167,15 +167,9 @@ class SettingsScreen extends ConsumerWidget {
             child: const Text('Cancelar'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              // TODO: Implement data deletion
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Funcion no implementada'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
+              await _deleteAllData(context, ref);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Borrar todo'),
@@ -183,6 +177,40 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _deleteAllData(BuildContext context, WidgetRef ref) async {
+    try {
+      final dbService = ref.read(databaseServiceProvider);
+      final authService = ref.read(authServiceProvider);
+      final user = authService.currentUser;
+
+      // Delete all cloud data if user is authenticated
+      if (user != null) {
+        await dbService.deleteAllUserDataFromCloud(user.uid);
+      }
+
+      // Clear all local data
+      await dbService.clearAllLocalData();
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Todos los datos han sido eliminados'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al eliminar datos: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 }
 
@@ -211,6 +239,8 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _SyncStatusTile extends ConsumerWidget {
+  const _SyncStatusTile();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dbService = ref.watch(databaseServiceProvider);
@@ -256,6 +286,8 @@ class _SyncStatusTile extends ConsumerWidget {
 }
 
 class _AccountTile extends ConsumerWidget {
+  const _AccountTile();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
@@ -277,9 +309,7 @@ class _AccountTile extends ConsumerWidget {
                 child: const Text('Cerrar sesion'),
               )
             : TextButton(
-                onPressed: () {
-                  // TODO: Implement sign in
-                },
+                onPressed: () => _showSignInDialog(context, ref),
                 child: const Text('Iniciar sesion'),
               ),
       ),
@@ -319,9 +349,40 @@ class _AccountTile extends ConsumerWidget {
       ),
     );
   }
+
+  void _showSignInDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Iniciar sesion'),
+        content: const Text(
+          'Para iniciar sesion con una cuenta existente, '
+          've a la pantalla de Perfil y vincula tu cuenta.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
+              );
+            },
+            child: const Text('Ir a Perfil'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ProfileTile extends ConsumerWidget {
+  const _ProfileTile();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);

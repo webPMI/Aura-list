@@ -7,6 +7,7 @@ import '../../providers/theme_provider.dart';
 import '../../providers/task_provider.dart';
 import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
+import '../../screens/profile_screen.dart';
 
 class AppDrawer extends ConsumerWidget {
   final VoidCallback? onNavigate;
@@ -185,17 +186,23 @@ class _DrawerHeader extends ConsumerWidget {
     final dailyTasks = ref.watch(tasksProvider('daily'));
     final completedToday = dailyTasks.where((task) => task.isCompleted).length;
     final totalToday = dailyTasks.length;
+    final progressPercent = totalToday > 0 ? completedToday / totalToday : 0.0;
 
     // Motivational messages based on completion
     String motivationalMessage;
+    IconData motivationIcon;
     if (completedToday == 0 && totalToday > 0) {
-      motivationalMessage = 'Comienza tu dia con energia!';
+      motivationalMessage = 'Comienza tu dia!';
+      motivationIcon = Icons.wb_sunny;
     } else if (completedToday == totalToday && totalToday > 0) {
-      motivationalMessage = 'Todo completado! Eres increible!';
+      motivationalMessage = 'Todo listo!';
+      motivationIcon = Icons.celebration;
     } else if (completedToday > 0) {
-      motivationalMessage = 'Sigue asi! Vas muy bien!';
+      motivationalMessage = 'Sigue asi!';
+      motivationIcon = Icons.trending_up;
     } else {
-      motivationalMessage = 'Tu mejor version te espera!';
+      motivationalMessage = 'Listo para empezar';
+      motivationIcon = Icons.rocket_launch;
     }
 
     return Container(
@@ -214,181 +221,139 @@ class _DrawerHeader extends ConsumerWidget {
                   colorScheme.secondary.withValues(alpha: 0.6),
                 ],
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.primary.withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: colorScheme.primary.withValues(alpha: 0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         child: Stack(
           children: [
-            // Decorative circles
+            // Decorative circles (smaller)
             Positioned(
-              top: -30,
-              right: -30,
+              top: -20,
+              right: -20,
               child: Container(
-                width: 100,
-                height: 100,
+                width: 60,
+                height: 60,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.1),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: -20,
-              left: -20,
-              child: Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.05),
+                  color: Colors.white.withValues(alpha: 0.08),
                 ),
               ),
             ),
 
             // Content
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // App Icon/Logo
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.3),
-                        width: 1,
+                  // App Icon/Logo + Name
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.check_circle,
+                          size: 28,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
-                    child: const Icon(
-                      Icons.check_circle,
-                      size: 36,
-                      color: Colors.white,
-                    ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'AuraList',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            Text(
+                              DateFormat('EEEE, d MMM', 'es_ES')
+                                  .format(DateTime.now()),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.white.withValues(alpha: 0.8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
 
-                  // App Name
-                  const Text(
-                    'AuraList',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-
-                  // Tagline
-                  Text(
-                    'Tu gestor de tareas',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Stats Card
+                  // Progress Bar
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        width: 1,
-                      ),
                     ),
-                    child: Row(
+                    child: Column(
                       children: [
-                        // Completion indicator
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withValues(alpha: 0.2),
-                          ),
-                          child: Center(
-                            child: Text(
-                              completedToday == totalToday && totalToday > 0
-                                  ? '!'
-                                  : '$completedToday',
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              totalToday > 0
+                                  ? '$completedToday de $totalToday tareas'
+                                  : 'Sin tareas hoy',
                               style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
                                 color: Colors.white,
                               ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-
-                        // Stats text
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                totalToday > 0
-                                    ? '$completedToday de $totalToday tareas completadas'
-                                    : 'Sin tareas para hoy',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
+                            Row(
+                              children: [
+                                Icon(
+                                  motivationIcon,
+                                  size: 14,
+                                  color: Colors.white.withValues(alpha: 0.9),
                                 ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                DateFormat('EEEE, d MMM', 'es_ES')
-                                    .format(DateTime.now()),
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.white.withValues(alpha: 0.8),
+                                const SizedBox(width: 4),
+                                Text(
+                                  motivationalMessage,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            ),
+                          ],
                         ),
+                        if (totalToday > 0) ...[
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: progressPercent,
+                              minHeight: 6,
+                              backgroundColor: Colors.white.withValues(alpha: 0.2),
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Motivational message
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.auto_awesome,
-                        size: 16,
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          motivationalMessage,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontStyle: FontStyle.italic,
-                            color: Colors.white.withValues(alpha: 0.9),
-                          ),
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),
@@ -543,6 +508,7 @@ class _AccountSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
+    final authService = ref.watch(authServiceProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
@@ -550,59 +516,80 @@ class _AccountSection extends ConsumerWidget {
       child: authState.when(
         data: (user) {
           final isAnonymous = user?.isAnonymous ?? true;
-          final userName = isAnonymous ? 'Usuario' : 'Cuenta';
+          final email = authService.linkedEmail;
+          final userName = isAnonymous
+              ? 'Usuario Anonimo'
+              : (email ?? 'Usuario');
           final firstLetter = userName[0].toUpperCase();
 
           return _AnimatedListTile(
             leading: CircleAvatar(
               backgroundColor: colorScheme.primaryContainer,
+              radius: 24,
               child: Text(
                 firstLetter,
                 style: TextStyle(
                   color: colorScheme.primary,
                   fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                  fontSize: 20,
                 ),
               ),
             ),
             title: Text(
-              user != null ? userName : 'Sin cuenta',
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              userName,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
             ),
-            subtitle: Row(
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: user != null ? Colors.green : Colors.grey,
-                  ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: user != null ? Colors.green : Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      user?.isAnonymous == true
+                          ? 'Solo en este dispositivo'
+                          : user != null
+                              ? 'Sincronizado en la nube'
+                              : 'Sin conexion',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(height: 4),
                 Text(
-                  user?.isAnonymous == true
-                      ? 'Modo anonimo'
-                      : user != null
-                          ? 'Conectado'
-                          : 'Iniciar sesion',
+                  'Toca para ver tu perfil',
                   style: TextStyle(
-                    fontSize: 12,
-                    color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    fontSize: 11,
+                    color: colorScheme.primary.withValues(alpha: 0.8),
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
-            trailing: user != null
-                ? IconButton(
-                    icon: const Icon(Icons.logout, size: 20),
-                    onPressed: () => _showLogoutDialog(context, ref),
-                    tooltip: 'Cerrar sesion',
-                    style: IconButton.styleFrom(
-                      foregroundColor: colorScheme.error,
-                    ),
-                  )
-                : const Icon(Icons.arrow_forward_ios, size: 16),
+            trailing: const Icon(Icons.chevron_right, size: 20),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ProfileScreen(),
+                ),
+              );
+            },
           );
         },
         loading: () => const ListTile(
@@ -617,49 +604,19 @@ class _AccountSection extends ConsumerWidget {
           leading: Icon(Icons.error_outline, color: colorScheme.error),
           title: const Text('Error de autenticacion'),
           subtitle: const Text(
-            'Toca para reintentar',
+            'Toca para ver perfil',
             style: TextStyle(fontSize: 12),
           ),
+          trailing: const Icon(Icons.chevron_right, size: 20),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ProfileScreen(),
+              ),
+            );
+          },
         ),
-      ),
-    );
-  }
-
-  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        icon: Icon(Icons.logout, color: colorScheme.error),
-        title: const Text('Cerrar sesion'),
-        content: const Text(
-          'Tus datos locales se mantendran seguros. Deseas cerrar sesion?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await ref.read(authServiceProvider).signOut();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Sesion cerrada correctamente'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: colorScheme.error,
-            ),
-            child: const Text('Cerrar sesion'),
-          ),
-        ],
       ),
     );
   }

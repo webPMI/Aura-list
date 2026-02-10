@@ -66,7 +66,7 @@ class TaskTile extends ConsumerWidget {
     return Semantics(
       label: 'Deslizar derecha para completar, izquierda para eliminar ${task.title}',
       child: Dismissible(
-        key: Key('dismiss_${task.id}'),
+        key: Key('dismiss_${task.key ?? (task.firestoreId.isNotEmpty ? task.firestoreId : task.hashCode)}'),
         direction: DismissDirection.horizontal,
         // Swipe RIGHT to complete (green background)
         background: Container(

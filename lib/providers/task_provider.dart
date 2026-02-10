@@ -32,20 +32,34 @@ class TaskNotifier extends StateNotifier<List<Task>> {
     );
   }
 
-  /// Remove duplicate tasks (same firestoreId)
+  /// Remove duplicate tasks (same firestoreId or same Hive key)
   List<Task> _deduplicateTasks(List<Task> tasks) {
-    final seen = <String>{};
+    final seenFirestoreIds = <String>{};
+    final seenHiveKeys = <dynamic>{};
     final unique = <Task>[];
 
     for (final task in tasks) {
-      // For tasks with firestoreId, deduplicate by firestoreId
+      bool isDuplicate = false;
+
+      // Check by firestoreId first (most reliable for synced tasks)
       if (task.firestoreId.isNotEmpty) {
-        if (!seen.contains(task.firestoreId)) {
-          seen.add(task.firestoreId);
-          unique.add(task);
+        if (seenFirestoreIds.contains(task.firestoreId)) {
+          isDuplicate = true;
+        } else {
+          seenFirestoreIds.add(task.firestoreId);
         }
-      } else {
-        // For local-only tasks, keep all (they have unique Hive keys)
+      }
+
+      // Also check by Hive key (for local-only tasks)
+      if (!isDuplicate && task.key != null) {
+        if (seenHiveKeys.contains(task.key)) {
+          isDuplicate = true;
+        } else {
+          seenHiveKeys.add(task.key);
+        }
+      }
+
+      if (!isDuplicate) {
         unique.add(task);
       }
     }
@@ -106,11 +120,58 @@ class TaskNotifier extends StateNotifier<List<Task>> {
 
   Future<void> updateTask(Task task) async {
     try {
-      await _db.saveTaskLocally(task);
+      // Si la tarea ya está en Hive, usar updateInPlace
+      if (task.isInBox) {
+        task.lastUpdatedAt = DateTime.now();
+        await task.save();
 
-      final user = _auth.currentUser;
-      if (user != null) {
-        await _db.syncTaskToCloud(task, user.uid);
+        final user = _auth.currentUser;
+        if (user != null) {
+          await _db.syncTaskToCloudDebounced(task, user.uid);
+        }
+      } else {
+        // Buscar la tarea original en el estado actual por firestoreId o key
+        Task? original;
+        if (task.firestoreId.isNotEmpty) {
+          original = state.firstWhere(
+            (t) => t.firestoreId == task.firestoreId,
+            orElse: () => task,
+          );
+        }
+
+        if (original != null && original.isInBox && original != task) {
+          // Actualizar la tarea original in-place
+          original.updateInPlace(
+            title: task.title,
+            type: task.type,
+            isCompleted: task.isCompleted,
+            dueDate: task.dueDate,
+            category: task.category,
+            priority: task.priority,
+            dueTimeMinutes: task.dueTimeMinutes,
+            motivation: task.motivation,
+            reward: task.reward,
+            recurrenceDay: task.recurrenceDay,
+            deadline: task.deadline,
+            deleted: task.deleted,
+            deletedAt: task.deletedAt,
+            lastUpdatedAt: DateTime.now(),
+          );
+          await original.save();
+
+          final user = _auth.currentUser;
+          if (user != null) {
+            await _db.syncTaskToCloudDebounced(original, user.uid);
+          }
+        } else {
+          // Fallback: guardar usando el servicio (que maneja duplicados)
+          await _db.saveTaskLocally(task);
+
+          final user = _auth.currentUser;
+          if (user != null) {
+            await _db.syncTaskToCloud(task, user.uid);
+          }
+        }
       }
     } catch (e, stack) {
       _errorHandler.handle(
@@ -126,8 +187,38 @@ class TaskNotifier extends StateNotifier<List<Task>> {
   }
 
   Future<void> toggleTask(Task task) async {
-    final updatedTask = task.copyWith(isCompleted: !task.isCompleted);
-    await updateTask(updatedTask);
+    try {
+      // Usar updateInPlace para tareas que ya están en Hive (preserva el key)
+      if (task.isInBox) {
+        task.updateInPlace(
+          isCompleted: !task.isCompleted,
+          lastUpdatedAt: DateTime.now(),
+        );
+        await task.save();
+
+        final user = _auth.currentUser;
+        if (user != null) {
+          await _db.syncTaskToCloudDebounced(task, user.uid);
+        }
+      } else {
+        // Fallback para tareas no guardadas aún
+        final updatedTask = task.copyWith(
+          isCompleted: !task.isCompleted,
+          lastUpdatedAt: DateTime.now(),
+        );
+        await updateTask(updatedTask);
+      }
+    } catch (e, stack) {
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        severity: ErrorSeverity.error,
+        message: 'Error al cambiar estado de tarea',
+        userMessage: 'No se pudo actualizar la tarea',
+        stackTrace: stack,
+      );
+      rethrow;
+    }
   }
 
   Future<void> deleteTask(Task task) async {
