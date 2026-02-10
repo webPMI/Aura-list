@@ -219,11 +219,15 @@ class DatabaseService {
       // Close existing boxes if they exist
       try {
         if (_taskBox != null && _taskBox!.isOpen) await _taskBox!.close();
-        if (_syncQueueBox != null && _syncQueueBox!.isOpen) await _syncQueueBox!.close();
-        if (_historyBox != null && _historyBox!.isOpen) await _historyBox!.close();
+        if (_syncQueueBox != null && _syncQueueBox!.isOpen)
+          await _syncQueueBox!.close();
+        if (_historyBox != null && _historyBox!.isOpen)
+          await _historyBox!.close();
         if (_notesBox != null && _notesBox!.isOpen) await _notesBox!.close();
-        if (_notesSyncQueueBox != null && _notesSyncQueueBox!.isOpen) await _notesSyncQueueBox!.close();
-        if (_userPrefsBox != null && _userPrefsBox!.isOpen) await _userPrefsBox!.close();
+        if (_notesSyncQueueBox != null && _notesSyncQueueBox!.isOpen)
+          await _notesSyncQueueBox!.close();
+        if (_userPrefsBox != null && _userPrefsBox!.isOpen)
+          await _userPrefsBox!.close();
       } catch (e) {
         debugPrint('⚠️ [Database] Error cerrando boxes: $e');
       }
@@ -269,7 +273,9 @@ class DatabaseService {
         attempts++;
 
         if (_isConnectionClosedError(e) && attempts <= maxRetries) {
-          debugPrint('🔄 [Database] Conexión cerrada detectada en $operationName, reintentando ($attempts/$maxRetries)...');
+          debugPrint(
+            '🔄 [Database] Conexión cerrada detectada en $operationName, reintentando ($attempts/$maxRetries)...',
+          );
           await _reinitializeBoxes();
           continue;
         }
@@ -288,7 +294,9 @@ class DatabaseService {
       _lastIntegrityReport = await checker.checkAllBoxes();
 
       if (!_lastIntegrityReport!.allHealthy) {
-        debugPrint('[Database] Some boxes need attention, attempting repair...');
+        debugPrint(
+          '[Database] Some boxes need attention, attempting repair...',
+        );
         _lastIntegrityReport = await checker.repairAllBoxes();
 
         if (!_lastIntegrityReport!.allUsable) {
@@ -343,7 +351,8 @@ class DatabaseService {
 
   /// Check if we should use cache for a collection
   bool shouldUseCacheFor(String collection) {
-    return _quotaManager?.shouldUseCache(collection) ?? isCacheValid(collection);
+    return _quotaManager?.shouldUseCache(collection) ??
+        isCacheValid(collection);
   }
 
   /// Run migrations for existing data
@@ -377,20 +386,36 @@ class DatabaseService {
     }
   }
 
-  /// Remove duplicate tasks and notes with same firestoreId
+  /// Remove duplicate tasks and notes with same firestoreId or same creation timestamp
   Future<void> _cleanupDuplicates() async {
     try {
       // Clean up duplicate tasks
       final seenTaskIds = <String>{};
+      final seenTimestamps = <int>{};
       final tasksToDelete = <dynamic>[];
 
       for (final task in _taskBox!.values) {
+        bool isDuplicate = false;
         if (task.firestoreId.isNotEmpty) {
           if (seenTaskIds.contains(task.firestoreId)) {
-            tasksToDelete.add(task.key);
+            isDuplicate = true;
           } else {
             seenTaskIds.add(task.firestoreId);
           }
+        }
+
+        // Also check by timestamp for local-only duplicates
+        final ts = task.createdAt.millisecondsSinceEpoch;
+        if (!isDuplicate && ts > 0) {
+          if (seenTimestamps.contains(ts)) {
+            isDuplicate = true;
+          } else {
+            seenTimestamps.add(ts);
+          }
+        }
+
+        if (isDuplicate) {
+          tasksToDelete.add(task.key);
         }
       }
 
@@ -404,15 +429,30 @@ class DatabaseService {
 
       // Clean up duplicate notes
       final seenNoteIds = <String>{};
+      final seenNoteTimestamps = <int>{};
       final notesToDelete = <dynamic>[];
 
       for (final note in _notesBox!.values) {
+        bool isDuplicate = false;
         if (note.firestoreId.isNotEmpty) {
           if (seenNoteIds.contains(note.firestoreId)) {
-            notesToDelete.add(note.key);
+            isDuplicate = true;
           } else {
             seenNoteIds.add(note.firestoreId);
           }
+        }
+
+        final ts = note.createdAt.millisecondsSinceEpoch;
+        if (!isDuplicate && ts > 0) {
+          if (seenNoteTimestamps.contains(ts)) {
+            isDuplicate = true;
+          } else {
+            seenNoteTimestamps.add(ts);
+          }
+        }
+
+        if (isDuplicate) {
+          notesToDelete.add(note.key);
         }
       }
 
@@ -532,45 +572,41 @@ class DatabaseService {
   }
 
   Future<void> saveTaskLocally(Task task) async {
-    await _executeWithRetry(
-      () async {
-        final box = await _box;
-        if (task.isInBox) {
-          await task.save();
-        } else {
-          // Check for duplicates by firestoreId before adding
-          if (task.firestoreId.isNotEmpty) {
-            final existing = box.values.cast<Task?>().firstWhere(
-              (t) => t?.firestoreId == task.firestoreId,
-              orElse: () => null,
-            );
-            if (existing != null) {
-              // Update existing instead of adding duplicate
-              existing.updateInPlace(
-                title: task.title,
-                type: task.type,
-                isCompleted: task.isCompleted,
-                dueDate: task.dueDate,
-                category: task.category,
-                priority: task.priority,
-                dueTimeMinutes: task.dueTimeMinutes,
-                motivation: task.motivation,
-                reward: task.reward,
-                recurrenceDay: task.recurrenceDay,
-                deadline: task.deadline,
-                deleted: task.deleted,
-                deletedAt: task.deletedAt,
-                lastUpdatedAt: task.lastUpdatedAt,
-              );
-              await existing.save();
-              return;
-            }
-          }
-          await box.add(task);
+    await _executeWithRetry(() async {
+      final box = await _box;
+      if (task.isInBox) {
+        await task.save();
+      } else {
+        // IMPORTANT: Avoid duplicating local tasks.
+        // AI agents often create new Task instances (via copyWith) which lose their Hive reference.
+        // We must check if a task with the same identity already exists.
+        final existing = await _findExistingTask(task);
+
+        if (existing != null) {
+          // Update existing instead of adding duplicate
+          existing.updateInPlace(
+            title: task.title,
+            type: task.type,
+            isCompleted: task.isCompleted,
+            dueDate: task.dueDate,
+            category: task.category,
+            priority: task.priority,
+            dueTimeMinutes: task.dueTimeMinutes,
+            motivation: task.motivation,
+            reward: task.reward,
+            recurrenceDay: task.recurrenceDay,
+            deadline: task.deadline,
+            deleted: task.deleted,
+            deletedAt: task.deletedAt,
+            lastUpdatedAt: task.lastUpdatedAt,
+          );
+          await existing.save();
+          // IMPORTANT: Exit to avoid box.add() creating a duplicate
+          return;
         }
-      },
-      operationName: 'guardar tarea',
-    ).catchError((e, stack) {
+        await box.add(task);
+      }
+    }, operationName: 'guardar tarea').catchError((e, stack) {
       _errorHandler.handle(
         e,
         type: ErrorType.database,
@@ -605,17 +641,23 @@ class DatabaseService {
     // Check if cloud sync is enabled
     final syncEnabled = await isCloudSyncEnabled();
     if (!syncEnabled) {
-      debugPrint('⚠️ [SYNC] Cloud sync deshabilitado, tarea guardada solo localmente');
+      debugPrint(
+        '⚠️ [SYNC] Cloud sync deshabilitado, tarea guardada solo localmente',
+      );
       return;
     }
 
     if (!_firebaseAvailable || firestore == null) {
-      debugPrint('⚠️ [SYNC] Firebase no disponible, tarea guardada solo localmente');
+      debugPrint(
+        '⚠️ [SYNC] Firebase no disponible, tarea guardada solo localmente',
+      );
       return;
     }
 
     if (userId.isEmpty) {
-      debugPrint('⚠️ [SYNC] Usuario no autenticado (userId vacío), tarea guardada solo localmente');
+      debugPrint(
+        '⚠️ [SYNC] Usuario no autenticado (userId vacío), tarea guardada solo localmente',
+      );
       _errorHandler.handle(
         'Usuario no autenticado',
         type: ErrorType.auth,
@@ -626,7 +668,9 @@ class DatabaseService {
       return;
     }
 
-    debugPrint('🔄 [SYNC] Iniciando sincronización de tarea "${task.title}" para usuario $userId');
+    debugPrint(
+      '🔄 [SYNC] Iniciando sincronización de tarea "${task.title}" para usuario $userId',
+    );
 
     try {
       await _syncTaskWithRetry(task, userId);
@@ -738,7 +782,9 @@ class DatabaseService {
       final queue = await _syncQueue;
       if (queue.isEmpty) return;
 
-      debugPrint('🔄 [SYNC QUEUE] Procesando ${queue.length} tareas pendientes');
+      debugPrint(
+        '🔄 [SYNC QUEUE] Procesando ${queue.length} tareas pendientes',
+      );
       final box = await _box;
       final keysToRemove = <dynamic>[];
 
@@ -777,7 +823,9 @@ class DatabaseService {
 
           // Si la tarea fue eliminada localmente, eliminar de la cola
           if (currentTask == null) {
-            debugPrint('⚠️ [SYNC QUEUE] Tarea no encontrada localmente, eliminando de cola');
+            debugPrint(
+              '⚠️ [SYNC QUEUE] Tarea no encontrada localmente, eliminando de cola',
+            );
             keysToRemove.add(entry.key);
             continue;
           }
@@ -791,7 +839,9 @@ class DatabaseService {
           }
 
           keysToRemove.add(entry.key);
-          debugPrint('✅ [SYNC QUEUE] Tarea "${currentTask.title}" sincronizada desde cola');
+          debugPrint(
+            '✅ [SYNC QUEUE] Tarea "${currentTask.title}" sincronizada desde cola',
+          );
         } catch (e) {
           debugPrint('❌ [SYNC QUEUE] Error al procesar item: $e');
           // Mantener en la cola para reintentar despues
@@ -882,7 +932,9 @@ class DatabaseService {
       return;
     }
 
-    debugPrint('⏱️ [SYNC] Agregando tarea "${task.title}" a cola de sincronización (debounced)');
+    debugPrint(
+      '⏱️ [SYNC] Agregando tarea "${task.title}" a cola de sincronización (debounced)',
+    );
 
     // Update lastUpdatedAt
     task.lastUpdatedAt = DateTime.now();
@@ -957,7 +1009,9 @@ class DatabaseService {
       return;
     }
 
-    debugPrint('🔄 [SYNC] Flushing ${taskKeys.length} tareas y ${noteKeys.length} notas pendientes');
+    debugPrint(
+      '🔄 [SYNC] Flushing ${taskKeys.length} tareas y ${noteKeys.length} notas pendientes',
+    );
 
     try {
       // Collect tasks to sync
@@ -978,7 +1032,9 @@ class DatabaseService {
 
       // Batch sync
       if (tasksToSync.isNotEmpty || notesToSync.isNotEmpty) {
-        debugPrint('📦 [SYNC] Sincronizando lote: ${tasksToSync.length} tareas, ${notesToSync.length} notas');
+        debugPrint(
+          '📦 [SYNC] Sincronizando lote: ${tasksToSync.length} tareas, ${notesToSync.length} notas',
+        );
         await _batchSync(tasksToSync, notesToSync, userId);
       }
     } catch (e, stack) {
@@ -1042,9 +1098,9 @@ class DatabaseService {
 
       // Commit batch
       await batch.commit().timeout(
-            const Duration(seconds: 15),
-            onTimeout: () => throw TimeoutException('Batch sync timeout'),
-          );
+        const Duration(seconds: 15),
+        onTimeout: () => throw TimeoutException('Batch sync timeout'),
+      );
 
       // Save updated firestoreIds locally
       for (final task in tasks) {
@@ -1054,7 +1110,9 @@ class DatabaseService {
         if (note.isInBox) await note.save();
       }
 
-      debugPrint('Batch sync completado: ${tasks.length} tareas, ${notes.length} notas');
+      debugPrint(
+        'Batch sync completado: ${tasks.length} tareas, ${notes.length} notas',
+      );
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -1084,6 +1142,20 @@ class DatabaseService {
 
     if (task.isInBox) {
       await task.save();
+    } else {
+      // IMPORTANT: Find the local instance to mark as deleted.
+      // Detached instances (lost Hive key) happen often with AI agents.
+      final existing = await _findExistingTask(task);
+      if (existing != null) {
+        existing.updateInPlace(
+          deleted: true,
+          deletedAt: task.deletedAt,
+          lastUpdatedAt: task.lastUpdatedAt,
+        );
+        await existing.save();
+        // Update the task object to match the identity for the sync step below
+        task.firestoreId = existing.firestoreId;
+      }
     }
 
     // Sync deletion to cloud
@@ -1092,7 +1164,32 @@ class DatabaseService {
     }
   }
 
-  /// Soft delete a note
+  /// Helper to find an existing task by any of its identities
+  Future<Task?> _findExistingTask(Task task) async {
+    final box = await _box;
+    // 1. By Hive key
+    if (task.key != null) {
+      final t = box.get(task.key);
+      if (t != null) return t;
+    }
+    // 2. By firestoreId (for synced tasks)
+    if (task.firestoreId.isNotEmpty) {
+      final t = box.values.cast<Task?>().firstWhere(
+        (t) => t?.firestoreId == task.firestoreId,
+        orElse: () => null,
+      );
+      if (t != null) return t;
+    }
+    // 3. By createdAt (for local tasks)
+    return box.values.cast<Task?>().firstWhere(
+      (t) =>
+          t != null &&
+          t.createdAt.millisecondsSinceEpoch ==
+              task.createdAt.millisecondsSinceEpoch,
+      orElse: () => null,
+    );
+  }
+
   Future<void> softDeleteNote(Note note, String userId) async {
     note.deleted = true;
     note.deletedAt = DateTime.now();
@@ -1100,12 +1197,47 @@ class DatabaseService {
 
     if (note.isInBox) {
       await note.save();
+    } else {
+      // IMPORTANT: Find the local instance to mark as deleted
+      final existing = await _findExistingNote(note);
+      if (existing != null) {
+        existing.updateInPlace(
+          deleted: true,
+          deletedAt: note.deletedAt,
+          updatedAt: note.updatedAt,
+        );
+        await existing.save();
+        note.firestoreId = existing.firestoreId;
+      }
     }
 
     // Sync deletion to cloud
     if (userId.isNotEmpty) {
       await syncNoteToCloudDebounced(note, userId);
     }
+  }
+
+  /// Helper to find an existing note by identity
+  Future<Note?> _findExistingNote(Note note) async {
+    final box = await _notes;
+    if (note.key != null) {
+      final n = box.get(note.key);
+      if (n != null) return n;
+    }
+    if (note.firestoreId.isNotEmpty) {
+      final n = box.values.cast<Note?>().firstWhere(
+        (n) => n?.firestoreId == note.firestoreId,
+        orElse: () => null,
+      );
+      if (n != null) return n;
+    }
+    return box.values.cast<Note?>().firstWhere(
+      (n) =>
+          n != null &&
+          n.createdAt.millisecondsSinceEpoch ==
+              note.createdAt.millisecondsSinceEpoch,
+      orElse: () => null,
+    );
   }
 
   /// Permanently delete soft-deleted items older than specified days
@@ -1119,7 +1251,9 @@ class DatabaseService {
       final taskKeysToDelete = <dynamic>[];
       for (final entry in box.toMap().entries) {
         final task = entry.value;
-        if (task.deleted && task.deletedAt != null && task.deletedAt!.isBefore(cutoff)) {
+        if (task.deleted &&
+            task.deletedAt != null &&
+            task.deletedAt!.isBefore(cutoff)) {
           taskKeysToDelete.add(entry.key);
         }
       }
@@ -1131,7 +1265,9 @@ class DatabaseService {
       final noteKeysToDelete = <dynamic>[];
       for (final entry in notesBox.toMap().entries) {
         final note = entry.value;
-        if (note.deleted && note.deletedAt != null && note.deletedAt!.isBefore(cutoff)) {
+        if (note.deleted &&
+            note.deletedAt != null &&
+            note.deletedAt!.isBefore(cutoff)) {
           noteKeysToDelete.add(entry.key);
         }
       }
@@ -1139,7 +1275,9 @@ class DatabaseService {
         await notesBox.delete(key);
       }
 
-      debugPrint('Purged ${taskKeysToDelete.length} tasks, ${noteKeysToDelete.length} notes');
+      debugPrint(
+        'Purged ${taskKeysToDelete.length} tasks, ${noteKeysToDelete.length} notes',
+      );
     } catch (e) {
       debugPrint('Error purging soft-deleted items: $e');
     }
@@ -1148,11 +1286,16 @@ class DatabaseService {
   // ==================== TASK HISTORY OPERATIONS ====================
 
   /// Records a task completion or missed status for a given date
-  Future<void> recordTaskCompletion(String taskId, bool completed, {DateTime? date}) async {
+  Future<void> recordTaskCompletion(
+    String taskId,
+    bool completed, {
+    DateTime? date,
+  }) async {
     try {
       final box = await _historyBoxGetter;
       final targetDate = TaskHistory.normalizeDate(date ?? DateTime.now());
-      final historyKey = '${taskId}_${targetDate.year}_${targetDate.month}_${targetDate.day}';
+      final historyKey =
+          '${taskId}_${targetDate.year}_${targetDate.month}_${targetDate.day}';
 
       // Check if entry already exists
       TaskHistory? existingEntry;
@@ -1191,7 +1334,10 @@ class DatabaseService {
   }
 
   /// Gets the task history for a specific task, limited to a number of days
-  Future<List<TaskHistory>> getTaskHistory(String taskId, {int days = 30}) async {
+  Future<List<TaskHistory>> getTaskHistory(
+    String taskId, {
+    int days = 30,
+  }) async {
     try {
       final box = await _historyBoxGetter;
       final cutoffDate = TaskHistory.normalizeDate(
@@ -1199,9 +1345,13 @@ class DatabaseService {
       );
 
       return box.values
-          .where((entry) =>
-              entry.taskId == taskId &&
-              entry.date.isAfter(cutoffDate.subtract(const Duration(days: 1))))
+          .where(
+            (entry) =>
+                entry.taskId == taskId &&
+                entry.date.isAfter(
+                  cutoffDate.subtract(const Duration(days: 1)),
+                ),
+          )
           .toList()
         ..sort((a, b) => b.date.compareTo(a.date));
     } catch (e, stack) {
@@ -1356,7 +1506,8 @@ class DatabaseService {
                 entryDate.month == day.month &&
                 entryDate.day == day.day;
           },
-          orElse: () => TaskHistory(taskId: taskId, date: day, wasCompleted: false),
+          orElse: () =>
+              TaskHistory(taskId: taskId, date: day, wasCompleted: false),
         );
 
         if (entry.wasCompleted) {
@@ -1399,8 +1550,12 @@ class DatabaseService {
         'completedThisMonth': completedThisMonth,
         'totalThisMonth': totalThisMonth,
         'last7Days': last7Days,
-        'completionRateWeek': totalThisWeek > 0 ? completedThisWeek / totalThisWeek : 0.0,
-        'completionRateMonth': totalThisMonth > 0 ? completedThisMonth / totalThisMonth : 0.0,
+        'completionRateWeek': totalThisWeek > 0
+            ? completedThisWeek / totalThisWeek
+            : 0.0,
+        'completionRateMonth': totalThisMonth > 0
+            ? completedThisMonth / totalThisMonth
+            : 0.0,
       };
     } catch (e, stack) {
       _errorHandler.handle(
@@ -1496,9 +1651,10 @@ class DatabaseService {
     try {
       final box = await _notes;
       return box.values
-          .where((note) =>
-              !note.deleted &&
-              (note.taskId == null || note.taskId!.isEmpty))
+          .where(
+            (note) =>
+                !note.deleted && (note.taskId == null || note.taskId!.isEmpty),
+          )
           .toList()
         ..sort((a, b) {
           // Pinned first, then by updatedAt
@@ -1523,12 +1679,11 @@ class DatabaseService {
   Future<List<Note>> getAllNotes() async {
     try {
       final box = await _notes;
-      return box.values.where((note) => !note.deleted).toList()
-        ..sort((a, b) {
-          if (a.isPinned && !b.isPinned) return -1;
-          if (!a.isPinned && b.isPinned) return 1;
-          return b.updatedAt.compareTo(a.updatedAt);
-        });
+      return box.values.where((note) => !note.deleted).toList()..sort((a, b) {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return b.updatedAt.compareTo(a.updatedAt);
+      });
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -1563,41 +1718,36 @@ class DatabaseService {
 
   /// Save a note locally
   Future<void> saveNoteLocally(Note note) async {
-    await _executeWithRetry(
-      () async {
-        final box = await _notes;
-        note.updatedAt = DateTime.now();
-        if (note.isInBox) {
-          await note.save();
-        } else {
-          // Check for duplicates by firestoreId before adding
-          if (note.firestoreId.isNotEmpty) {
-            final existing = box.values.cast<Note?>().firstWhere(
-              (n) => n?.firestoreId == note.firestoreId,
-              orElse: () => null,
-            );
-            if (existing != null) {
-              // Update existing instead of adding duplicate
-              existing.updateInPlace(
-                title: note.title,
-                content: note.content,
-                updatedAt: note.updatedAt,
-                taskId: note.taskId,
-                color: note.color,
-                isPinned: note.isPinned,
-                tags: note.tags,
-                deleted: note.deleted,
-                deletedAt: note.deletedAt,
-              );
-              await existing.save();
-              return;
-            }
-          }
-          await box.add(note);
+    await _executeWithRetry(() async {
+      final box = await _notes;
+      note.updatedAt = DateTime.now();
+      if (note.isInBox) {
+        await note.save();
+      } else {
+        // IMPORTANT: Avoid duplicating local notes.
+        // AI agents often create new Note instances (via copyWith) which lose their Hive reference.
+        final existing = await _findExistingNote(note);
+
+        if (existing != null) {
+          // Update existing instead of adding duplicate
+          existing.updateInPlace(
+            title: note.title,
+            content: note.content,
+            updatedAt: note.updatedAt,
+            taskId: note.taskId,
+            color: note.color,
+            isPinned: note.isPinned,
+            tags: note.tags,
+            deleted: note.deleted,
+            deletedAt: note.deletedAt,
+          );
+          await existing.save();
+          // IMPORTANT: Exit to avoid box.add() creating a duplicate
+          return;
         }
-      },
-      operationName: 'guardar nota',
-    ).catchError((e, stack) {
+        await box.add(note);
+      }
+    }, operationName: 'guardar nota').catchError((e, stack) {
       _errorHandler.handle(
         e,
         type: ErrorType.database,
@@ -1635,9 +1785,11 @@ class DatabaseService {
 
       List<Note> getSortedNotes() {
         return box.values
-            .where((note) =>
-                !note.deleted &&
-                (note.taskId == null || note.taskId!.isEmpty))
+            .where(
+              (note) =>
+                  !note.deleted &&
+                  (note.taskId == null || note.taskId!.isEmpty),
+            )
             .toList()
           ..sort((a, b) {
             if (a.isPinned && !b.isPinned) return -1;
@@ -1694,10 +1846,12 @@ class DatabaseService {
       final box = await _notes;
       final lowerQuery = query.toLowerCase();
       return box.values
-          .where((note) =>
-              note.title.toLowerCase().contains(lowerQuery) ||
-              note.content.toLowerCase().contains(lowerQuery) ||
-              note.tags.any((tag) => tag.toLowerCase().contains(lowerQuery)))
+          .where(
+            (note) =>
+                note.title.toLowerCase().contains(lowerQuery) ||
+                note.content.toLowerCase().contains(lowerQuery) ||
+                note.tags.any((tag) => tag.toLowerCase().contains(lowerQuery)),
+          )
           .toList()
         ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     } catch (e) {
@@ -1753,7 +1907,9 @@ class DatabaseService {
           .doc(note.firestoreId.isNotEmpty ? note.firestoreId : null);
 
       if (note.firestoreId.isEmpty) {
-        await docRef.set(note.toFirestore()).timeout(
+        await docRef
+            .set(note.toFirestore())
+            .timeout(
               const Duration(seconds: 10),
               onTimeout: () => throw TimeoutException('Firebase timeout'),
             );
@@ -1761,7 +1917,9 @@ class DatabaseService {
         await note.save();
         debugPrint('Nota sincronizada con Firebase (nueva)');
       } else {
-        await docRef.update(note.toFirestore()).timeout(
+        await docRef
+            .update(note.toFirestore())
+            .timeout(
               const Duration(seconds: 10),
               onTimeout: () => throw TimeoutException('Firebase timeout'),
             );
@@ -1897,7 +2055,9 @@ class DatabaseService {
 
           // Si la nota fue eliminada localmente, eliminar de la cola
           if (currentNote == null) {
-            debugPrint('⚠️ [SYNC QUEUE] Nota no encontrada localmente, eliminando de cola');
+            debugPrint(
+              '⚠️ [SYNC QUEUE] Nota no encontrada localmente, eliminando de cola',
+            );
             keysToRemove.add(entry.key);
             continue;
           }
@@ -1911,7 +2071,9 @@ class DatabaseService {
           }
 
           keysToRemove.add(entry.key);
-          debugPrint('✅ [SYNC QUEUE] Nota "${currentNote.title}" sincronizada desde cola');
+          debugPrint(
+            '✅ [SYNC QUEUE] Nota "${currentNote.title}" sincronizada desde cola',
+          );
         } catch (e) {
           debugPrint('❌ [SYNC QUEUE] Error al procesar nota: $e');
           // Mantener en la cola para reintentar despues
@@ -1957,7 +2119,9 @@ class DatabaseService {
     // Check if cloud sync is enabled
     final syncEnabled = await isCloudSyncEnabled();
     if (!syncEnabled) {
-      debugPrint('⚠️ [SYNC] Cloud sync deshabilitado, saltando sync desde nube');
+      debugPrint(
+        '⚠️ [SYNC] Cloud sync deshabilitado, saltando sync desde nube',
+      );
       return SyncResult(tasksDownloaded: 0, notesDownloaded: 0, errors: 0);
     }
 
@@ -1971,7 +2135,9 @@ class DatabaseService {
       return SyncResult(tasksDownloaded: 0, notesDownloaded: 0, errors: 0);
     }
 
-    debugPrint('🔄 [SYNC] Iniciando sincronización desde Firebase para usuario $userId');
+    debugPrint(
+      '🔄 [SYNC] Iniciando sincronización desde Firebase para usuario $userId',
+    );
     int tasksDownloaded = 0;
     int notesDownloaded = 0;
     int errors = 0;
@@ -1991,7 +2157,9 @@ class DatabaseService {
               onTimeout: () => throw TimeoutException('Firebase timeout'),
             );
 
-        debugPrint('📥 [SYNC] Encontradas ${tasksSnapshot.docs.length} tareas en Firebase');
+        debugPrint(
+          '📥 [SYNC] Encontradas ${tasksSnapshot.docs.length} tareas en Firebase',
+        );
 
         for (final doc in tasksSnapshot.docs) {
           try {
@@ -2020,8 +2188,10 @@ class DatabaseService {
 
             if (existingTask != null) {
               // Task exists locally - check which is newer
-              final localUpdated = existingTask.lastUpdatedAt ?? existingTask.createdAt;
-              final cloudUpdated = cloudTask.lastUpdatedAt ?? cloudTask.createdAt;
+              final localUpdated =
+                  existingTask.lastUpdatedAt ?? existingTask.createdAt;
+              final cloudUpdated =
+                  cloudTask.lastUpdatedAt ?? cloudTask.createdAt;
 
               if (cloudUpdated.isAfter(localUpdated)) {
                 // Cloud is newer - update local
@@ -2050,7 +2220,9 @@ class DatabaseService {
               // Task doesn't exist locally - add it
               await box.add(cloudTask);
               tasksDownloaded++;
-              debugPrint('📥 [SYNC] Tarea nueva descargada: "${cloudTask.title}"');
+              debugPrint(
+                '📥 [SYNC] Tarea nueva descargada: "${cloudTask.title}"',
+              );
             }
           } catch (e) {
             debugPrint('❌ [SYNC] Error procesando tarea ${doc.id}: $e');
@@ -2072,7 +2244,9 @@ class DatabaseService {
               onTimeout: () => throw TimeoutException('Firebase timeout'),
             );
 
-        debugPrint('📥 [SYNC] Encontradas ${notesSnapshot.docs.length} notas en Firebase');
+        debugPrint(
+          '📥 [SYNC] Encontradas ${notesSnapshot.docs.length} notas en Firebase',
+        );
 
         for (final doc in notesSnapshot.docs) {
           try {
@@ -2124,7 +2298,9 @@ class DatabaseService {
               // Note doesn't exist locally - add it
               await notesBox.add(cloudNote);
               notesDownloaded++;
-              debugPrint('📥 [SYNC] Nota nueva descargada: "${cloudNote.title}"');
+              debugPrint(
+                '📥 [SYNC] Nota nueva descargada: "${cloudNote.title}"',
+              );
             }
           } catch (e) {
             debugPrint('❌ [SYNC] Error procesando nota ${doc.id}: $e');
@@ -2140,7 +2316,9 @@ class DatabaseService {
       updateCollectionSync('tasks');
       updateCollectionSync('notes');
 
-      debugPrint('✅ [SYNC] Sync desde nube completado: $tasksDownloaded tareas, $notesDownloaded notas, $errors errores');
+      debugPrint(
+        '✅ [SYNC] Sync desde nube completado: $tasksDownloaded tareas, $notesDownloaded notas, $errors errores',
+      );
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -2202,12 +2380,14 @@ class DatabaseService {
       final notesBox = await _notes;
 
       // Find and sync tasks without firestoreId
-      final localOnlyTasks = box.values.where(
-        (t) => t.firestoreId.isEmpty && !t.deleted,
-      ).toList();
+      final localOnlyTasks = box.values
+          .where((t) => t.firestoreId.isEmpty && !t.deleted)
+          .toList();
 
       if (localOnlyTasks.isNotEmpty) {
-        debugPrint('📤 [SYNC] Sincronizando ${localOnlyTasks.length} tareas locales');
+        debugPrint(
+          '📤 [SYNC] Sincronizando ${localOnlyTasks.length} tareas locales',
+        );
         for (final task in localOnlyTasks) {
           try {
             await syncTaskToCloud(task, userId);
@@ -2218,12 +2398,14 @@ class DatabaseService {
       }
 
       // Find and sync notes without firestoreId
-      final localOnlyNotes = notesBox.values.where(
-        (n) => n.firestoreId.isEmpty && !n.deleted,
-      ).toList();
+      final localOnlyNotes = notesBox.values
+          .where((n) => n.firestoreId.isEmpty && !n.deleted)
+          .toList();
 
       if (localOnlyNotes.isNotEmpty) {
-        debugPrint('📤 [SYNC] Sincronizando ${localOnlyNotes.length} notas locales');
+        debugPrint(
+          '📤 [SYNC] Sincronizando ${localOnlyNotes.length} notas locales',
+        );
         for (final note in localOnlyNotes) {
           try {
             await syncNoteToCloud(note, userId);
@@ -2424,12 +2606,14 @@ class DatabaseService {
             .map((n) => n.toFirestore())
             .toList(),
         'history': historyBox.values
-            .map((h) => {
-                  'taskId': h.taskId,
-                  'date': h.date.toIso8601String(),
-                  'wasCompleted': h.wasCompleted,
-                  'completedAt': h.completedAt?.toIso8601String(),
-                })
+            .map(
+              (h) => {
+                'taskId': h.taskId,
+                'date': h.date.toIso8601String(),
+                'wasCompleted': h.wasCompleted,
+                'completedAt': h.completedAt?.toIso8601String(),
+              },
+            )
             .toList(),
         'preferences': prefs.toJson(),
       };

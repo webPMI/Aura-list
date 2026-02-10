@@ -22,27 +22,32 @@ class TaskNotifier extends StateNotifier<List<Task>> {
   final String _type;
   StreamSubscription? _subscription;
 
-  TaskNotifier(this._db, this._auth, this._errorHandler, this._type) : super([]) {
+  TaskNotifier(this._db, this._auth, this._errorHandler, this._type)
+    : super([]) {
     _init();
   }
 
   void _init() {
-    _subscription = _db.watchLocalTasks(_type).listen(
-      (tasks) => state = _deduplicateTasks(tasks),
-      onError: (e) => debugPrint('Error watching tasks: $e'),
-    );
+    _subscription = _db
+        .watchLocalTasks(_type)
+        .listen(
+          (tasks) => state = _deduplicateTasks(tasks),
+          onError: (e) => debugPrint('Error watching tasks: $e'),
+        );
   }
 
-  /// Remove duplicate tasks (same firestoreId or same Hive key)
+  /// IMPORTANT: Identification must check firestoreId, Hive key, OR createdAt.
+  /// AI agents often create new Task instances which lose their Hive reference.
   List<Task> _deduplicateTasks(List<Task> tasks) {
     final seenFirestoreIds = <String>{};
     final seenHiveKeys = <dynamic>{};
+    final seenTimestamps = <int>{};
     final unique = <Task>[];
 
     for (final task in tasks) {
       bool isDuplicate = false;
 
-      // Check by firestoreId first (most reliable for synced tasks)
+      // 1. Check by firestoreId
       if (task.firestoreId.isNotEmpty) {
         if (seenFirestoreIds.contains(task.firestoreId)) {
           isDuplicate = true;
@@ -51,12 +56,22 @@ class TaskNotifier extends StateNotifier<List<Task>> {
         }
       }
 
-      // Also check by Hive key (for local-only tasks)
+      // 2. Check by Hive key
       if (!isDuplicate && task.key != null) {
         if (seenHiveKeys.contains(task.key)) {
           isDuplicate = true;
         } else {
           seenHiveKeys.add(task.key);
+        }
+      }
+
+      // 3. Check by createdAt (crucial for local tasks with lost keys)
+      if (!isDuplicate) {
+        final ts = task.createdAt.millisecondsSinceEpoch;
+        if (seenTimestamps.contains(ts)) {
+          isDuplicate = true;
+        } else {
+          seenTimestamps.add(ts);
         }
       }
 
@@ -152,6 +167,17 @@ class TaskNotifier extends StateNotifier<List<Task>> {
         );
       }
 
+      // Si aún no se encuentra, buscar por createdAt (identidad local persistente)
+      if (original == null) {
+        original = state.cast<Task?>().firstWhere(
+          (t) =>
+              t != null &&
+              t.createdAt.millisecondsSinceEpoch ==
+                  task.createdAt.millisecondsSinceEpoch,
+          orElse: () => null,
+        );
+      }
+
       if (original != null && original.isInBox) {
         // Actualizar la tarea original in-place
         original.updateInPlace(
@@ -179,7 +205,9 @@ class TaskNotifier extends StateNotifier<List<Task>> {
       } else {
         // La tarea no existe en el estado - esto no debería pasar en edición normal
         // Solo agregar si realmente es una tarea nueva
-        debugPrint('⚠️ [TaskProvider] updateTask llamado con tarea no encontrada en state');
+        debugPrint(
+          '⚠️ [TaskProvider] updateTask llamado con tarea no encontrada en state',
+        );
         task.lastUpdatedAt = DateTime.now();
         await _db.saveTaskLocally(task);
 
@@ -232,6 +260,17 @@ class TaskNotifier extends StateNotifier<List<Task>> {
           );
         }
 
+        // Fallback: buscar por createdAt
+        if (original == null) {
+          original = state.cast<Task?>().firstWhere(
+            (t) =>
+                t != null &&
+                t.createdAt.millisecondsSinceEpoch ==
+                    task.createdAt.millisecondsSinceEpoch,
+            orElse: () => null,
+          );
+        }
+
         if (original != null && original.isInBox) {
           original.updateInPlace(
             isCompleted: !original.isCompleted,
@@ -245,11 +284,15 @@ class TaskNotifier extends StateNotifier<List<Task>> {
           }
         } else {
           // Caso muy raro: actualizar la tarea pasada
-          debugPrint('⚠️ [TaskProvider] toggleTask fallback: tarea no encontrada');
-          await updateTask(task.copyWith(
-            isCompleted: !task.isCompleted,
-            lastUpdatedAt: DateTime.now(),
-          ));
+          debugPrint(
+            '⚠️ [TaskProvider] toggleTask fallback: tarea no encontrada',
+          );
+          await updateTask(
+            task.copyWith(
+              isCompleted: !task.isCompleted,
+              lastUpdatedAt: DateTime.now(),
+            ),
+          );
         }
       }
     } catch (e, stack) {
