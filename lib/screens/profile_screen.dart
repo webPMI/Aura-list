@@ -5,8 +5,8 @@ import '../services/auth_service.dart';
 import '../services/database_service.dart';
 import '../core/constants/legal/terms_of_service.dart';
 import '../core/constants/legal/privacy_policy.dart';
-import '../widgets/navigation/drawer_menu_button.dart';
 import '../providers/task_provider.dart';
+import '../widgets/navigation/drawer_menu_button.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -101,6 +101,12 @@ class ProfileScreen extends ConsumerWidget {
                 subtitle: const Text('Esta accion no se puede deshacer'),
                 onTap: () => _showDeleteAccountDialog(context, ref),
               ),
+
+              const Divider(),
+
+              // About Section
+              _SectionHeader('Acerca de'),
+              _AboutSection(),
 
               const SizedBox(height: 32),
             ],
@@ -542,24 +548,26 @@ class _AccountSection extends ConsumerWidget {
 
   Future<void> _linkWithGoogle(BuildContext context, WidgetRef ref) async {
     final authService = ref.read(authServiceProvider);
-    final result = await authService.linkWithGoogle();
+    final (:credential, :error) = await authService.linkWithGoogle();
 
     if (context.mounted) {
-      if (result != null) {
+      if (credential != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Cuenta vinculada con Google exitosamente'),
             behavior: SnackBarBehavior.floating,
           ),
         );
-      } else {
+      } else if (error != null) {
+        // Show specific error message
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No se pudo vincular con Google'),
+          SnackBar(
+            content: Text(error),
             behavior: SnackBarBehavior.floating,
           ),
         );
       }
+      // If error is null and credential is null, user cancelled - no message needed
     }
   }
 }
@@ -1095,6 +1103,161 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
           child: const Text('Eliminar cuenta'),
         ),
       ],
+    );
+  }
+}
+
+/// Seccion "Acerca de" con informacion del creador
+class _AboutSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Card(
+        elevation: 0,
+        color: colorScheme.surfaceContainerLow,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // App icon/logo
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      colorScheme.primary,
+                      colorScheme.tertiary,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colorScheme.primary.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.white,
+                  size: 36,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // App name
+              Text(
+                'AuraList',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Tu gestor de tareas inteligente',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Divider
+              Divider(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+              ),
+              const SizedBox(height: 16),
+              // Creator info
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.code,
+                    size: 16,
+                    color: colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Creado por ',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                  Text(
+                    'ink.enzo',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // Contact
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.email_outlined,
+                    size: 16,
+                    color: colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                  const SizedBox(width: 8),
+                  SelectableText(
+                    'servicioweb.pmi@gmail.com',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Made with love
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Hecho con ',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  Icon(
+                    Icons.favorite,
+                    size: 14,
+                    color: Colors.redAccent,
+                  ),
+                  Text(
+                    ' en Flutter',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

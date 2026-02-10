@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../core/responsive/breakpoints.dart';
 import '../core/constants/motivational_messages.dart';
+import '../models/task_model.dart';
 import '../providers/task_provider.dart';
 import '../providers/navigation_provider.dart';
 import '../providers/notes_provider.dart';
 import '../widgets/layouts/dashboard_layout.dart';
 import '../widgets/navigation/drawer_menu_button.dart';
 import '../widgets/dashboard/wellness_suggestions_card.dart';
+import '../widgets/dashboard/user_card.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -23,7 +25,10 @@ class DashboardScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: () {
-              // TODO: Implement search
+              showSearch(
+                context: context,
+                delegate: _TaskSearchDelegate(ref),
+              );
             },
             tooltip: 'Buscar',
           ),
@@ -31,6 +36,7 @@ class DashboardScreen extends ConsumerWidget {
       ),
       body: DashboardLayout(
         cards: [
+          const UserCard(),
           _TodayProgressCard(),
           _TodayTasksCard(),
           const WellnessSuggestionsCard(),
@@ -726,5 +732,365 @@ class _CelebrationOverlayState extends State<_CelebrationOverlay>
     }
 
     return particles;
+  }
+}
+
+/// Search delegate for searching tasks across all task types
+class _TaskSearchDelegate extends SearchDelegate<Task?> {
+  final WidgetRef ref;
+  static const _taskTypes = ['daily', 'weekly', 'monthly', 'yearly', 'once'];
+  static const _priorityColors = [Colors.blue, Colors.orange, Colors.red];
+  static const _priorityLabels = ['Baja', 'Media', 'Alta'];
+
+  _TaskSearchDelegate(this.ref)
+      : super(
+          searchFieldLabel: 'Buscar tareas...',
+          textInputAction: TextInputAction.search,
+        );
+
+  /// Get all tasks from all task types
+  List<Task> _getAllTasks() {
+    final allTasks = <Task>[];
+    for (final type in _taskTypes) {
+      allTasks.addAll(ref.read(tasksProvider(type)));
+    }
+    return allTasks;
+  }
+
+  /// Filter tasks based on search query
+  List<Task> _filterTasks(String query) {
+    if (query.isEmpty) return [];
+
+    final queryLower = query.toLowerCase().trim();
+    final allTasks = _getAllTasks();
+
+    return allTasks.where((task) {
+      // Search in title
+      if (task.title.toLowerCase().contains(queryLower)) return true;
+      // Search in category
+      if (task.category.toLowerCase().contains(queryLower)) return true;
+      // Search in motivation
+      if (task.motivation?.toLowerCase().contains(queryLower) ?? false) {
+        return true;
+      }
+      // Search in reward
+      if (task.reward?.toLowerCase().contains(queryLower) ?? false) {
+        return true;
+      }
+      return false;
+    }).toList();
+  }
+
+  @override
+  ThemeData appBarTheme(BuildContext context) {
+    final theme = Theme.of(context);
+    return theme.copyWith(
+      appBarTheme: theme.appBarTheme.copyWith(
+        backgroundColor: theme.colorScheme.surface,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        hintStyle: TextStyle(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+        ),
+        border: InputBorder.none,
+      ),
+    );
+  }
+
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    return [
+      if (query.isNotEmpty)
+        IconButton(
+          icon: const Icon(Icons.clear),
+          onPressed: () {
+            query = '';
+            showSuggestions(context);
+          },
+          tooltip: 'Limpiar',
+        ),
+    ];
+  }
+
+  @override
+  Widget buildLeading(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.arrow_back),
+      onPressed: () => close(context, null),
+      tooltip: 'Volver',
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    return _buildSearchResults(context);
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    return _buildSearchResults(context);
+  }
+
+  Widget _buildSearchResults(BuildContext context) {
+    final results = _filterTasks(query);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    if (query.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search,
+              size: 64,
+              color: colorScheme.onSurface.withValues(alpha: 0.3),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Escribe para buscar tareas',
+              style: TextStyle(
+                fontSize: 16,
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Busca por titulo, categoria o motivacion',
+              style: TextStyle(
+                fontSize: 14,
+                color: colorScheme.onSurface.withValues(alpha: 0.4),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (results.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 64,
+              color: colorScheme.onSurface.withValues(alpha: 0.3),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Sin resultados',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'No se encontraron tareas para "$query"',
+              style: TextStyle(
+                fontSize: 14,
+                color: colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: results.length,
+      itemBuilder: (context, index) {
+        final task = results[index];
+        return _SearchResultTile(
+          task: task,
+          query: query,
+          priorityColors: _priorityColors,
+          priorityLabels: _priorityLabels,
+          onTap: () {
+            // Navigate to the task's type list
+            ref.read(selectedTaskTypeProvider.notifier).state = task.type;
+            ref.read(selectedRouteProvider.notifier).state = AppRoute.tasks;
+            close(context, task);
+          },
+        );
+      },
+    );
+  }
+}
+
+/// A tile showing a search result with highlighted matching text
+class _SearchResultTile extends StatelessWidget {
+  final Task task;
+  final String query;
+  final List<Color> priorityColors;
+  final List<String> priorityLabels;
+  final VoidCallback onTap;
+
+  const _SearchResultTile({
+    required this.task,
+    required this.query,
+    required this.priorityColors,
+    required this.priorityLabels,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final priorityColor = priorityColors[task.priority.clamp(0, 2)];
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      elevation: 0,
+      color: colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // Priority indicator
+              Container(
+                width: 4,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: priorityColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Task info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _HighlightedText(
+                      text: task.title,
+                      query: query,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: colorScheme.onSurface,
+                        decoration: task.isCompleted
+                            ? TextDecoration.lineThrough
+                            : null,
+                      ),
+                      highlightColor: colorScheme.primary.withValues(alpha: 0.3),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          task.typeIcon,
+                          size: 14,
+                          color: colorScheme.onSurface.withValues(alpha: 0.5),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          task.typeLabel,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colorScheme.onSurface.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primaryContainer.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            task.category,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Completion status
+              Icon(
+                task.isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
+                color: task.isCompleted
+                    ? Colors.green
+                    : colorScheme.onSurface.withValues(alpha: 0.3),
+                size: 24,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Widget to highlight matching text in search results
+class _HighlightedText extends StatelessWidget {
+  final String text;
+  final String query;
+  final TextStyle style;
+  final Color highlightColor;
+
+  const _HighlightedText({
+    required this.text,
+    required this.query,
+    required this.style,
+    required this.highlightColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (query.isEmpty) {
+      return Text(text, style: style, maxLines: 2, overflow: TextOverflow.ellipsis);
+    }
+
+    final queryLower = query.toLowerCase();
+    final textLower = text.toLowerCase();
+    final startIndex = textLower.indexOf(queryLower);
+
+    if (startIndex == -1) {
+      return Text(text, style: style, maxLines: 2, overflow: TextOverflow.ellipsis);
+    }
+
+    final endIndex = startIndex + query.length;
+    final beforeMatch = text.substring(0, startIndex);
+    final match = text.substring(startIndex, endIndex);
+    final afterMatch = text.substring(endIndex);
+
+    return RichText(
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      text: TextSpan(
+        style: style,
+        children: [
+          TextSpan(text: beforeMatch),
+          TextSpan(
+            text: match,
+            style: style.copyWith(
+              backgroundColor: highlightColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          TextSpan(text: afterMatch),
+        ],
+      ),
+    );
   }
 }

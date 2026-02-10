@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/navigation_provider.dart';
+import '../services/auth_service.dart';
 import '../widgets/navigation/adaptive_navigation.dart';
 import '../widgets/dialogs/task_form_dialog.dart';
 import 'dashboard_screen.dart';
@@ -9,14 +10,34 @@ import 'tasks_screen.dart';
 import 'notes_screen.dart';
 import 'calendar_screen.dart';
 import 'settings_screen.dart';
+import 'profile_screen.dart';
 
 class MainScaffold extends ConsumerWidget {
   const MainScaffold({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Watch the auth initialization provider to ensure anonymous sign-in happens
+    final authInit = ref.watch(authInitializationProvider);
+
     final selectedRoute = ref.watch(selectedRouteProvider);
 
+    // Show loading screen while initializing auth
+    return authInit.when(
+      data: (_) => _buildScaffold(context, ref, selectedRoute),
+      loading: () => const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      error: (error, stack) {
+        // Even if auth fails, show the app (offline mode)
+        return _buildScaffold(context, ref, selectedRoute);
+      },
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context, WidgetRef ref, AppRoute selectedRoute) {
     return AdaptiveNavigation(
       floatingActionButton: _buildFab(context, ref, selectedRoute),
       child: _buildContent(selectedRoute),
@@ -30,7 +51,7 @@ class MainScaffold extends ConsumerWidget {
       AppRoute.notes => const NotesScreen(),
       AppRoute.calendar => const CalendarScreen(),
       AppRoute.settings => const SettingsScreen(),
-      AppRoute.profile => const SettingsScreen(), // Profile uses Navigator.push, fallback to settings
+      AppRoute.profile => const ProfileScreen(),
     };
   }
 

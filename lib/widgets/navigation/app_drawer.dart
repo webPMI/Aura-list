@@ -7,7 +7,6 @@ import '../../providers/theme_provider.dart';
 import '../../providers/task_provider.dart';
 import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
-import '../../screens/profile_screen.dart';
 
 class AppDrawer extends ConsumerWidget {
   final VoidCallback? onNavigate;
@@ -117,7 +116,7 @@ class AppDrawer extends ConsumerWidget {
         ),
 
         // Account Section
-        _AccountSection(),
+        _AccountSection(onNavigate: onNavigate),
 
         const SizedBox(height: 24),
 
@@ -505,6 +504,10 @@ class _SyncStatusTile extends ConsumerWidget {
 }
 
 class _AccountSection extends ConsumerWidget {
+  final VoidCallback? onNavigate;
+
+  const _AccountSection({this.onNavigate});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
@@ -583,12 +586,8 @@ class _AccountSection extends ConsumerWidget {
             ),
             trailing: const Icon(Icons.chevron_right, size: 20),
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ProfileScreen(),
-                ),
-              );
+              ref.read(selectedRouteProvider.notifier).state = AppRoute.profile;
+              onNavigate?.call();
             },
           );
         },
@@ -609,12 +608,8 @@ class _AccountSection extends ConsumerWidget {
           ),
           trailing: const Icon(Icons.chevron_right, size: 20),
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const ProfileScreen(),
-              ),
-            );
+            ref.read(selectedRouteProvider.notifier).state = AppRoute.profile;
+            onNavigate?.call();
           },
         ),
       ),
@@ -704,7 +699,7 @@ class _AboutSection extends StatelessWidget {
           color: Colors.white,
         ),
       ),
-      applicationLegalese: '2026 AuraList',
+      applicationLegalese: '© 2026 AuraList',
       children: [
         const SizedBox(height: 16),
         const Text(
@@ -717,6 +712,27 @@ class _AboutSection extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 12,
+            color: colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Divider(height: 1),
+        const SizedBox(height: 12),
+        Text(
+          'Creado por ink.enzo',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurface.withValues(alpha: 0.8),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Contacto: servicioweb.pmi@gmail.com',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 11,
             color: colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),

@@ -138,10 +138,10 @@ class _LinkAccountDialogContentState extends State<_LinkAccountDialogContent> {
 
     try {
       final authService = widget.ref.read(authServiceProvider);
-      final result = await authService.linkWithGoogle();
+      final (:credential, :error) = await authService.linkWithGoogle();
 
       if (mounted) {
-        if (result != null) {
+        if (credential != null) {
           setState(() {
             _successMessage = 'Cuenta vinculada con Google exitosamente';
             _isLoading = false;
@@ -151,10 +151,15 @@ class _LinkAccountDialogContentState extends State<_LinkAccountDialogContent> {
           if (mounted) {
             Navigator.pop(context, true);
           }
-        } else {
+        } else if (error != null) {
+          // Show specific error from the service
           setState(() {
-            _errorMessage =
-                'No se pudo vincular con Google. Intenta de nuevo.';
+            _errorMessage = error;
+            _isLoading = false;
+          });
+        } else {
+          // User cancelled - just reset loading state
+          setState(() {
             _isLoading = false;
           });
         }

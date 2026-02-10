@@ -18,32 +18,64 @@ class NotesList extends ConsumerWidget {
 
     if (notes.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.note_outlined,
-              size: 64,
-              color: colorScheme.onSurface.withValues(alpha: 0.1),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Sin notas',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: colorScheme.onSurface.withValues(alpha: 0.65),
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.note_add_outlined,
+                  size: 64,
+                  color: colorScheme.primary.withValues(alpha: 0.7),
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Toca el boton + para crear una nota',
-              style: TextStyle(
-                fontSize: 14,
-                color: colorScheme.onSurface.withValues(alpha: 0.5),
+              const SizedBox(height: 24),
+              Text(
+                'Tus notas apareceran aqui',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface.withValues(alpha: 0.8),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              Text(
+                'Guarda ideas, listas, recordatorios\ny todo lo que necesites.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: colorScheme.onSurface.withValues(alpha: 0.5),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 32),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.touch_app_outlined,
+                    size: 16,
+                    color: colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Toca "Nueva nota" para empezar',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       );
     }

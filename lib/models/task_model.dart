@@ -221,20 +221,26 @@ class Task extends HiveObject {
 
   /// Actualiza los campos in-place cuando el objeto esta en Hive.
   /// Usar este metodo para modificar un objeto que ya esta guardado.
+  /// Los parametros clearX permiten limpiar campos opcionales (ponerlos a null).
   void updateInPlace({
     String? firestoreId,
     String? title,
     String? type,
     bool? isCompleted,
     DateTime? dueDate,
+    bool clearDueDate = false,
     String? category,
     int? priority,
     int? dueTimeMinutes,
     bool clearDueTime = false,
     String? motivation,
+    bool clearMotivation = false,
     String? reward,
+    bool clearReward = false,
     int? recurrenceDay,
+    bool clearRecurrenceDay = false,
     DateTime? deadline,
+    bool clearDeadline = false,
     bool? deleted,
     DateTime? deletedAt,
     DateTime? lastUpdatedAt,
@@ -243,7 +249,11 @@ class Task extends HiveObject {
     if (title != null) this.title = title;
     if (type != null) this.type = type;
     if (isCompleted != null) this.isCompleted = isCompleted;
-    if (dueDate != null) this.dueDate = dueDate;
+    if (clearDueDate) {
+      this.dueDate = null;
+    } else if (dueDate != null) {
+      this.dueDate = dueDate;
+    }
     if (category != null) this.category = category;
     if (priority != null) this.priority = priority;
     if (clearDueTime) {
@@ -251,10 +261,26 @@ class Task extends HiveObject {
     } else if (dueTimeMinutes != null) {
       this.dueTimeMinutes = dueTimeMinutes;
     }
-    if (motivation != null) this.motivation = motivation;
-    if (reward != null) this.reward = reward;
-    if (recurrenceDay != null) this.recurrenceDay = recurrenceDay;
-    if (deadline != null) this.deadline = deadline;
+    if (clearMotivation) {
+      this.motivation = null;
+    } else if (motivation != null) {
+      this.motivation = motivation;
+    }
+    if (clearReward) {
+      this.reward = null;
+    } else if (reward != null) {
+      this.reward = reward;
+    }
+    if (clearRecurrenceDay) {
+      this.recurrenceDay = null;
+    } else if (recurrenceDay != null) {
+      this.recurrenceDay = recurrenceDay;
+    }
+    if (clearDeadline) {
+      this.deadline = null;
+    } else if (deadline != null) {
+      this.deadline = deadline;
+    }
     if (deleted != null) this.deleted = deleted;
     if (deletedAt != null) this.deletedAt = deletedAt;
     if (lastUpdatedAt != null) this.lastUpdatedAt = lastUpdatedAt;

@@ -109,6 +109,12 @@ final drawerOpenProvider = StateProvider<bool>((ref) => false);
 /// Provider for currently selected task (for master-detail view)
 final selectedTaskIdProvider = StateProvider<String?>((ref) => null);
 
+/// Provider for search query in tasks screen
+final taskSearchQueryProvider = StateProvider<String>((ref) => '');
+
+/// Provider to track if search mode is active
+final isSearchActiveProvider = StateProvider<bool>((ref) => false);
+
 /// Provider for navigation history (for back navigation)
 final navigationHistoryProvider =
     StateNotifierProvider<NavigationHistoryNotifier, List<AppRoute>>((ref) {

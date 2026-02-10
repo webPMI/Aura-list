@@ -19,6 +19,31 @@ final databaseServiceProvider = Provider<DatabaseService>((ref) {
   return DatabaseService(errorHandler);
 });
 
+/// Provider for cloud sync enabled preference
+/// Returns a stream that watches the cloudSyncEnabled preference
+final cloudSyncEnabledProvider = FutureProvider<bool>((ref) async {
+  final db = ref.watch(databaseServiceProvider);
+  final prefs = await db.getUserPreferences();
+  return prefs.cloudSyncEnabled;
+});
+
+/// Result of a sync operation
+class SyncResult {
+  final int tasksDownloaded;
+  final int notesDownloaded;
+  final int errors;
+
+  SyncResult({
+    required this.tasksDownloaded,
+    required this.notesDownloaded,
+    required this.errors,
+  });
+
+  bool get hasErrors => errors > 0;
+  bool get hasChanges => tasksDownloaded > 0 || notesDownloaded > 0;
+  int get totalDownloaded => tasksDownloaded + notesDownloaded;
+}
+
 class DatabaseService {
   final ErrorHandler _errorHandler;
 
@@ -42,6 +67,7 @@ class DatabaseService {
   Box<UserPreferences>? _userPrefsBox;
   bool _initialized = false;
   Completer<void>? _initCompleter;
+  bool _isReinitializing = false;
   FirebaseFirestore? _firestore;
   bool _firebaseAvailable = false;
 
@@ -156,6 +182,100 @@ class DatabaseService {
       _initCompleter!.completeError(e);
       _initCompleter = null;
       rethrow;
+    }
+  }
+
+  /// Check if a box is open and usable
+  bool _isBoxUsable<T>(Box<T>? box) {
+    if (box == null) return false;
+    try {
+      return box.isOpen;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Check if IndexedDB connection error
+  bool _isConnectionClosedError(dynamic error) {
+    final errorStr = error.toString().toLowerCase();
+    return errorStr.contains('database connection is closing') ||
+        errorStr.contains('invalidstateerror') ||
+        errorStr.contains('the database connection is closing') ||
+        errorStr.contains('transaction') && errorStr.contains('idbdatabase');
+  }
+
+  /// Reinitialize boxes after connection closed (iOS/Web IndexedDB issue)
+  Future<void> _reinitializeBoxes() async {
+    if (_isReinitializing) {
+      // Wait for ongoing reinitialization
+      await Future.delayed(const Duration(milliseconds: 500));
+      return;
+    }
+
+    _isReinitializing = true;
+    debugPrint('🔄 [Database] Reinitializando conexión a base de datos...');
+
+    try {
+      // Close existing boxes if they exist
+      try {
+        if (_taskBox != null && _taskBox!.isOpen) await _taskBox!.close();
+        if (_syncQueueBox != null && _syncQueueBox!.isOpen) await _syncQueueBox!.close();
+        if (_historyBox != null && _historyBox!.isOpen) await _historyBox!.close();
+        if (_notesBox != null && _notesBox!.isOpen) await _notesBox!.close();
+        if (_notesSyncQueueBox != null && _notesSyncQueueBox!.isOpen) await _notesSyncQueueBox!.close();
+        if (_userPrefsBox != null && _userPrefsBox!.isOpen) await _userPrefsBox!.close();
+      } catch (e) {
+        debugPrint('⚠️ [Database] Error cerrando boxes: $e');
+      }
+
+      // Small delay to let IndexedDB clean up
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      // Reopen boxes
+      _taskBox = await Hive.openBox<Task>(_boxName);
+      _syncQueueBox = await Hive.openBox<Map>(_syncQueueBoxName);
+      _historyBox = await Hive.openBox<TaskHistory>(_historyBoxName);
+      _notesBox = await Hive.openBox<Note>(_notesBoxName);
+      _notesSyncQueueBox = await Hive.openBox<Map>(_notesSyncQueueBoxName);
+      _userPrefsBox = await Hive.openBox<UserPreferences>(_userPrefsBoxName);
+
+      debugPrint('✅ [Database] Conexión reinicializada exitosamente');
+    } catch (e, stack) {
+      debugPrint('❌ [Database] Error reinicializando: $e');
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        severity: ErrorSeverity.error,
+        message: 'Error reinicializando base de datos',
+        stackTrace: stack,
+      );
+    } finally {
+      _isReinitializing = false;
+    }
+  }
+
+  /// Execute a database operation with automatic retry on connection errors
+  Future<T> _executeWithRetry<T>(
+    Future<T> Function() operation, {
+    int maxRetries = 2,
+    String operationName = 'operación',
+  }) async {
+    int attempts = 0;
+
+    while (true) {
+      try {
+        return await operation();
+      } catch (e) {
+        attempts++;
+
+        if (_isConnectionClosedError(e) && attempts <= maxRetries) {
+          debugPrint('🔄 [Database] Conexión cerrada detectada en $operationName, reintentando ($attempts/$maxRetries)...');
+          await _reinitializeBoxes();
+          continue;
+        }
+
+        rethrow;
+      }
     }
   }
 
@@ -310,16 +430,25 @@ class DatabaseService {
 
   Future<Box<Task>> get _box async {
     await init();
+    if (!_isBoxUsable(_taskBox)) {
+      await _reinitializeBoxes();
+    }
     return _taskBox!;
   }
 
   Future<Box<Map>> get _syncQueue async {
     await init();
+    if (!_isBoxUsable(_syncQueueBox)) {
+      await _reinitializeBoxes();
+    }
     return _syncQueueBox!;
   }
 
   Future<Box<TaskHistory>> get _historyBoxGetter async {
     await init();
+    if (!_isBoxUsable(_historyBox)) {
+      await _reinitializeBoxes();
+    }
     return _historyBox!;
   }
 
@@ -327,6 +456,9 @@ class DatabaseService {
 
   Future<Box<UserPreferences>> get _userPrefs async {
     await init();
+    if (!_isBoxUsable(_userPrefsBox)) {
+      await _reinitializeBoxes();
+    }
     return _userPrefsBox!;
   }
 
@@ -364,6 +496,20 @@ class DatabaseService {
     await prefs.save();
   }
 
+  /// Check if cloud sync is enabled
+  Future<bool> isCloudSyncEnabled() async {
+    final prefs = await getUserPreferences();
+    return prefs.cloudSyncEnabled;
+  }
+
+  /// Enable or disable cloud sync
+  Future<void> setCloudSyncEnabled(bool enabled) async {
+    final prefs = await getUserPreferences();
+    prefs.cloudSyncEnabled = enabled;
+    await prefs.save();
+    debugPrint('Cloud sync ${enabled ? "habilitado" : "deshabilitado"}');
+  }
+
   // Local Operations
   Future<List<Task>> getLocalTasks(String type) async {
     try {
@@ -386,42 +532,45 @@ class DatabaseService {
   }
 
   Future<void> saveTaskLocally(Task task) async {
-    try {
-      final box = await _box;
-      if (task.isInBox) {
-        await task.save();
-      } else {
-        // Check for duplicates by firestoreId before adding
-        if (task.firestoreId.isNotEmpty) {
-          final existing = box.values.cast<Task?>().firstWhere(
-            (t) => t?.firestoreId == task.firestoreId,
-            orElse: () => null,
-          );
-          if (existing != null) {
-            // Update existing instead of adding duplicate
-            existing.updateInPlace(
-              title: task.title,
-              type: task.type,
-              isCompleted: task.isCompleted,
-              dueDate: task.dueDate,
-              category: task.category,
-              priority: task.priority,
-              dueTimeMinutes: task.dueTimeMinutes,
-              motivation: task.motivation,
-              reward: task.reward,
-              recurrenceDay: task.recurrenceDay,
-              deadline: task.deadline,
-              deleted: task.deleted,
-              deletedAt: task.deletedAt,
-              lastUpdatedAt: task.lastUpdatedAt,
+    await _executeWithRetry(
+      () async {
+        final box = await _box;
+        if (task.isInBox) {
+          await task.save();
+        } else {
+          // Check for duplicates by firestoreId before adding
+          if (task.firestoreId.isNotEmpty) {
+            final existing = box.values.cast<Task?>().firstWhere(
+              (t) => t?.firestoreId == task.firestoreId,
+              orElse: () => null,
             );
-            await existing.save();
-            return;
+            if (existing != null) {
+              // Update existing instead of adding duplicate
+              existing.updateInPlace(
+                title: task.title,
+                type: task.type,
+                isCompleted: task.isCompleted,
+                dueDate: task.dueDate,
+                category: task.category,
+                priority: task.priority,
+                dueTimeMinutes: task.dueTimeMinutes,
+                motivation: task.motivation,
+                reward: task.reward,
+                recurrenceDay: task.recurrenceDay,
+                deadline: task.deadline,
+                deleted: task.deleted,
+                deletedAt: task.deletedAt,
+                lastUpdatedAt: task.lastUpdatedAt,
+              );
+              await existing.save();
+              return;
+            }
           }
+          await box.add(task);
         }
-        await box.add(task);
-      }
-    } catch (e, stack) {
+      },
+      operationName: 'guardar tarea',
+    ).catchError((e, stack) {
       _errorHandler.handle(
         e,
         type: ErrorType.database,
@@ -430,8 +579,8 @@ class DatabaseService {
         userMessage: 'No se pudo guardar la tarea',
         stackTrace: stack,
       );
-      rethrow;
-    }
+      throw e;
+    });
   }
 
   Future<void> deleteTaskLocally(dynamic key) async {
@@ -453,12 +602,20 @@ class DatabaseService {
 
   // Cloud Operations & Sync con manejo de errores robusto
   Future<void> syncTaskToCloud(Task task, String userId) async {
+    // Check if cloud sync is enabled
+    final syncEnabled = await isCloudSyncEnabled();
+    if (!syncEnabled) {
+      debugPrint('⚠️ [SYNC] Cloud sync deshabilitado, tarea guardada solo localmente');
+      return;
+    }
+
     if (!_firebaseAvailable || firestore == null) {
-      debugPrint('Firebase no configurado, tarea guardada solo localmente');
+      debugPrint('⚠️ [SYNC] Firebase no disponible, tarea guardada solo localmente');
       return;
     }
 
     if (userId.isEmpty) {
+      debugPrint('⚠️ [SYNC] Usuario no autenticado (userId vacío), tarea guardada solo localmente');
       _errorHandler.handle(
         'Usuario no autenticado',
         type: ErrorType.auth,
@@ -469,9 +626,12 @@ class DatabaseService {
       return;
     }
 
+    debugPrint('🔄 [SYNC] Iniciando sincronización de tarea "${task.title}" para usuario $userId');
+
     try {
       await _syncTaskWithRetry(task, userId);
     } catch (e, stack) {
+      debugPrint('❌ [SYNC] Error al sincronizar tarea: $e');
       _errorHandler.handle(
         e,
         type: ErrorType.network,
@@ -578,18 +738,63 @@ class DatabaseService {
       final queue = await _syncQueue;
       if (queue.isEmpty) return;
 
+      debugPrint('🔄 [SYNC QUEUE] Procesando ${queue.length} tareas pendientes');
+      final box = await _box;
       final keysToRemove = <dynamic>[];
 
       for (var entry in queue.toMap().entries) {
         try {
           final data = entry.value;
-          final task = data['task'] as Task;
+          final queuedTask = data['task'] as Task;
           final userId = data['userId'] as String;
+          final timestamp = data['timestamp'] as int?;
 
-          await _syncTaskWithRetry(task, userId);
+          // Verificar si el item es muy viejo (mas de 7 dias)
+          if (timestamp != null) {
+            final age = DateTime.now().difference(
+              DateTime.fromMillisecondsSinceEpoch(timestamp),
+            );
+            if (age.inDays > 7) {
+              debugPrint('🗑️ [SYNC QUEUE] Item muy viejo, eliminando');
+              keysToRemove.add(entry.key);
+              continue;
+            }
+          }
+
+          // Buscar la tarea actual en Hive por firestoreId o key
+          Task? currentTask;
+          if (queuedTask.firestoreId.isNotEmpty) {
+            currentTask = box.values.cast<Task?>().firstWhere(
+              (t) => t?.firestoreId == queuedTask.firestoreId,
+              orElse: () => null,
+            );
+          }
+
+          // Si no se encontro por firestoreId, buscar por key si existe
+          if (currentTask == null && queuedTask.key != null) {
+            currentTask = box.get(queuedTask.key);
+          }
+
+          // Si la tarea fue eliminada localmente, eliminar de la cola
+          if (currentTask == null) {
+            debugPrint('⚠️ [SYNC QUEUE] Tarea no encontrada localmente, eliminando de cola');
+            keysToRemove.add(entry.key);
+            continue;
+          }
+
+          // Usar la tarea actual (con posibles actualizaciones) para sincronizar
+          await _syncTaskWithRetry(currentTask, userId);
+
+          // Guardar el firestoreId actualizado si cambio
+          if (currentTask.isInBox && currentTask.firestoreId.isNotEmpty) {
+            await currentTask.save();
+          }
+
           keysToRemove.add(entry.key);
+          debugPrint('✅ [SYNC QUEUE] Tarea "${currentTask.title}" sincronizada desde cola');
         } catch (e) {
-          // Mantener en la cola para reintentar después
+          debugPrint('❌ [SYNC QUEUE] Error al procesar item: $e');
+          // Mantener en la cola para reintentar despues
         }
       }
 
@@ -597,12 +802,16 @@ class DatabaseService {
       for (var key in keysToRemove) {
         await queue.delete(key);
       }
+
+      if (keysToRemove.isNotEmpty) {
+        debugPrint('✅ [SYNC QUEUE] ${keysToRemove.length} items procesados');
+      }
     } catch (e, stack) {
       _errorHandler.handle(
         e,
         type: ErrorType.database,
         severity: ErrorSeverity.error,
-        message: 'Error al procesar cola de sincronización',
+        message: 'Error al procesar cola de sincronizacion',
         stackTrace: stack,
       );
     }
@@ -657,9 +866,23 @@ class DatabaseService {
   /// Sync task to cloud with debouncing
   /// Groups multiple changes and syncs after delay
   Future<void> syncTaskToCloudDebounced(Task task, String userId) async {
-    if (!_firebaseAvailable || firestore == null || userId.isEmpty) {
+    // Check if cloud sync is enabled
+    final syncEnabled = await isCloudSyncEnabled();
+    if (!syncEnabled) {
       return;
     }
+
+    if (!_firebaseAvailable || firestore == null) {
+      debugPrint('⚠️ [SYNC] Firebase no disponible, saltando debounce sync');
+      return;
+    }
+
+    if (userId.isEmpty) {
+      debugPrint('⚠️ [SYNC] Usuario vacío en debounce sync, saltando');
+      return;
+    }
+
+    debugPrint('⏱️ [SYNC] Agregando tarea "${task.title}" a cola de sincronización (debounced)');
 
     // Update lastUpdatedAt
     task.lastUpdatedAt = DateTime.now();
@@ -680,6 +903,12 @@ class DatabaseService {
 
   /// Sync note to cloud with debouncing
   Future<void> syncNoteToCloudDebounced(Note note, String userId) async {
+    // Check if cloud sync is enabled
+    final syncEnabled = await isCloudSyncEnabled();
+    if (!syncEnabled) {
+      return;
+    }
+
     if (!_firebaseAvailable || firestore == null || userId.isEmpty) {
       return;
     }
@@ -703,8 +932,19 @@ class DatabaseService {
 
   /// Flush all pending syncs (called after debounce delay or on app close)
   Future<void> _flushPendingSyncs() async {
+    // Check if cloud sync is enabled
+    final syncEnabled = await isCloudSyncEnabled();
+    if (!syncEnabled) {
+      _pendingSyncTaskKeys.clear();
+      _pendingSyncNoteKeys.clear();
+      return;
+    }
+
     final userId = _pendingSyncUserId;
-    if (userId == null || userId.isEmpty) return;
+    if (userId == null || userId.isEmpty) {
+      debugPrint('⚠️ [SYNC] No hay userId para flush pending syncs');
+      return;
+    }
 
     // Copy and clear pending sets
     final taskKeys = Set<int>.from(_pendingSyncTaskKeys);
@@ -712,7 +952,12 @@ class DatabaseService {
     _pendingSyncTaskKeys.clear();
     _pendingSyncNoteKeys.clear();
 
-    if (taskKeys.isEmpty && noteKeys.isEmpty) return;
+    if (taskKeys.isEmpty && noteKeys.isEmpty) {
+      debugPrint('⏱️ [SYNC] No hay elementos pendientes para sincronizar');
+      return;
+    }
+
+    debugPrint('🔄 [SYNC] Flushing ${taskKeys.length} tareas y ${noteKeys.length} notas pendientes');
 
     try {
       // Collect tasks to sync
@@ -733,9 +978,11 @@ class DatabaseService {
 
       // Batch sync
       if (tasksToSync.isNotEmpty || notesToSync.isNotEmpty) {
+        debugPrint('📦 [SYNC] Sincronizando lote: ${tasksToSync.length} tareas, ${notesToSync.length} notas');
         await _batchSync(tasksToSync, notesToSync, userId);
       }
     } catch (e, stack) {
+      debugPrint('❌ [SYNC] Error en flush pending syncs: $e');
       _errorHandler.handle(
         e,
         type: ErrorType.network,
@@ -1230,11 +1477,17 @@ class DatabaseService {
 
   Future<Box<Note>> get _notes async {
     await init();
+    if (!_isBoxUsable(_notesBox)) {
+      await _reinitializeBoxes();
+    }
     return _notesBox!;
   }
 
   Future<Box<Map>> get _notesSyncQueue async {
     await init();
+    if (!_isBoxUsable(_notesSyncQueueBox)) {
+      await _reinitializeBoxes();
+    }
     return _notesSyncQueueBox!;
   }
 
@@ -1310,38 +1563,41 @@ class DatabaseService {
 
   /// Save a note locally
   Future<void> saveNoteLocally(Note note) async {
-    try {
-      final box = await _notes;
-      note.updatedAt = DateTime.now();
-      if (note.isInBox) {
-        await note.save();
-      } else {
-        // Check for duplicates by firestoreId before adding
-        if (note.firestoreId.isNotEmpty) {
-          final existing = box.values.cast<Note?>().firstWhere(
-            (n) => n?.firestoreId == note.firestoreId,
-            orElse: () => null,
-          );
-          if (existing != null) {
-            // Update existing instead of adding duplicate
-            existing.updateInPlace(
-              title: note.title,
-              content: note.content,
-              updatedAt: note.updatedAt,
-              taskId: note.taskId,
-              color: note.color,
-              isPinned: note.isPinned,
-              tags: note.tags,
-              deleted: note.deleted,
-              deletedAt: note.deletedAt,
+    await _executeWithRetry(
+      () async {
+        final box = await _notes;
+        note.updatedAt = DateTime.now();
+        if (note.isInBox) {
+          await note.save();
+        } else {
+          // Check for duplicates by firestoreId before adding
+          if (note.firestoreId.isNotEmpty) {
+            final existing = box.values.cast<Note?>().firstWhere(
+              (n) => n?.firestoreId == note.firestoreId,
+              orElse: () => null,
             );
-            await existing.save();
-            return;
+            if (existing != null) {
+              // Update existing instead of adding duplicate
+              existing.updateInPlace(
+                title: note.title,
+                content: note.content,
+                updatedAt: note.updatedAt,
+                taskId: note.taskId,
+                color: note.color,
+                isPinned: note.isPinned,
+                tags: note.tags,
+                deleted: note.deleted,
+                deletedAt: note.deletedAt,
+              );
+              await existing.save();
+              return;
+            }
           }
+          await box.add(note);
         }
-        await box.add(note);
-      }
-    } catch (e, stack) {
+      },
+      operationName: 'guardar nota',
+    ).catchError((e, stack) {
       _errorHandler.handle(
         e,
         type: ErrorType.database,
@@ -1350,8 +1606,8 @@ class DatabaseService {
         userMessage: 'No se pudo guardar la nota',
         stackTrace: stack,
       );
-      rethrow;
-    }
+      throw e;
+    });
   }
 
   /// Delete a note locally
@@ -1451,6 +1707,12 @@ class DatabaseService {
 
   /// Sync note to Firebase
   Future<void> syncNoteToCloud(Note note, String userId) async {
+    // Check if cloud sync is enabled
+    final syncEnabled = await isCloudSyncEnabled();
+    if (!syncEnabled) {
+      return;
+    }
+
     if (!_firebaseAvailable || firestore == null) {
       debugPrint('Firebase no configurado, nota guardada solo localmente');
       return;
@@ -1596,17 +1858,62 @@ class DatabaseService {
       final queue = await _notesSyncQueue;
       if (queue.isEmpty) return;
 
+      debugPrint('🔄 [SYNC QUEUE] Procesando ${queue.length} notas pendientes');
+      final notesBox = await _notes;
       final keysToRemove = <dynamic>[];
 
       for (var entry in queue.toMap().entries) {
         try {
           final data = entry.value;
-          final note = data['note'] as Note;
+          final queuedNote = data['note'] as Note;
           final userId = data['userId'] as String;
+          final timestamp = data['timestamp'] as int?;
 
-          await _syncNoteWithRetry(note, userId);
+          // Verificar si el item es muy viejo (mas de 7 dias)
+          if (timestamp != null) {
+            final age = DateTime.now().difference(
+              DateTime.fromMillisecondsSinceEpoch(timestamp),
+            );
+            if (age.inDays > 7) {
+              debugPrint('🗑️ [SYNC QUEUE] Nota muy vieja, eliminando');
+              keysToRemove.add(entry.key);
+              continue;
+            }
+          }
+
+          // Buscar la nota actual en Hive por firestoreId o key
+          Note? currentNote;
+          if (queuedNote.firestoreId.isNotEmpty) {
+            currentNote = notesBox.values.cast<Note?>().firstWhere(
+              (n) => n?.firestoreId == queuedNote.firestoreId,
+              orElse: () => null,
+            );
+          }
+
+          // Si no se encontro por firestoreId, buscar por key si existe
+          if (currentNote == null && queuedNote.key != null) {
+            currentNote = notesBox.get(queuedNote.key);
+          }
+
+          // Si la nota fue eliminada localmente, eliminar de la cola
+          if (currentNote == null) {
+            debugPrint('⚠️ [SYNC QUEUE] Nota no encontrada localmente, eliminando de cola');
+            keysToRemove.add(entry.key);
+            continue;
+          }
+
+          // Usar la nota actual (con posibles actualizaciones) para sincronizar
+          await _syncNoteWithRetry(currentNote, userId);
+
+          // Guardar el firestoreId actualizado si cambio
+          if (currentNote.isInBox && currentNote.firestoreId.isNotEmpty) {
+            await currentNote.save();
+          }
+
           keysToRemove.add(entry.key);
+          debugPrint('✅ [SYNC QUEUE] Nota "${currentNote.title}" sincronizada desde cola');
         } catch (e) {
+          debugPrint('❌ [SYNC QUEUE] Error al procesar nota: $e');
           // Mantener en la cola para reintentar despues
         }
       }
@@ -1614,6 +1921,10 @@ class DatabaseService {
       // Eliminar notas sincronizadas exitosamente
       for (var key in keysToRemove) {
         await queue.delete(key);
+      }
+
+      if (keysToRemove.isNotEmpty) {
+        debugPrint('✅ [SYNC QUEUE] ${keysToRemove.length} notas procesadas');
       }
     } catch (e, stack) {
       _errorHandler.handle(
@@ -1637,8 +1948,303 @@ class DatabaseService {
     await _processNotesSyncQueue();
   }
 
+  // ==================== CLOUD TO LOCAL SYNC ====================
+
+  /// Sync tasks from Firestore to local Hive (download/pull)
+  /// Called on app startup or when user logs in
+  /// Uses lastUpdatedAt for incremental sync
+  Future<SyncResult> syncFromCloud(String userId) async {
+    // Check if cloud sync is enabled
+    final syncEnabled = await isCloudSyncEnabled();
+    if (!syncEnabled) {
+      debugPrint('⚠️ [SYNC] Cloud sync deshabilitado, saltando sync desde nube');
+      return SyncResult(tasksDownloaded: 0, notesDownloaded: 0, errors: 0);
+    }
+
+    if (!_firebaseAvailable || firestore == null) {
+      debugPrint('⚠️ [SYNC] Firebase no disponible, saltando sync desde nube');
+      return SyncResult(tasksDownloaded: 0, notesDownloaded: 0, errors: 0);
+    }
+
+    if (userId.isEmpty) {
+      debugPrint('⚠️ [SYNC] Usuario vacío, saltando sync desde nube');
+      return SyncResult(tasksDownloaded: 0, notesDownloaded: 0, errors: 0);
+    }
+
+    debugPrint('🔄 [SYNC] Iniciando sincronización desde Firebase para usuario $userId');
+    int tasksDownloaded = 0;
+    int notesDownloaded = 0;
+    int errors = 0;
+
+    try {
+      final box = await _box;
+      final notesBox = await _notes;
+      final userDoc = firestore!.collection('users').doc(userId);
+
+      // Sync tasks from Firestore
+      try {
+        final tasksSnapshot = await userDoc
+            .collection('tasks')
+            .get()
+            .timeout(
+              const Duration(seconds: 30),
+              onTimeout: () => throw TimeoutException('Firebase timeout'),
+            );
+
+        debugPrint('📥 [SYNC] Encontradas ${tasksSnapshot.docs.length} tareas en Firebase');
+
+        for (final doc in tasksSnapshot.docs) {
+          try {
+            final cloudTask = Task.fromFirestore(doc.id, doc.data());
+
+            // Skip deleted tasks from cloud
+            if (cloudTask.deleted) {
+              // Check if we have this task locally and mark it as deleted
+              final localTask = box.values.cast<Task?>().firstWhere(
+                (t) => t?.firestoreId == doc.id,
+                orElse: () => null,
+              );
+              if (localTask != null && !localTask.deleted) {
+                localTask.deleted = true;
+                localTask.deletedAt = cloudTask.deletedAt ?? DateTime.now();
+                await localTask.save();
+              }
+              continue;
+            }
+
+            // Check if task exists locally by firestoreId
+            final existingTask = box.values.cast<Task?>().firstWhere(
+              (t) => t?.firestoreId == doc.id,
+              orElse: () => null,
+            );
+
+            if (existingTask != null) {
+              // Task exists locally - check which is newer
+              final localUpdated = existingTask.lastUpdatedAt ?? existingTask.createdAt;
+              final cloudUpdated = cloudTask.lastUpdatedAt ?? cloudTask.createdAt;
+
+              if (cloudUpdated.isAfter(localUpdated)) {
+                // Cloud is newer - update local
+                existingTask.updateInPlace(
+                  title: cloudTask.title,
+                  type: cloudTask.type,
+                  isCompleted: cloudTask.isCompleted,
+                  dueDate: cloudTask.dueDate,
+                  category: cloudTask.category,
+                  priority: cloudTask.priority,
+                  dueTimeMinutes: cloudTask.dueTimeMinutes,
+                  motivation: cloudTask.motivation,
+                  reward: cloudTask.reward,
+                  recurrenceDay: cloudTask.recurrenceDay,
+                  deadline: cloudTask.deadline,
+                  deleted: cloudTask.deleted,
+                  deletedAt: cloudTask.deletedAt,
+                  lastUpdatedAt: cloudUpdated,
+                );
+                await existingTask.save();
+                tasksDownloaded++;
+                debugPrint('📥 [SYNC] Tarea actualizada: "${cloudTask.title}"');
+              }
+              // else: local is newer or same - will be synced to cloud later
+            } else {
+              // Task doesn't exist locally - add it
+              await box.add(cloudTask);
+              tasksDownloaded++;
+              debugPrint('📥 [SYNC] Tarea nueva descargada: "${cloudTask.title}"');
+            }
+          } catch (e) {
+            debugPrint('❌ [SYNC] Error procesando tarea ${doc.id}: $e');
+            errors++;
+          }
+        }
+      } catch (e) {
+        debugPrint('❌ [SYNC] Error al obtener tareas de Firebase: $e');
+        errors++;
+      }
+
+      // Sync notes from Firestore
+      try {
+        final notesSnapshot = await userDoc
+            .collection('notes')
+            .get()
+            .timeout(
+              const Duration(seconds: 30),
+              onTimeout: () => throw TimeoutException('Firebase timeout'),
+            );
+
+        debugPrint('📥 [SYNC] Encontradas ${notesSnapshot.docs.length} notas en Firebase');
+
+        for (final doc in notesSnapshot.docs) {
+          try {
+            final cloudNote = Note.fromFirestore(doc.id, doc.data());
+
+            // Skip deleted notes from cloud
+            if (cloudNote.deleted) {
+              final localNote = notesBox.values.cast<Note?>().firstWhere(
+                (n) => n?.firestoreId == doc.id,
+                orElse: () => null,
+              );
+              if (localNote != null && !localNote.deleted) {
+                localNote.deleted = true;
+                localNote.deletedAt = cloudNote.deletedAt ?? DateTime.now();
+                await localNote.save();
+              }
+              continue;
+            }
+
+            // Check if note exists locally by firestoreId
+            final existingNote = notesBox.values.cast<Note?>().firstWhere(
+              (n) => n?.firestoreId == doc.id,
+              orElse: () => null,
+            );
+
+            if (existingNote != null) {
+              // Note exists locally - check which is newer
+              final localUpdated = existingNote.updatedAt;
+              final cloudUpdated = cloudNote.updatedAt;
+
+              if (cloudUpdated.isAfter(localUpdated)) {
+                // Cloud is newer - update local
+                existingNote.updateInPlace(
+                  title: cloudNote.title,
+                  content: cloudNote.content,
+                  updatedAt: cloudUpdated,
+                  taskId: cloudNote.taskId,
+                  color: cloudNote.color,
+                  isPinned: cloudNote.isPinned,
+                  tags: cloudNote.tags,
+                  deleted: cloudNote.deleted,
+                  deletedAt: cloudNote.deletedAt,
+                );
+                await existingNote.save();
+                notesDownloaded++;
+                debugPrint('📥 [SYNC] Nota actualizada: "${cloudNote.title}"');
+              }
+            } else {
+              // Note doesn't exist locally - add it
+              await notesBox.add(cloudNote);
+              notesDownloaded++;
+              debugPrint('📥 [SYNC] Nota nueva descargada: "${cloudNote.title}"');
+            }
+          } catch (e) {
+            debugPrint('❌ [SYNC] Error procesando nota ${doc.id}: $e');
+            errors++;
+          }
+        }
+      } catch (e) {
+        debugPrint('❌ [SYNC] Error al obtener notas de Firebase: $e');
+        errors++;
+      }
+
+      // Update collection sync timestamp
+      updateCollectionSync('tasks');
+      updateCollectionSync('notes');
+
+      debugPrint('✅ [SYNC] Sync desde nube completado: $tasksDownloaded tareas, $notesDownloaded notas, $errors errores');
+    } catch (e, stack) {
+      _errorHandler.handle(
+        e,
+        type: ErrorType.sync,
+        severity: ErrorSeverity.warning,
+        message: 'Error al sincronizar desde Firebase',
+        userMessage: 'No se pudieron descargar todos los datos',
+        stackTrace: stack,
+      );
+      errors++;
+    }
+
+    return SyncResult(
+      tasksDownloaded: tasksDownloaded,
+      notesDownloaded: notesDownloaded,
+      errors: errors,
+    );
+  }
+
+  /// Perform full bidirectional sync
+  /// 1. Download changes from cloud
+  /// 2. Upload local changes to cloud
+  Future<SyncResult> performFullSync(String userId) async {
+    // Check if cloud sync is enabled
+    final syncEnabled = await isCloudSyncEnabled();
+    if (!syncEnabled) {
+      debugPrint('⚠️ [SYNC] Cloud sync deshabilitado, saltando sync completo');
+      return SyncResult(tasksDownloaded: 0, notesDownloaded: 0, errors: 0);
+    }
+
+    if (!_firebaseAvailable || firestore == null || userId.isEmpty) {
+      return SyncResult(tasksDownloaded: 0, notesDownloaded: 0, errors: 0);
+    }
+
+    debugPrint('🔄 [SYNC] Iniciando sincronización bidireccional completa');
+
+    // First, download from cloud
+    final downloadResult = await syncFromCloud(userId);
+
+    // Then, upload pending local changes
+    await forceSyncAll();
+
+    // Finally, sync any local-only tasks (those without firestoreId)
+    await _syncLocalOnlyItems(userId);
+
+    return downloadResult;
+  }
+
+  /// Sync local items that don't have a firestoreId yet
+  Future<void> _syncLocalOnlyItems(String userId) async {
+    // Check if cloud sync is enabled
+    final syncEnabled = await isCloudSyncEnabled();
+    if (!syncEnabled) return;
+
+    if (!_firebaseAvailable || firestore == null || userId.isEmpty) return;
+
+    try {
+      final box = await _box;
+      final notesBox = await _notes;
+
+      // Find and sync tasks without firestoreId
+      final localOnlyTasks = box.values.where(
+        (t) => t.firestoreId.isEmpty && !t.deleted,
+      ).toList();
+
+      if (localOnlyTasks.isNotEmpty) {
+        debugPrint('📤 [SYNC] Sincronizando ${localOnlyTasks.length} tareas locales');
+        for (final task in localOnlyTasks) {
+          try {
+            await syncTaskToCloud(task, userId);
+          } catch (e) {
+            debugPrint('❌ [SYNC] Error sincronizando tarea local: $e');
+          }
+        }
+      }
+
+      // Find and sync notes without firestoreId
+      final localOnlyNotes = notesBox.values.where(
+        (n) => n.firestoreId.isEmpty && !n.deleted,
+      ).toList();
+
+      if (localOnlyNotes.isNotEmpty) {
+        debugPrint('📤 [SYNC] Sincronizando ${localOnlyNotes.length} notas locales');
+        for (final note in localOnlyNotes) {
+          try {
+            await syncNoteToCloud(note, userId);
+          } catch (e) {
+            debugPrint('❌ [SYNC] Error sincronizando nota local: $e');
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ [SYNC] Error en sync de items locales: $e');
+    }
+  }
+
   /// Delete task from Firestore
   Future<void> deleteTaskFromCloud(String firestoreId, String userId) async {
+    // Check if cloud sync is enabled
+    final syncEnabled = await isCloudSyncEnabled();
+    if (!syncEnabled) {
+      return;
+    }
+
     if (!_firebaseAvailable || firestore == null) {
       return;
     }
@@ -1672,6 +2278,12 @@ class DatabaseService {
 
   /// Delete note from Firestore
   Future<void> deleteNoteFromCloud(String firestoreId, String userId) async {
+    // Check if cloud sync is enabled
+    final syncEnabled = await isCloudSyncEnabled();
+    if (!syncEnabled) {
+      return;
+    }
+
     if (!_firebaseAvailable || firestore == null) {
       return;
     }

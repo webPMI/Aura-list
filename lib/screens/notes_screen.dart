@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/responsive/breakpoints.dart';
 import '../models/note_model.dart';
 import '../providers/notes_provider.dart';
 import '../widgets/notes_list.dart';
 import '../widgets/note_editor.dart';
-import '../widgets/quick_note_input.dart';
 import '../widgets/navigation/drawer_menu_button.dart';
 
 class NotesScreen extends ConsumerStatefulWidget {
@@ -67,7 +67,6 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final notes = ref.watch(independentNotesProvider);
     final isMobile = context.isMobile;
-    final horizontalPadding = context.horizontalPadding;
 
     return Scaffold(
       appBar: DrawerAwareAppBar(
@@ -103,23 +102,19 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
       body: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: Breakpoints.maxContentWidth),
-          child: Column(
-            children: [
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: horizontalPadding - 16,
-                ),
-                child: QuickNoteInput(onFeedback: _showSnackBar),
-              ),
-              Expanded(
-                child: NotesList(
-                  onNoteEdit: _showNoteEditor,
-                  onFeedback: _showSnackBar,
-                ),
-              ),
-            ],
+          child: NotesList(
+            onNoteEdit: _showNoteEditor,
+            onFeedback: _showSnackBar,
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          _showNoteEditor();
+        },
+        icon: const Icon(Icons.add),
+        label: const Text('Nueva nota'),
       ),
     );
   }

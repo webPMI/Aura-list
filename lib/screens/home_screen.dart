@@ -907,19 +907,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     if (selectedDueTime != null) {
                       dueTimeMinutes = selectedDueTime!.hour * 60 + selectedDueTime!.minute;
                     }
-                    final updatedTask = task.copyWith(
+
+                    // Determinar qué campos limpiar
+                    final motivationText = motivationController.text.trim();
+                    final rewardText = rewardController.text.trim();
+
+                    // Update the original task in-place (preserves Hive reference)
+                    task.updateInPlace(
                       title: title,
                       priority: selectedPriority,
                       category: selectedCategory,
                       dueDate: selectedDueDate,
+                      clearDueDate: selectedDueDate == null && task.dueDate != null,
                       dueTimeMinutes: dueTimeMinutes,
-                      motivation: motivationController.text.isNotEmpty ? motivationController.text : null,
-                      reward: rewardController.text.isNotEmpty ? rewardController.text : null,
+                      clearDueTime: dueTimeMinutes == null && task.dueTimeMinutes != null,
+                      motivation: motivationText.isNotEmpty ? motivationText : null,
+                      clearMotivation: motivationText.isEmpty && task.motivation != null,
+                      reward: rewardText.isNotEmpty ? rewardText : null,
+                      clearReward: rewardText.isEmpty && task.reward != null,
                       deadline: selectedDeadline,
+                      clearDeadline: selectedDeadline == null && task.deadline != null,
+                      lastUpdatedAt: DateTime.now(),
                     );
                     ref
                         .read(tasksProvider(task.type).notifier)
-                        .updateTask(updatedTask);
+                        .updateTask(task);
                     _taskController.clear();
                     motivationController.dispose();
                     rewardController.dispose();

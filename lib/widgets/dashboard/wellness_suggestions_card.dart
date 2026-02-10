@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -71,6 +72,16 @@ final dailyWellnessSuggestionsProvider = Provider<List<WellnessSuggestion>>((ref
   suggestions.shuffle(random);
   return suggestions.take(6).toList();
 });
+
+/// Comportamiento de scroll personalizado que habilita arrastre con mouse en web.
+class _WebDragScrollBehavior extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.trackpad,
+  };
+}
 
 /// Constantes de diseno para tarjetas de sugerencias
 class _WellnessCardConstants {
@@ -230,12 +241,89 @@ class _WellnessSuggestionsCardState extends ConsumerState<WellnessSuggestionsCar
                           ),
                         ),
                         // Page indicator - ocultar en pantallas muy pequenas
-                        if (!isCompact)
+                        if (!isCompact) ...[
                           _PageIndicator(
                             count: suggestions.length,
                             currentIndex: _currentIndex,
                             color: colorScheme.primary,
                           ),
+                          const SizedBox(width: 8),
+                          TextButton.icon(
+                            onPressed: () {
+                              // Show all suggestions in a dialog
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (context) => DraggableScrollableSheet(
+                                  initialChildSize: 0.7,
+                                  minChildSize: 0.5,
+                                  maxChildSize: 0.95,
+                                  builder: (context, scrollController) => Container(
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.surface,
+                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        // Handle bar
+                                        Container(
+                                          margin: const EdgeInsets.symmetric(vertical: 12),
+                                          width: 40,
+                                          height: 4,
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+                                            borderRadius: BorderRadius.circular(2),
+                                          ),
+                                        ),
+                                        // Title
+                                        Padding(
+                                          padding: const EdgeInsets.all(16),
+                                          child: Text(
+                                            'Todas las sugerencias',
+                                            style: Theme.of(context).textTheme.titleLarge,
+                                          ),
+                                        ),
+                                        // List of all suggestions
+                                        Expanded(
+                                          child: ListView.builder(
+                                            controller: scrollController,
+                                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                                            itemCount: suggestions.length,
+                                            itemBuilder: (context, index) {
+                                              final suggestion = suggestions[index];
+                                              return Card(
+                                                margin: const EdgeInsets.only(bottom: 12),
+                                                child: ListTile(
+                                                  leading: Icon(
+                                                    suggestion.category.categoryIcon,
+                                                    color: suggestion.category.categoryGradient.first,
+                                                  ),
+                                                  title: Text(suggestion.title),
+                                                  subtitle: Text(suggestion.description),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.chevron_right, size: 18),
+                            label: const Text(
+                              'Ver todos',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -254,28 +342,31 @@ class _WellnessSuggestionsCardState extends ConsumerState<WellnessSuggestionsCar
                   // Suggestion cards
                   SizedBox(
                     height: cardHeight,
-                    child: PageView.builder(
-                      controller: _getPageController(availableWidth),
-                      itemCount: suggestions.length,
-                      onPageChanged: (index) {
-                        setState(() => _currentIndex = index);
-                      },
-                      itemBuilder: (context, index) {
-                        final suggestion = suggestions[index];
-                        return Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: isCompact ? 2 : 4,
-                            vertical: isCompact ? 4 : 8,
-                          ),
-                          child: _SuggestionCard(
-                            suggestion: suggestion,
-                            isCompact: isCompact,
-                            onTap: () => _showSuggestionDetails(context, suggestion),
-                            onMarkDone: () => _markAsDone(suggestion),
-                            onAddToList: () => _addToList(suggestion),
-                          ),
-                        );
-                      },
+                    child: ScrollConfiguration(
+                      behavior: _WebDragScrollBehavior(),
+                      child: PageView.builder(
+                        controller: _getPageController(availableWidth),
+                        itemCount: suggestions.length,
+                        onPageChanged: (index) {
+                          setState(() => _currentIndex = index);
+                        },
+                        itemBuilder: (context, index) {
+                          final suggestion = suggestions[index];
+                          return Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isCompact ? 2 : 4,
+                              vertical: isCompact ? 4 : 8,
+                            ),
+                            child: _SuggestionCard(
+                              suggestion: suggestion,
+                              isCompact: isCompact,
+                              onTap: () => _showSuggestionDetails(context, suggestion),
+                              onMarkDone: () => _markAsDone(suggestion),
+                              onAddToList: () => _addToList(suggestion),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
                   SizedBox(height: isCompact ? 4 : 8),

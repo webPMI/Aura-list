@@ -5,6 +5,7 @@ import '../models/task_model.dart';
 import '../services/database_service.dart';
 import '../services/auth_service.dart';
 import '../services/error_handler.dart';
+import 'navigation_provider.dart';
 
 final tasksProvider =
     StateNotifierProvider.family<TaskNotifier, List<Task>, String>((ref, type) {
@@ -120,7 +121,7 @@ class TaskNotifier extends StateNotifier<List<Task>> {
 
   Future<void> updateTask(Task task) async {
     try {
-      // Si la tarea ya está en Hive, usar updateInPlace
+      // Si la tarea ya está en Hive, guardar directamente
       if (task.isInBox) {
         task.lastUpdatedAt = DateTime.now();
         await task.save();
@@ -129,48 +130,62 @@ class TaskNotifier extends StateNotifier<List<Task>> {
         if (user != null) {
           await _db.syncTaskToCloudDebounced(task, user.uid);
         }
-      } else {
-        // Buscar la tarea original en el estado actual por firestoreId o key
-        Task? original;
-        if (task.firestoreId.isNotEmpty) {
-          original = state.firstWhere(
-            (t) => t.firestoreId == task.firestoreId,
-            orElse: () => task,
-          );
+        return;
+      }
+
+      // Buscar la tarea original en el estado actual
+      Task? original;
+
+      // Primero buscar por Hive key (más confiable para tareas locales)
+      if (task.key != null) {
+        original = state.cast<Task?>().firstWhere(
+          (t) => t?.key == task.key,
+          orElse: () => null,
+        );
+      }
+
+      // Si no se encuentra por key, buscar por firestoreId
+      if (original == null && task.firestoreId.isNotEmpty) {
+        original = state.cast<Task?>().firstWhere(
+          (t) => t?.firestoreId == task.firestoreId,
+          orElse: () => null,
+        );
+      }
+
+      if (original != null && original.isInBox) {
+        // Actualizar la tarea original in-place
+        original.updateInPlace(
+          title: task.title,
+          type: task.type,
+          isCompleted: task.isCompleted,
+          dueDate: task.dueDate,
+          category: task.category,
+          priority: task.priority,
+          dueTimeMinutes: task.dueTimeMinutes,
+          motivation: task.motivation,
+          reward: task.reward,
+          recurrenceDay: task.recurrenceDay,
+          deadline: task.deadline,
+          deleted: task.deleted,
+          deletedAt: task.deletedAt,
+          lastUpdatedAt: DateTime.now(),
+        );
+        await original.save();
+
+        final user = _auth.currentUser;
+        if (user != null) {
+          await _db.syncTaskToCloudDebounced(original, user.uid);
         }
+      } else {
+        // La tarea no existe en el estado - esto no debería pasar en edición normal
+        // Solo agregar si realmente es una tarea nueva
+        debugPrint('⚠️ [TaskProvider] updateTask llamado con tarea no encontrada en state');
+        task.lastUpdatedAt = DateTime.now();
+        await _db.saveTaskLocally(task);
 
-        if (original != null && original.isInBox && original != task) {
-          // Actualizar la tarea original in-place
-          original.updateInPlace(
-            title: task.title,
-            type: task.type,
-            isCompleted: task.isCompleted,
-            dueDate: task.dueDate,
-            category: task.category,
-            priority: task.priority,
-            dueTimeMinutes: task.dueTimeMinutes,
-            motivation: task.motivation,
-            reward: task.reward,
-            recurrenceDay: task.recurrenceDay,
-            deadline: task.deadline,
-            deleted: task.deleted,
-            deletedAt: task.deletedAt,
-            lastUpdatedAt: DateTime.now(),
-          );
-          await original.save();
-
-          final user = _auth.currentUser;
-          if (user != null) {
-            await _db.syncTaskToCloudDebounced(original, user.uid);
-          }
-        } else {
-          // Fallback: guardar usando el servicio (que maneja duplicados)
-          await _db.saveTaskLocally(task);
-
-          final user = _auth.currentUser;
-          if (user != null) {
-            await _db.syncTaskToCloud(task, user.uid);
-          }
+        final user = _auth.currentUser;
+        if (user != null) {
+          await _db.syncTaskToCloud(task, user.uid);
         }
       }
     } catch (e, stack) {
@@ -201,12 +216,41 @@ class TaskNotifier extends StateNotifier<List<Task>> {
           await _db.syncTaskToCloudDebounced(task, user.uid);
         }
       } else {
-        // Fallback para tareas no guardadas aún
-        final updatedTask = task.copyWith(
-          isCompleted: !task.isCompleted,
-          lastUpdatedAt: DateTime.now(),
-        );
-        await updateTask(updatedTask);
+        // Fallback: buscar el original en el estado y actualizarlo
+        Task? original;
+
+        if (task.key != null) {
+          original = state.cast<Task?>().firstWhere(
+            (t) => t?.key == task.key,
+            orElse: () => null,
+          );
+        }
+        if (original == null && task.firestoreId.isNotEmpty) {
+          original = state.cast<Task?>().firstWhere(
+            (t) => t?.firestoreId == task.firestoreId,
+            orElse: () => null,
+          );
+        }
+
+        if (original != null && original.isInBox) {
+          original.updateInPlace(
+            isCompleted: !original.isCompleted,
+            lastUpdatedAt: DateTime.now(),
+          );
+          await original.save();
+
+          final user = _auth.currentUser;
+          if (user != null) {
+            await _db.syncTaskToCloudDebounced(original, user.uid);
+          }
+        } else {
+          // Caso muy raro: actualizar la tarea pasada
+          debugPrint('⚠️ [TaskProvider] toggleTask fallback: tarea no encontrada');
+          await updateTask(task.copyWith(
+            isCompleted: !task.isCompleted,
+            lastUpdatedAt: DateTime.now(),
+          ));
+        }
       }
     } catch (e, stack) {
       _errorHandler.handle(
@@ -244,3 +288,25 @@ class TaskNotifier extends StateNotifier<List<Task>> {
     }
   }
 }
+
+/// Provider for filtered tasks based on search query
+/// Combines task type filtering with text search
+final filteredTasksProvider = Provider.family<List<Task>, String>((ref, type) {
+  final tasks = ref.watch(tasksProvider(type));
+  final searchQuery = ref.watch(taskSearchQueryProvider).toLowerCase().trim();
+
+  if (searchQuery.isEmpty) {
+    return tasks;
+  }
+
+  return tasks.where((task) {
+    final titleMatch = task.title.toLowerCase().contains(searchQuery);
+    final categoryMatch = task.category.toLowerCase().contains(searchQuery);
+    final motivationMatch =
+        task.motivation?.toLowerCase().contains(searchQuery) ?? false;
+    final rewardMatch =
+        task.reward?.toLowerCase().contains(searchQuery) ?? false;
+
+    return titleMatch || categoryMatch || motivationMatch || rewardMatch;
+  }).toList();
+});

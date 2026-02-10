@@ -9,15 +9,60 @@ class TaskList extends ConsumerWidget {
   final String type;
   final void Function(Task task)? onEditTask;
   final void Function(String message)? onFeedback;
+  final List<Task>? filteredTasks;
+  final bool isSearching;
+  final String? searchQuery;
 
-  const TaskList({super.key, required this.type, this.onEditTask, this.onFeedback});
+  const TaskList({
+    super.key,
+    required this.type,
+    this.onEditTask,
+    this.onFeedback,
+    this.filteredTasks,
+    this.isSearching = false,
+    this.searchQuery,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tasks = ref.watch(tasksProvider(type));
+    final List<Task> tasks = filteredTasks ?? ref.watch(tasksProvider(type));
     final colorScheme = Theme.of(context).colorScheme;
 
     if (tasks.isEmpty) {
+      // Show different message when searching vs no tasks
+      if (isSearching && searchQuery != null && searchQuery!.isNotEmpty) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.search_off_rounded,
+                size: 64,
+                color: colorScheme.onSurface.withValues(alpha: 0.1),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Sin resultados',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  color: colorScheme.onSurface.withValues(alpha: 0.65),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'No se encontraron tareas para "$searchQuery"',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: colorScheme.onSurface.withValues(alpha: 0.65),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        );
+      }
+
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -25,7 +70,7 @@ class TaskList extends ConsumerWidget {
             Icon(
               Icons.checklist_rtl_rounded,
               size: 64,
-              color: colorScheme.onSurface.withValues(alpha:0.1),
+              color: colorScheme.onSurface.withValues(alpha: 0.1),
             ),
             const SizedBox(height: 16),
             Text(
@@ -37,7 +82,7 @@ class TaskList extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
-                color: colorScheme.onSurface.withValues(alpha:0.65),
+                color: colorScheme.onSurface.withValues(alpha: 0.65),
               ),
             ),
             const SizedBox(height: 8),
@@ -45,7 +90,7 @@ class TaskList extends ConsumerWidget {
               '¡Toca el botón + para empezar!',
               style: TextStyle(
                 fontSize: 14,
-                color: colorScheme.onSurface.withValues(alpha:0.65),
+                color: colorScheme.onSurface.withValues(alpha: 0.65),
               ),
             ),
           ],

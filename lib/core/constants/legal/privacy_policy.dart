@@ -149,7 +149,8 @@ Si vinculas tu cuenta con Google, aplicara tambien la politica de privacidad de 
 ## 11. Contacto
 
 Para ejercer tus derechos o consultas sobre privacidad:
-- Usa la opcion "Ayuda" en la configuracion de la app
+- Email: servicioweb.pmi@gmail.com
+- Creador: ink.enzo
 - Tiempo de respuesta: Maximo 30 dias
 
 ## 12. Base Legal del Procesamiento

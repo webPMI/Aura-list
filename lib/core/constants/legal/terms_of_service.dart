@@ -110,7 +110,9 @@ Estos terminos se rigen por las leyes aplicables en tu jurisdiccion. Cualquier d
 
 ## 12. Contacto
 
-Para preguntas sobre estos terminos, puedes contactarnos a traves de la seccion de ayuda en la aplicacion.
+Para preguntas sobre estos terminos:
+- Email: servicioweb.pmi@gmail.com
+- Creador: ink.enzo
 
 ---
 

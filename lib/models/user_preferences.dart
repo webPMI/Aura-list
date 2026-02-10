@@ -52,7 +52,7 @@ class UserPreferences extends HiveObject {
     Map<String, String>? collectionLastSync,
     this.syncOnMobileData = true,
     this.syncDebounceMs = 3000,
-    this.cloudSyncEnabled = true,
+    this.cloudSyncEnabled = false,
   }) : collectionLastSync = collectionLastSync ?? {};
 
   // Check if user has accepted all legal requirements
@@ -131,7 +131,7 @@ class UserPreferences extends HiveObject {
           : null,
       syncOnMobileData: data['syncOnMobileData'] ?? true,
       syncDebounceMs: data['syncDebounceMs'] ?? 3000,
-      cloudSyncEnabled: data['cloudSyncEnabled'] ?? true,
+      cloudSyncEnabled: data['cloudSyncEnabled'] ?? false,
     );
   }
 

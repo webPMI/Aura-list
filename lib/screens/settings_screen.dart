@@ -72,6 +72,7 @@ class SettingsScreen extends ConsumerWidget {
 
               // Data Section
               _SectionHeader('Datos'),
+              const _CloudSyncToggle(),
               const _SyncStatusTile(),
               ListTile(
                 leading: const Icon(Icons.download_outlined),
@@ -234,6 +235,94 @@ class _SectionHeader extends StatelessWidget {
           color: colorScheme.primary,
         ),
       ),
+    );
+  }
+}
+
+class _CloudSyncToggle extends ConsumerStatefulWidget {
+  const _CloudSyncToggle();
+
+  @override
+  ConsumerState<_CloudSyncToggle> createState() => _CloudSyncToggleState();
+}
+
+class _CloudSyncToggleState extends ConsumerState<_CloudSyncToggle> {
+  bool _isLoading = true;
+  bool _syncEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSyncPreference();
+  }
+
+  Future<void> _loadSyncPreference() async {
+    final dbService = ref.read(databaseServiceProvider);
+    final enabled = await dbService.isCloudSyncEnabled();
+    if (mounted) {
+      setState(() {
+        _syncEnabled = enabled;
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _toggleSync(bool value) async {
+    setState(() => _isLoading = true);
+
+    final dbService = ref.read(databaseServiceProvider);
+    await dbService.setCloudSyncEnabled(value);
+
+    // If enabling sync, trigger initial sync
+    if (value) {
+      final authService = ref.read(authServiceProvider);
+      final user = authService.currentUser;
+      if (user != null) {
+        await dbService.performFullSync(user.uid);
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _syncEnabled = value;
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            value
+                ? 'Sincronizacion a la nube activada'
+                : 'Sincronizacion a la nube desactivada',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(
+        _syncEnabled ? Icons.cloud_outlined : Icons.cloud_off_outlined,
+      ),
+      title: const Text('Sincronizar a la nube'),
+      subtitle: Text(
+        _syncEnabled
+            ? 'Tus datos se sincronizan con Firebase'
+            : 'Tus datos solo se guardan localmente',
+      ),
+      trailing: _isLoading
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Switch(
+              value: _syncEnabled,
+              onChanged: _toggleSync,
+            ),
     );
   }
 }

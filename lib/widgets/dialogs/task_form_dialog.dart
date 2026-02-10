@@ -177,24 +177,35 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
       }
 
       if (_isEditing) {
-        // Update existing task
-        final updatedTask = widget.task!.copyWith(
+        // Update existing task IN-PLACE to avoid duplication
+        // The original task object is already in Hive, so we update it directly
+        final originalTask = widget.task!;
+
+        // Determinar qué campos limpiar
+        final motivationText = _motivationController.text.trim();
+        final rewardText = _rewardController.text.trim();
+
+        // Update the original task in-place (preserves Hive reference)
+        originalTask.updateInPlace(
           title: _titleController.text.trim(),
           category: _selectedCategory,
           priority: _selectedPriority,
           dueDate: _selectedDueDate,
+          clearDueDate: _selectedDueDate == null && originalTask.dueDate != null,
           dueTimeMinutes: dueTimeMinutes,
-          motivation: _motivationController.text.trim().isEmpty
-              ? null
-              : _motivationController.text.trim(),
-          reward: _rewardController.text.trim().isEmpty
-              ? null
-              : _rewardController.text.trim(),
+          clearDueTime: dueTimeMinutes == null && originalTask.dueTimeMinutes != null,
+          motivation: motivationText.isNotEmpty ? motivationText : null,
+          clearMotivation: motivationText.isEmpty && originalTask.motivation != null,
+          reward: rewardText.isNotEmpty ? rewardText : null,
+          clearReward: rewardText.isEmpty && originalTask.reward != null,
           deadline: _selectedDeadline,
+          clearDeadline: _selectedDeadline == null && originalTask.deadline != null,
+          lastUpdatedAt: DateTime.now(),
         );
+
         await widget.ref
             .read(tasksProvider(widget.taskType).notifier)
-            .updateTask(updatedTask);
+            .updateTask(originalTask);
 
         if (mounted) {
           Navigator.pop(context);

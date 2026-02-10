@@ -11,10 +11,10 @@ class CalendarView extends ConsumerStatefulWidget {
   const CalendarView({super.key, this.onDateSelected, this.onTaskTap});
 
   @override
-  ConsumerState<CalendarView> createState() => _CalendarViewState();
+  ConsumerState<CalendarView> createState() => CalendarViewState();
 }
 
-class _CalendarViewState extends ConsumerState<CalendarView> {
+class CalendarViewState extends ConsumerState<CalendarView> {
   late DateTime _currentMonth;
   DateTime? _selectedDate;
 
@@ -23,6 +23,16 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
     super.initState();
     _currentMonth = DateTime.now();
     _selectedDate = DateTime.now();
+  }
+
+  /// Jumps to today's date, updating both the current month and selected date.
+  void jumpToToday() {
+    final now = DateTime.now();
+    setState(() {
+      _currentMonth = DateTime(now.year, now.month);
+      _selectedDate = now;
+    });
+    widget.onDateSelected?.call(now);
   }
 
   // Genera los días del mes actual

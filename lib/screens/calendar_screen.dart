@@ -4,11 +4,18 @@ import '../core/responsive/breakpoints.dart';
 import '../widgets/calendar_view.dart';
 import '../widgets/navigation/drawer_menu_button.dart';
 
-class CalendarScreen extends ConsumerWidget {
+class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CalendarScreen> createState() => _CalendarScreenState();
+}
+
+class _CalendarScreenState extends ConsumerState<CalendarScreen> {
+  final _calendarKey = GlobalKey<CalendarViewState>();
+
+  @override
+  Widget build(BuildContext context) {
     final isDesktop = context.isDesktop;
 
     return Scaffold(
@@ -19,9 +26,9 @@ class CalendarScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.today),
             onPressed: () {
-              // TODO: Jump to today
+              _calendarKey.currentState?.jumpToToday();
             },
-            tooltip: 'Hoy',
+            tooltip: 'Ir a hoy',
           ),
         ],
       ),
@@ -31,6 +38,7 @@ class CalendarScreen extends ConsumerWidget {
             maxWidth: isDesktop ? 900 : Breakpoints.maxContentWidth,
           ),
           child: CalendarView(
+            key: _calendarKey,
             onDateSelected: (date) {
               // Handle date selection
             },
