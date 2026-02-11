@@ -1,6 +1,6 @@
-/// Politica de Privacidad de AuraList
-/// Version 1.0 - Febrero 2025
-/// Cumplimiento: GDPR, LGPD, CCPA
+// Politica de Privacidad de AuraList
+// Version 1.0 - Febrero 2025
+// Cumplimiento: GDPR, LGPD, CCPA
 
 const String privacyPolicyEs = '''
 # Politica de Privacidad de AuraList

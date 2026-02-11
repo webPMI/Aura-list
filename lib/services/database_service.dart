@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/task_model.dart';
 import '../models/task_history.dart';
 import '../models/note_model.dart';
+import '../models/notebook_model.dart';
 import '../models/user_preferences.dart';
 import '../models/sync_metadata.dart';
 import '../core/cache/cache_policy.dart';
@@ -55,6 +56,8 @@ class DatabaseService {
   static const String _notesBoxName = 'notes';
   static const String _notesSyncQueueBoxName = 'notes_sync_queue';
   static const String _userPrefsBoxName = 'user_prefs';
+  static const String _notebooksBoxName = 'notebooks';
+  static const String _notebooksSyncQueueBoxName = 'notebooks_sync_queue';
   static const int _maxRetries = 3;
   static const Duration _retryDelay = Duration(seconds: 2);
   static const Duration _syncDebounceDelay = Duration(seconds: 3);
@@ -65,6 +68,8 @@ class DatabaseService {
   Box<Note>? _notesBox;
   Box<Map>? _notesSyncQueueBox;
   Box<UserPreferences>? _userPrefsBox;
+  Box<Notebook>? _notebooksBox;
+  Box<Map>? _notebooksSyncQueueBox;
   bool _initialized = false;
   Completer<void>? _initCompleter;
   bool _isReinitializing = false;
@@ -129,6 +134,12 @@ class DatabaseService {
       if (!Hive.isAdapterRegistered(5)) {
         Hive.registerAdapter(SyncMetadataAdapter());
       }
+      if (!Hive.isAdapterRegistered(6)) {
+        Hive.registerAdapter(NotebookAdapter());
+      }
+      if (!Hive.isAdapterRegistered(7)) {
+        Hive.registerAdapter(ChecklistItemAdapter());
+      }
 
       // Open boxes safely - check if already open first
       _taskBox = Hive.isBoxOpen(_boxName)
@@ -149,6 +160,12 @@ class DatabaseService {
       _userPrefsBox = Hive.isBoxOpen(_userPrefsBoxName)
           ? Hive.box<UserPreferences>(_userPrefsBoxName)
           : await Hive.openBox<UserPreferences>(_userPrefsBoxName);
+      _notebooksBox = Hive.isBoxOpen(_notebooksBoxName)
+          ? Hive.box<Notebook>(_notebooksBoxName)
+          : await Hive.openBox<Notebook>(_notebooksBoxName);
+      _notebooksSyncQueueBox = Hive.isBoxOpen(_notebooksSyncQueueBoxName)
+          ? Hive.box<Map>(_notebooksSyncQueueBoxName)
+          : await Hive.openBox<Map>(_notebooksSyncQueueBoxName);
 
       // Check if Firebase is available
       try {
@@ -218,16 +235,30 @@ class DatabaseService {
     try {
       // Close existing boxes if they exist
       try {
-        if (_taskBox != null && _taskBox!.isOpen) await _taskBox!.close();
-        if (_syncQueueBox != null && _syncQueueBox!.isOpen)
+        if (_taskBox != null && _taskBox!.isOpen) {
+          await _taskBox!.close();
+        }
+        if (_syncQueueBox != null && _syncQueueBox!.isOpen) {
           await _syncQueueBox!.close();
-        if (_historyBox != null && _historyBox!.isOpen)
+        }
+        if (_historyBox != null && _historyBox!.isOpen) {
           await _historyBox!.close();
-        if (_notesBox != null && _notesBox!.isOpen) await _notesBox!.close();
-        if (_notesSyncQueueBox != null && _notesSyncQueueBox!.isOpen)
+        }
+        if (_notesBox != null && _notesBox!.isOpen) {
+          await _notesBox!.close();
+        }
+        if (_notesSyncQueueBox != null && _notesSyncQueueBox!.isOpen) {
           await _notesSyncQueueBox!.close();
-        if (_userPrefsBox != null && _userPrefsBox!.isOpen)
+        }
+        if (_userPrefsBox != null && _userPrefsBox!.isOpen) {
           await _userPrefsBox!.close();
+        }
+        if (_notebooksBox != null && _notebooksBox!.isOpen) {
+          await _notebooksBox!.close();
+        }
+        if (_notebooksSyncQueueBox != null && _notebooksSyncQueueBox!.isOpen) {
+          await _notebooksSyncQueueBox!.close();
+        }
       } catch (e) {
         debugPrint('⚠️ [Database] Error cerrando boxes: $e');
       }
@@ -242,6 +273,10 @@ class DatabaseService {
       _notesBox = await Hive.openBox<Note>(_notesBoxName);
       _notesSyncQueueBox = await Hive.openBox<Map>(_notesSyncQueueBoxName);
       _userPrefsBox = await Hive.openBox<UserPreferences>(_userPrefsBoxName);
+      _notebooksBox = await Hive.openBox<Notebook>(_notebooksBoxName);
+      _notebooksSyncQueueBox = await Hive.openBox<Map>(
+        _notebooksSyncQueueBoxName,
+      );
 
       debugPrint('✅ [Database] Conexión reinicializada exitosamente');
     } catch (e, stack) {
@@ -1157,7 +1192,9 @@ class DatabaseService {
     // Check if cloud sync is enabled - FIX 4
     final syncEnabled = await isCloudSyncEnabled();
     if (!syncEnabled) {
-      debugPrint('⚠️ [BATCH SYNC] Cloud sync deshabilitado, saltando sincronización por lotes');
+      debugPrint(
+        '⚠️ [BATCH SYNC] Cloud sync deshabilitado, saltando sincronización por lotes',
+      );
       return;
     }
 
@@ -1825,7 +1862,11 @@ class DatabaseService {
       return box.values
           .where((note) => !note.deleted && note.taskId == taskId)
           .toList()
-        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+        ..sort((a, b) {
+          if (a.isPinned && !b.isPinned) return -1;
+          if (!a.isPinned && b.isPinned) return 1;
+          return b.updatedAt.compareTo(a.updatedAt);
+        });
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -1910,6 +1951,7 @@ class DatabaseService {
             .where(
               (note) =>
                   !note.deleted &&
+                  note.status == 'active' &&
                   (note.taskId == null || note.taskId!.isEmpty),
             )
             .toList()
@@ -1935,6 +1977,38 @@ class DatabaseService {
     }
   }
 
+  /// Watch archived notes stream
+  Stream<List<Note>> watchArchivedNotes() async* {
+    try {
+      final box = await _notes;
+
+      List<Note> getSortedNotes() {
+        return box.values
+            .where(
+              (note) =>
+                  !note.deleted &&
+                  note.status == 'archived' &&
+                  (note.taskId == null || note.taskId!.isEmpty),
+            )
+            .toList()
+          ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      }
+
+      yield getSortedNotes();
+
+      yield* box.watch().map((_) => getSortedNotes());
+    } catch (e, stack) {
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        severity: ErrorSeverity.error,
+        message: 'Error al observar notas archivadas',
+        stackTrace: stack,
+      );
+      yield [];
+    }
+  }
+
   /// Watch notes for a specific task
   Stream<List<Note>> watchNotesForTask(String taskId) async* {
     try {
@@ -1944,7 +2018,11 @@ class DatabaseService {
         return box.values
             .where((note) => !note.deleted && note.taskId == taskId)
             .toList()
-          ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+          ..sort((a, b) {
+            if (a.isPinned && !b.isPinned) return -1;
+            if (!a.isPinned && b.isPinned) return 1;
+            return b.updatedAt.compareTo(a.updatedAt);
+          });
       }
 
       yield getTaskNotes();
@@ -1962,21 +2040,48 @@ class DatabaseService {
     }
   }
 
-  /// Search notes by title or content
-  Future<List<Note>> searchNotes(String query) async {
+  /// Search notes by query with validation and filtering
+  /// Returns up to [maxResults] notes that match the query
+  Future<List<Note>> searchNotes(String query, {int maxResults = 50}) async {
     try {
+      // Input validation and sanitization
+      final sanitized = query.trim();
+      if (sanitized.isEmpty) return [];
+
       final box = await _notes;
-      final lowerQuery = query.toLowerCase();
-      return box.values
+      final normalized = sanitized.toLowerCase();
+
+      // Search with filters
+      final results = box.values
           .where(
             (note) =>
-                note.title.toLowerCase().contains(lowerQuery) ||
-                note.content.toLowerCase().contains(lowerQuery) ||
-                note.tags.any((tag) => tag.toLowerCase().contains(lowerQuery)),
+                !note.deleted && // Exclude deleted notes
+                (note.title.toLowerCase().contains(normalized) ||
+                    note.content.toLowerCase().contains(normalized) ||
+                    note.tags.any(
+                      (tag) => tag.toLowerCase().contains(normalized),
+                    )),
           )
-          .toList()
-        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-    } catch (e) {
+          .take(maxResults) // Limit results
+          .toList();
+
+      // Sort by relevance: pinned first, then by date
+      results.sort((a, b) {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return b.updatedAt.compareTo(a.updatedAt);
+      });
+
+      return results;
+    } catch (e, stack) {
+      debugPrint('❌ [Database] Error en búsqueda de notas: $e');
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        severity: ErrorSeverity.error,
+        message: 'Error al buscar notas',
+        stackTrace: stack,
+      );
       return [];
     }
   }
@@ -2162,7 +2267,9 @@ class DatabaseService {
     // Check if cloud sync is enabled - FIX 4
     final syncEnabled = await isCloudSyncEnabled();
     if (!syncEnabled) {
-      debugPrint('⚠️ [SYNC QUEUE] Cloud sync deshabilitado, saltando procesamiento de cola de notas');
+      debugPrint(
+        '⚠️ [SYNC QUEUE] Cloud sync deshabilitado, saltando procesamiento de cola de notas',
+      );
       return;
     }
 
@@ -2313,6 +2420,254 @@ class DatabaseService {
   Future<void> forceSyncAll() async {
     await _processSyncQueue();
     await _processNotesSyncQueue();
+  }
+
+  // ==================== NOTEBOOKS ====================
+
+  Future<Box<Notebook>> get _notebooks async {
+    await init();
+    if (!_isBoxUsable(_notebooksBox)) {
+      await _reinitializeBoxes();
+    }
+    return _notebooksBox!;
+  }
+
+  /// Save notebook locally
+  Future<void> saveNotebookLocally(Notebook notebook) async {
+    await _executeWithRetry(() async {
+      final box = await _notebooks;
+      notebook.updatedAt = DateTime.now();
+      if (notebook.isInBox) {
+        await notebook.save();
+      } else {
+        await box.add(notebook);
+      }
+    });
+  }
+
+  /// Delete notebook locally
+  Future<void> deleteNotebookLocally(dynamic key) async {
+    await _executeWithRetry(() async {
+      final box = await _notebooks;
+      await box.delete(key);
+    });
+  }
+
+  /// Watch all notebooks
+  Stream<List<Notebook>> watchNotebooks() async* {
+    try {
+      final box = await _notebooks;
+
+      List<Notebook> getSortedNotebooks() {
+        return box.values.toList()..sort((a, b) {
+          // Favoritos primero
+          if (a.isFavorited && !b.isFavorited) return -1;
+          if (!a.isFavorited && b.isFavorited) return 1;
+          // Luego por fecha de creación
+          return b.createdAt.compareTo(a.createdAt);
+        });
+      }
+
+      yield getSortedNotebooks();
+
+      await for (final _ in box.watch()) {
+        yield getSortedNotebooks();
+      }
+    } catch (e, stack) {
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        severity: ErrorSeverity.error,
+        message: 'Error watching notebooks',
+        stackTrace: stack,
+      );
+      yield [];
+    }
+  }
+
+  /// Get all notebooks
+  Future<List<Notebook>> getAllNotebooks() async {
+    try {
+      final box = await _notebooks;
+      return box.values.toList();
+    } catch (e, stack) {
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        severity: ErrorSeverity.error,
+        message: 'Error al obtener notebooks',
+        stackTrace: stack,
+      );
+      return [];
+    }
+  }
+
+  /// Move all notes out of a notebook (set notebookId to null)
+  Future<void> moveNotesOutOfNotebook(String notebookId) async {
+    try {
+      final box = await _notes;
+      final notesInNotebook = box.values
+          .where((note) => note.notebookId == notebookId)
+          .toList();
+
+      for (final note in notesInNotebook) {
+        note.updateInPlace(clearNotebookId: true);
+        await note.save();
+      }
+    } catch (e, stack) {
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        severity: ErrorSeverity.error,
+        message: 'Error al mover notas fuera del notebook',
+        stackTrace: stack,
+      );
+    }
+  }
+
+  /// Sync notebook to Firebase
+  Future<void> syncNotebookToCloud(Notebook notebook, String userId) async {
+    final syncEnabled = await isCloudSyncEnabled();
+    if (!syncEnabled) {
+      return;
+    }
+
+    if (!_firebaseAvailable || firestore == null) {
+      debugPrint('Firebase no configurado, notebook guardado solo localmente');
+      return;
+    }
+
+    if (userId.isEmpty) {
+      return;
+    }
+
+    try {
+      await _syncNotebookWithRetry(notebook, userId);
+    } catch (e, stack) {
+      _errorHandler.handle(
+        e,
+        type: ErrorType.network,
+        severity: ErrorSeverity.warning,
+        message: 'Error al sincronizar notebook con Firebase',
+        userMessage: 'Se sincronizara cuando haya conexion',
+        stackTrace: stack,
+      );
+      await _addNotebookToSyncQueue(notebook, userId);
+    }
+  }
+
+  Future<void> _syncNotebookWithRetry(
+    Notebook notebook,
+    String userId, {
+    int retryCount = 0,
+  }) async {
+    final fs = firestore;
+    if (fs == null) return;
+
+    try {
+      final docRef = fs
+          .collection('users')
+          .doc(userId)
+          .collection('notebooks')
+          .doc(notebook.firestoreId.isNotEmpty ? notebook.firestoreId : null);
+
+      if (notebook.firestoreId.isEmpty) {
+        await docRef
+            .set(notebook.toFirestore())
+            .timeout(
+              const Duration(seconds: 10),
+              onTimeout: () => throw TimeoutException('Firebase timeout'),
+            );
+
+        final newFirestoreId = docRef.id;
+
+        if (notebook.isInBox) {
+          notebook.firestoreId = newFirestoreId;
+          await notebook.save();
+        } else {
+          final box = await _notebooks;
+          final existing = box.values.firstWhere(
+            (n) => n.key == notebook.key,
+            orElse: () => notebook,
+          );
+          if (existing.isInBox) {
+            existing.firestoreId = newFirestoreId;
+            await existing.save();
+          }
+        }
+      } else {
+        await docRef
+            .set(notebook.toFirestore(), SetOptions(merge: true))
+            .timeout(
+              const Duration(seconds: 10),
+              onTimeout: () => throw TimeoutException('Firebase timeout'),
+            );
+      }
+    } catch (e) {
+      if (retryCount < _maxRetries) {
+        await Future.delayed(_retryDelay * (retryCount + 1));
+        await _syncNotebookWithRetry(
+          notebook,
+          userId,
+          retryCount: retryCount + 1,
+        );
+      } else {
+        rethrow;
+      }
+    }
+  }
+
+  /// Delete notebook from Firebase
+  Future<void> deleteNotebookFromCloud(
+    String firestoreId,
+    String userId,
+  ) async {
+    final syncEnabled = await isCloudSyncEnabled();
+    if (!syncEnabled) {
+      return;
+    }
+
+    if (!_firebaseAvailable || firestore == null || userId.isEmpty) {
+      return;
+    }
+
+    try {
+      await firestore!
+          .collection('users')
+          .doc(userId)
+          .collection('notebooks')
+          .doc(firestoreId)
+          .delete();
+    } catch (e, stack) {
+      _errorHandler.handle(
+        e,
+        type: ErrorType.network,
+        severity: ErrorSeverity.warning,
+        message: 'Error al eliminar notebook de Firebase',
+        stackTrace: stack,
+      );
+    }
+  }
+
+  /// Add notebook to sync queue
+  Future<void> _addNotebookToSyncQueue(Notebook notebook, String userId) async {
+    try {
+      final box = _notebooksSyncQueueBox!;
+      await box.put(notebook.key, {
+        'notebookKey': notebook.key,
+        'userId': userId,
+        'retryCount': 0,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
+    } catch (e, stack) {
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        severity: ErrorSeverity.error,
+        message: 'Error al agregar notebook a cola de sincronizacion',
+        stackTrace: stack,
+      );
+    }
   }
 
   // ==================== CLOUD TO LOCAL SYNC ====================
@@ -2858,13 +3213,24 @@ class DatabaseService {
 
       // Close all boxes gracefully
       try {
-        if (_taskBox?.isOpen ?? false) await _taskBox!.close();
-        if (_syncQueueBox?.isOpen ?? false) await _syncQueueBox!.close();
-        if (_historyBox?.isOpen ?? false) await _historyBox!.close();
-        if (_notesBox?.isOpen ?? false) await _notesBox!.close();
-        if (_notesSyncQueueBox?.isOpen ?? false)
+        if (_taskBox?.isOpen ?? false) {
+          await _taskBox!.close();
+        }
+        if (_syncQueueBox?.isOpen ?? false) {
+          await _syncQueueBox!.close();
+        }
+        if (_historyBox?.isOpen ?? false) {
+          await _historyBox!.close();
+        }
+        if (_notesBox?.isOpen ?? false) {
+          await _notesBox!.close();
+        }
+        if (_notesSyncQueueBox?.isOpen ?? false) {
           await _notesSyncQueueBox!.close();
-        if (_userPrefsBox?.isOpen ?? false) await _userPrefsBox!.close();
+        }
+        if (_userPrefsBox?.isOpen ?? false) {
+          await _userPrefsBox!.close();
+        }
       } catch (e) {
         debugPrint('[DatabaseService] Error closing boxes: $e');
       }

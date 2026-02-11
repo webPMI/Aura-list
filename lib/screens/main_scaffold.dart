@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/navigation_provider.dart';
+import '../providers/update_provider.dart';
 import '../services/auth_service.dart';
 import '../widgets/navigation/adaptive_navigation.dart';
 import '../widgets/dialogs/task_form_dialog.dart';
 import 'dashboard_screen.dart';
 import 'tasks_screen.dart';
 import 'notes_screen.dart';
+import '../providers/notes_provider.dart';
+import '../widgets/note_editor.dart';
 import 'calendar_screen.dart';
 import 'settings_screen.dart';
 import 'profile_screen.dart';
@@ -25,11 +28,8 @@ class MainScaffold extends ConsumerWidget {
     // Show loading screen while initializing auth
     return authInit.when(
       data: (_) => _buildScaffold(context, ref, selectedRoute),
-      loading: () => const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, stack) {
         // Even if auth fails, show the app (offline mode)
         return _buildScaffold(context, ref, selectedRoute);
@@ -37,10 +37,16 @@ class MainScaffold extends ConsumerWidget {
     );
   }
 
-  Widget _buildScaffold(BuildContext context, WidgetRef ref, AppRoute selectedRoute) {
-    return AdaptiveNavigation(
-      floatingActionButton: _buildFab(context, ref, selectedRoute),
-      child: _buildContent(selectedRoute),
+  Widget _buildScaffold(
+    BuildContext context,
+    WidgetRef ref,
+    AppRoute selectedRoute,
+  ) {
+    return UpdateChecker(
+      child: AdaptiveNavigation(
+        floatingActionButton: _buildFab(context, ref, selectedRoute),
+        child: _buildContent(selectedRoute),
+      ),
     );
   }
 
@@ -97,7 +103,7 @@ class MainScaffold extends ConsumerWidget {
       return FloatingActionButton.extended(
         onPressed: () {
           HapticFeedback.mediumImpact();
-          _navigateToNoteEditor(context, ref);
+          _showNoteEditor(context, ref);
         },
         backgroundColor: colorScheme.tertiary,
         foregroundColor: colorScheme.onTertiary,
@@ -115,15 +121,59 @@ class MainScaffold extends ConsumerWidget {
     String type,
   ) async {
     // Show the task form dialog directly
-    await showTaskFormDialog(
-      context: context,
-      ref: ref,
-      taskType: type,
-    );
+    await showTaskFormDialog(context: context, ref: ref, taskType: type);
   }
 
-  void _navigateToNoteEditor(BuildContext context, WidgetRef ref) {
-    // Navigate to notes screen
-    ref.read(selectedRouteProvider.notifier).state = AppRoute.notes;
+  void _showNoteEditor(BuildContext context, WidgetRef ref) {
+    // Determine which provider to use for adding notes
+    // In NotesScreen it uses independentNotesProvider.notifier
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NoteEditor(
+          onSave:
+              (
+                title,
+                content,
+                color,
+                tags,
+                checklist, {
+                String? richContent,
+                String contentType = 'plain',
+              }) async {
+                try {
+                  await ref
+                      .read(independentNotesProvider.notifier)
+                      .addNote(
+                        title: title,
+                        content: content,
+                        color: color,
+                        tags: tags,
+                        checklist: checklist,
+                        richContent: richContent,
+                        contentType: contentType,
+                      );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Nota creada'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Error al guardar nota'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                }
+              },
+        ),
+      ),
+    );
   }
 }

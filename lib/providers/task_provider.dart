@@ -124,7 +124,9 @@ class TaskNotifier extends StateNotifier<List<Task>> {
         await _db.syncTaskToCloud(newTask, user.uid);
       } else {
         // FIX 5 - Si no hay userId, igual agregar a cola para sincronizar después
-        debugPrint('⚠️ [TaskProvider] Usuario no autenticado, tarea se sincronizará cuando haya auth');
+        debugPrint(
+          '⚠️ [TaskProvider] Usuario no autenticado, tarea se sincronizará cuando haya auth',
+        );
       }
     } catch (e, stack) {
       _errorHandler.handle(
@@ -173,15 +175,13 @@ class TaskNotifier extends StateNotifier<List<Task>> {
       }
 
       // Si aún no se encuentra, buscar por createdAt (identidad local persistente)
-      if (original == null) {
-        original = state.cast<Task?>().firstWhere(
-          (t) =>
-              t != null &&
-              t.createdAt.millisecondsSinceEpoch ==
-                  task.createdAt.millisecondsSinceEpoch,
-          orElse: () => null,
-        );
-      }
+      original ??= state.cast<Task?>().firstWhere(
+        (t) =>
+            t != null &&
+            t.createdAt.millisecondsSinceEpoch ==
+                task.createdAt.millisecondsSinceEpoch,
+        orElse: () => null,
+      );
 
       if (original != null && original.isInBox) {
         // Actualizar la tarea original in-place

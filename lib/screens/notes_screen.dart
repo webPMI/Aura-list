@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/responsive/breakpoints.dart';
+import '../core/utils/color_utils.dart';
 import '../models/note_model.dart';
 import '../providers/notes_provider.dart';
 import '../widgets/notes_list.dart';
@@ -29,34 +30,49 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
       MaterialPageRoute(
         builder: (context) => NoteEditor(
           note: note,
-          onSave: (title, content, color, tags) async {
-            try {
-              if (note == null) {
-                await ref
-                    .read(independentNotesProvider.notifier)
-                    .addNote(
+          onSave:
+              (
+                title,
+                content,
+                color,
+                tags,
+                checklist, {
+                String? richContent,
+                String contentType = 'plain',
+              }) async {
+                try {
+                  if (note == null) {
+                    await ref
+                        .read(independentNotesProvider.notifier)
+                        .addNote(
+                          title: title,
+                          content: content,
+                          color: color,
+                          tags: tags,
+                          checklist: checklist,
+                          richContent: richContent,
+                          contentType: contentType,
+                        );
+                    _showSnackBar('Nota creada');
+                  } else {
+                    final updatedNote = note.copyWith(
                       title: title,
                       content: content,
                       color: color,
                       tags: tags,
+                      checklist: checklist,
+                      richContent: richContent,
+                      contentType: contentType,
                     );
-                _showSnackBar('Nota creada');
-              } else {
-                final updatedNote = note.copyWith(
-                  title: title,
-                  content: content,
-                  color: color,
-                  tags: tags,
-                );
-                await ref
-                    .read(independentNotesProvider.notifier)
-                    .updateNote(updatedNote);
-                _showSnackBar('Nota actualizada');
-              }
-            } catch (e) {
-              _showSnackBar('Error al guardar nota');
-            }
-          },
+                    await ref
+                        .read(independentNotesProvider.notifier)
+                        .updateNote(updatedNote);
+                    _showSnackBar('Nota actualizada');
+                  }
+                } catch (e) {
+                  _showSnackBar('Error al guardar nota');
+                }
+              },
         ),
       ),
     );
@@ -107,14 +123,6 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
             onFeedback: _showSnackBar,
           ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          HapticFeedback.lightImpact();
-          _showNoteEditor();
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('Nueva nota'),
       ),
     );
   }
@@ -248,9 +256,7 @@ class _NoteSearchSheetState extends ConsumerState<_NoteSearchSheet> {
                         width: 12,
                         height: 12,
                         decoration: BoxDecoration(
-                          color: Color(
-                            int.parse(note.color.replaceFirst('#', '0xFF')),
-                          ),
+                          color: ColorUtils.parseHex(note.color),
                           shape: BoxShape.circle,
                           border: Border.all(color: colorScheme.outline),
                         ),
