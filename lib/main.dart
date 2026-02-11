@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -9,9 +11,12 @@ import 'screens/app_router.dart';
 import 'providers/theme_provider.dart';
 import 'services/auth_service.dart';
 import 'services/database_service.dart';
+import 'services/logger_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  final logger = LoggerService();
 
   // Initialize Firebase
   bool firebaseInitialized = false;
@@ -20,10 +25,10 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     firebaseInitialized = true;
-    debugPrint('Firebase inicializado correctamente');
+    logger.info('Main', 'Firebase inicializado correctamente');
   } catch (e) {
-    debugPrint('Error al inicializar Firebase: $e');
-    debugPrint('La aplicación funcionará en modo local únicamente');
+    logger.error('Main', 'Error al inicializar Firebase', error: e);
+    logger.warning('Main', 'La aplicación funcionará en modo local únicamente');
   }
 
   // Initialize Hive for web and theme storage
@@ -32,9 +37,11 @@ void main() async {
   // Initialize date formatting for Spanish
   await initializeDateFormatting('es', null);
 
-  runApp(ProviderScope(
-    child: ChecklistApp(firebaseInitialized: firebaseInitialized),
-  ));
+  runApp(
+    ProviderScope(
+      child: ChecklistApp(firebaseInitialized: firebaseInitialized),
+    ),
+  );
 }
 
 class ChecklistApp extends ConsumerStatefulWidget {
@@ -48,6 +55,7 @@ class ChecklistApp extends ConsumerStatefulWidget {
 
 class _ChecklistAppState extends ConsumerState<ChecklistApp> {
   bool _authInitialized = false;
+  final _logger = LoggerService();
 
   @override
   void initState() {
@@ -73,35 +81,49 @@ class _ChecklistAppState extends ConsumerState<ChecklistApp> {
 
       // Check if Firebase is actually available
       if (!authService.isFirebaseAvailable) {
-        debugPrint('Firebase Auth no disponible - app funcionara en modo local');
+        _logger.info(
+          'AuthInit',
+          'Firebase Auth no disponible - app funcionara en modo local',
+        );
         return;
       }
 
       final currentUser = authService.currentUser;
 
       if (currentUser == null) {
-        debugPrint('No hay usuario autenticado, iniciando sesion anonima...');
+        _logger.info(
+          'AuthInit',
+          'No hay usuario autenticado, iniciando sesion anonima...',
+        );
         final result = await authService.signInAnonymously();
         if (result != null) {
-          debugPrint('Usuario anonimo creado correctamente: ${result.user?.uid}');
+          _logger.info(
+            'AuthInit',
+            'Usuario anonimo creado correctamente: ${result.user?.uid}',
+          );
           // Perform initial sync after new login
           _performInitialSync(result.user?.uid);
         } else {
-          debugPrint('Login anonimo omitido - app funcionara en modo local');
+          _logger.warning(
+            'AuthInit',
+            'Login anonimo omitido - app funcionara en modo local',
+          );
         }
       } else {
-        debugPrint('Usuario ya autenticado: ${currentUser.uid}');
-        if (currentUser.isAnonymous) {
-          debugPrint('(sesion anonima activa)');
-        } else {
-          debugPrint('(cuenta vinculada: ${currentUser.email ?? "sin email"})');
-        }
+        _logger.info(
+          'AuthInit',
+          'Usuario ya autenticado: ${currentUser.uid}',
+          metadata: {
+            'isAnonymous': currentUser.isAnonymous,
+            'email': currentUser.email,
+          },
+        );
         // Perform sync for existing user
         _performInitialSync(currentUser.uid);
       }
     } catch (e) {
-      debugPrint('Error al inicializar autenticacion: $e');
-      debugPrint('La app continuara en modo local');
+      _logger.error('AuthInit', 'Error al inicializar autenticacion', error: e);
+      _logger.info('AuthInit', 'La app continuara en modo local');
     }
   }
 
@@ -116,17 +138,23 @@ class _ChecklistAppState extends ConsumerState<ChecklistApp> {
       // Check if cloud sync is enabled before attempting sync
       final syncEnabled = await dbService.isCloudSyncEnabled();
       if (!syncEnabled) {
-        debugPrint('Cloud sync deshabilitado - app funcionara en modo local');
+        _logger.info(
+          'Sync',
+          'Cloud sync deshabilitado - app funcionara en modo local',
+        );
         return;
       }
 
-      debugPrint('Iniciando sincronizacion inicial con Firebase...');
+      _logger.info('Sync', 'Iniciando sincronizacion inicial con Firebase...');
       final result = await dbService.performFullSync(userId);
       if (result.hasChanges) {
-        debugPrint('Sincronizacion completada: ${result.totalDownloaded} elementos descargados');
+        _logger.info(
+          'Sync',
+          'Sincronizacion completada: ${result.totalDownloaded} elementos descargados',
+        );
       }
     } catch (e) {
-      debugPrint('Error en sincronizacion inicial: $e');
+      _logger.error('Sync', 'Error en sincronizacion inicial', error: e);
       // No propagamos el error - la app funciona sin sync
     }
   }
@@ -139,6 +167,13 @@ class _ChecklistAppState extends ConsumerState<ChecklistApp> {
       title: 'AuraList',
       debugShowCheckedModeBanner: false,
       themeMode: themeMode,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        FlutterQuillLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('en', ''), Locale('es', '')],
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
