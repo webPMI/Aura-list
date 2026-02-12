@@ -206,15 +206,52 @@ class _LoggedInCard extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    // Guia celestial
+                    // Guia celestial con indicador de afinidad
                     if (activeGuide != null)
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: GestureDetector(
-                          onTap: () => showGuideSelectorSheet(context),
-                          child: Tooltip(
-                            message: activeGuide.name,
-                            child: const GuideAvatar(size: 36, showBorder: true),
+                          onTap: () {
+                            // Mostrar detalles de afinidad al tocar
+                            ref.read(guideAffinityProvider(activeGuide.id).future).then((affinity) {
+                              if (context.mounted) {
+                                showAffinityDetailsDialog(context, activeGuide, affinity);
+                              }
+                            });
+                          },
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Tooltip(
+                                message: activeGuide.name,
+                                child: const GuideAvatar(size: 36, showBorder: true),
+                              ),
+                              const SizedBox(height: 2),
+                              // Indicador compacto de nivel
+                              Consumer(
+                                builder: (context, ref, child) {
+                                  final affinityAsync = ref.watch(guideAffinityProvider(activeGuide.id));
+                                  return affinityAsync.when(
+                                    data: (affinity) {
+                                      final level = affinity?.connectionLevel ?? 0;
+                                      return Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: List.generate(
+                                          5,
+                                          (i) => Icon(
+                                            i < level ? Icons.star : Icons.star_border,
+                                            size: 8,
+                                            color: Colors.white.withValues(alpha: 0.9),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    loading: () => const SizedBox.shrink(),
+                                    error: (_, __) => const SizedBox.shrink(),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                         ),
                       )

@@ -47,6 +47,7 @@ class SettingsScreen extends ConsumerWidget {
               // Appearance Section
               _SectionHeader('Apariencia'),
               const _GuideCelestialTile(),
+              const _AchievementsTile(),
               ListTile(
                 leading: const Icon(Icons.palette_outlined),
                 title: const Text('Tema'),
@@ -270,6 +271,31 @@ class _GuideCelestialTile extends ConsumerWidget {
       ),
       trailing: const Icon(Icons.chevron_right),
       onTap: () => showGuideSelectorSheet(context),
+    );
+  }
+}
+
+class _AchievementsTile extends ConsumerWidget {
+  const _AchievementsTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final earnedCount = ref.watch(earnedAchievementsProvider).length;
+    final totalCount = ref.watch(guideAchievementsProvider).length;
+
+    return ListTile(
+      leading: const Icon(Icons.emoji_events_outlined),
+      title: const Text('Logros obtenidos'),
+      subtitle: Text(
+        totalCount > 0
+            ? '$earnedCount/$totalCount logros desbloqueados'
+            : 'Selecciona un guia para ver logros',
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const AchievementsScreen()),
+      ),
     );
   }
 }

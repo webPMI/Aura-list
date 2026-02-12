@@ -16,12 +16,46 @@ import '../widgets/note_editor.dart';
 import 'calendar_screen.dart';
 import 'settings_screen.dart';
 import 'profile_screen.dart';
+import '../features/guides/providers/guide_onboarding_provider.dart';
+import '../features/guides/widgets/guide_intro_modal.dart';
 
-class MainScaffold extends ConsumerWidget {
+class MainScaffold extends ConsumerStatefulWidget {
   const MainScaffold({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MainScaffold> createState() => _MainScaffoldState();
+}
+
+class _MainScaffoldState extends ConsumerState<MainScaffold> {
+  bool _hasCheckedIntro = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Check if we should show the guide intro modal after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndShowGuideIntro();
+    });
+  }
+
+  Future<void> _checkAndShowGuideIntro() async {
+    if (_hasCheckedIntro || !mounted) return;
+    _hasCheckedIntro = true;
+
+    // Wait for the shouldShowGuideIntroProvider to resolve
+    final shouldShow = await ref.read(shouldShowGuideIntroProvider.future);
+
+    if (shouldShow && mounted) {
+      // Wait a bit for the UI to settle
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        showGuideIntroModal(context, ref);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Watch the auth initialization provider to ensure anonymous sign-in happens
     final authInit = ref.watch(authInitializationProvider);
 
@@ -52,9 +86,8 @@ class MainScaffold extends ConsumerWidget {
               floatingActionButton: _buildFab(context, ref, selectedRoute),
               child: _buildContent(selectedRoute),
             ),
-            // Greeting overlay - solo visible en dashboard
-            if (selectedRoute == AppRoute.dashboard)
-              const GuideGreetingWidget(),
+            // Greeting overlay - visible en cualquier pantalla al abrir la app
+            const GuideGreetingWidget(),
           ],
         ),
       ),

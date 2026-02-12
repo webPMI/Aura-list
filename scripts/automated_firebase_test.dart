@@ -4,6 +4,7 @@
 /// It uses Firebase REST APIs to create test users and verify sync operations.
 ///
 /// Usage: dart run scripts/automated_firebase_test.dart
+library;
 
 import 'dart:convert';
 import 'dart:io';

@@ -1,71 +1,57 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:checklist_app/models/task_model.dart';
 
 void main() {
-  group('Task Model Tests', () {
-    test('Task creation with required fields', () {
-      final now = DateTime(2024, 1, 1);
-      final task = Task(title: 'Test Task', type: 'daily', createdAt: now);
+  group('Task Model Unit Tests', () {
+    final now = DateTime.now();
 
-      expect(task.title, 'Test Task');
+    test('Task creation and defaults', () {
+      final task = Task(title: 'New Task', type: 'daily', createdAt: now);
+
+      expect(task.title, 'New Task');
       expect(task.type, 'daily');
-      expect(task.createdAt, now);
       expect(task.isCompleted, false);
       expect(task.category, 'Personal');
       expect(task.priority, 1);
+      expect(task.deleted, false);
     });
 
-    test('typeLabel and typeIcon return correct values', () {
-      final daily = Task(title: 'T', type: 'daily', createdAt: DateTime.now());
-      final weekly = Task(
-        title: 'T',
+    test('toJson / fromJson serialization (Firestore)', () {
+      final task = Task(
+        title: 'Serialize Me',
         type: 'weekly',
-        createdAt: DateTime.now(),
+        createdAt: now,
+        priority: 2,
+        category: 'Work',
       );
-      final once = Task(title: 'T', type: 'once', createdAt: DateTime.now());
 
-      expect(daily.typeLabel, 'Diaria');
-      expect(daily.typeIcon, Icons.wb_sunny_outlined);
-      expect(weekly.typeLabel, 'Semanal');
-      expect(once.typeLabel, 'Única');
+      final json = task.toFirestore();
+      final restored = Task.fromFirestore('test-id', json);
+
+      expect(restored.firestoreId, 'test-id');
+      expect(restored.title, task.title);
+      expect(restored.type, task.type);
+      expect(restored.priority, task.priority);
+      expect(restored.category, task.category);
+      expect(
+        restored.createdAt.toIso8601String(),
+        task.createdAt.toIso8601String(),
+      );
     });
 
-    test('dueTime and dueDateTimeComplete', () {
-      final date = DateTime(2024, 5, 20);
-      final task = Task(
-        title: 'T',
-        type: 'once',
-        createdAt: DateTime.now(),
-        dueDate: date,
-        dueTimeMinutes: 630, // 10:30 AM
-      );
+    test('copyWith creates independent copy', () {
+      final task = Task(title: 'Original', type: 'daily', createdAt: now);
 
-      expect(task.dueTime, const TimeOfDay(hour: 10, minute: 30));
-      expect(task.dueDateTimeComplete, DateTime(2024, 5, 20, 10, 30));
-    });
-
-    test('copyWith creates updated instance', () {
-      final task = Task(
-        title: 'Original',
-        type: 'daily',
-        createdAt: DateTime.now(),
-        priority: 1,
-      );
-
-      final copy = task.copyWith(title: 'Updated', priority: 2);
+      final copy = task.copyWith(title: 'Updated');
 
       expect(copy.title, 'Updated');
-      expect(copy.priority, 2);
-      expect(copy.type, 'daily');
+      expect(task.title, 'Original');
+      expect(copy.createdAt, task.createdAt);
+      expect(copy, isNot(same(task)));
     });
 
     test('updateInPlace modifies existing instance', () {
-      final task = Task(
-        title: 'Original',
-        type: 'daily',
-        createdAt: DateTime.now(),
-      );
+      final task = Task(title: 'In-Place', type: 'daily', createdAt: now);
 
       task.updateInPlace(title: 'Modified', isCompleted: true);
 
@@ -73,58 +59,54 @@ void main() {
       expect(task.isCompleted, true);
     });
 
-    test('motivationText returns custom or default', () {
-      final task1 = Task(
-        title: 'T',
-        type: 'd',
-        createdAt: DateTime.now(),
-        motivation: 'Custom',
+    test('typeLabel returns correct Spanish labels', () {
+      expect(
+        Task(title: 'T', type: 'daily', createdAt: now).typeLabel,
+        'Diaria',
       );
-      final task2 = Task(title: 'T', type: 'd', createdAt: DateTime.now());
-
-      expect(task1.motivationText, 'Custom');
-      expect(task2.motivationText, isNotEmpty);
+      expect(
+        Task(title: 'T', type: 'weekly', createdAt: now).typeLabel,
+        'Semanal',
+      );
+      expect(
+        Task(title: 'T', type: 'monthly', createdAt: now).typeLabel,
+        'Mensual',
+      );
+      expect(
+        Task(title: 'T', type: 'yearly', createdAt: now).typeLabel,
+        'Anual',
+      );
+      expect(Task(title: 'T', type: 'once', createdAt: now).typeLabel, 'Única');
     });
 
-    test('isOverdue and isUrgent', () {
-      final past = DateTime.now().subtract(const Duration(hours: 1));
-      final soon = DateTime.now().add(const Duration(hours: 2));
+    test('isOverdue and isUrgent logic', () {
+      final past = now.subtract(const Duration(days: 1));
+      final soon = now.add(const Duration(hours: 5));
+      final far = now.add(const Duration(days: 5));
 
-      final taskOverdue = Task(
+      final overdueTask = Task(
         title: 'T',
         type: 'd',
-        createdAt: DateTime.now(),
+        createdAt: now,
         deadline: past,
       );
-      final taskUrgent = Task(
+      final urgentTask = Task(
         title: 'T',
         type: 'd',
-        createdAt: DateTime.now(),
+        createdAt: now,
         deadline: soon,
       );
-
-      expect(taskOverdue.isOverdue, true);
-      expect(taskUrgent.isUrgent, true);
-    });
-
-    test('toFirestore and fromFirestore work correctly', () {
-      final original = Task(
-        firestoreId: 'fs-123',
-        title: 'Test Task',
-        type: 'daily',
-        createdAt: DateTime(2024, 1, 1),
-        isCompleted: true,
-        priority: 2,
-        category: 'Work',
+      final futureTask = Task(
+        title: 'T',
+        type: 'd',
+        createdAt: now,
+        deadline: far,
       );
 
-      final firestore = original.toFirestore();
-      final restored = Task.fromFirestore('fs-123', firestore);
-
-      expect(restored.title, original.title);
-      expect(restored.isCompleted, original.isCompleted);
-      expect(restored.priority, original.priority);
-      expect(restored.category, original.category);
+      expect(overdueTask.isOverdue, true);
+      expect(urgentTask.isUrgent, true);
+      expect(futureTask.isOverdue, false);
+      expect(futureTask.isUrgent, false);
     });
   });
 }

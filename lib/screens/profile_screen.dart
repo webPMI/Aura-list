@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/responsive/breakpoints.dart';
+import '../core/utils/color_utils.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
 import '../core/constants/legal/terms_of_service.dart';
@@ -9,6 +10,7 @@ import '../providers/task_provider.dart';
 import '../widgets/navigation/drawer_menu_button.dart';
 import '../widgets/auth/auth_action_sheet.dart';
 import '../widgets/auth/sync_toggle_tile.dart';
+import '../features/guides/guides.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -43,6 +45,12 @@ class ProfileScreen extends ConsumerWidget {
               // Statistics Section
               _SectionHeader('Tus Estadisticas'),
               _UserStatistics(),
+
+              const Divider(),
+
+              // Guide Section
+              _SectionHeader('Tu Guia Celestial'),
+              const _GuideAffinitySection(),
 
               const Divider(),
 
@@ -780,6 +788,271 @@ class _TypeRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Seccion de estadísticas del guía celestial activo.
+/// Muestra avatar, nivel de afinidad y botones de acción.
+class _GuideAffinitySection extends ConsumerWidget {
+  const _GuideAffinitySection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final guide = ref.watch(activeGuideProvider);
+
+    if (guide == null) {
+      return _buildNoGuideCard(context, ref);
+    }
+
+    return _buildGuideCard(context, ref, guide);
+  }
+
+  Widget _buildNoGuideCard(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Card(
+        elevation: 0,
+        color: colorScheme.surfaceContainerHighest,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Icon(
+                Icons.auto_awesome,
+                size: 48,
+                color: colorScheme.onSurface.withValues(alpha: 0.4),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Sin guia activo',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Elige un guia celestial para acompanarte en tus tareas',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: () => showGuideSelectorSheet(context),
+                icon: const Icon(Icons.person_search),
+                label: const Text('Elegir guia'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGuideCard(BuildContext context, WidgetRef ref, Guide guide) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final guideColor =
+        parseHexColor(guide.themeAccentHex ?? guide.themePrimaryHex) ??
+            colorScheme.primary;
+    final affinityAsync = ref.watch(guideAffinityProvider(guide.id));
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              guideColor.withValues(alpha: 0.12),
+              colorScheme.surfaceContainerHighest,
+            ],
+          ),
+          border: Border.all(
+            color: guideColor.withValues(alpha: 0.3),
+            width: 1.5,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header: avatar + nombre + titulo
+              Row(
+                children: [
+                  GuideAvatar(guide: guide, size: 48, showBorder: true),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          guide.name,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: guideColor,
+                          ),
+                        ),
+                        if (guide.title.isNotEmpty)
+                          Text(
+                            guide.title,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colorScheme.onSurface
+                                  .withValues(alpha: 0.6),
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Indicador de nivel de afinidad (large)
+              AffinityLevelIndicator(
+                guide: guide,
+                size: AffinityIndicatorSize.large,
+                showLabel: true,
+                showProgress: true,
+              ),
+
+              // Mensaje motivacional si la afinidad es >= nivel 3
+              affinityAsync.when(
+                data: (affinity) {
+                  if (affinity != null && affinity.connectionLevel >= 3) {
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: guideColor.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.format_quote,
+                              size: 16,
+                              color: guideColor.withValues(alpha: 0.7),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _getMotivationalMessage(
+                                  guide,
+                                  affinity.connectionLevel,
+                                ),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontStyle: FontStyle.italic,
+                                  color: colorScheme.onSurface
+                                      .withValues(alpha: 0.8),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Botones de accion
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => showGuideSelectorSheet(context),
+                      icon: Icon(
+                        Icons.swap_horiz,
+                        size: 18,
+                        color: guideColor,
+                      ),
+                      label: Text(
+                        'Cambiar guia',
+                        style: TextStyle(color: guideColor),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                            color: guideColor.withValues(alpha: 0.5)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _showAchievementsGallery(context),
+                      icon: Icon(
+                        Icons.emoji_events_outlined,
+                        size: 18,
+                        color: guideColor,
+                      ),
+                      label: Text(
+                        'Ver logros',
+                        style: TextStyle(color: guideColor),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                            color: guideColor.withValues(alpha: 0.5)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getMotivationalMessage(Guide guide, int level) {
+    // Mensajes motivacionales dependiendo del nivel de afinidad
+    switch (level) {
+      case 3:
+        return '"Confias en mi guia. Sigamos adelante juntos."';
+      case 4:
+        return '"Nuestro vinculo es fuerte. Lo que empieces, lo terminas."';
+      case 5:
+        return '"Somos uno en proposito. Tu exito es mi honor."';
+      default:
+        return '"Cada tarea cumplida nos acerca mas."';
+    }
+  }
+
+  void _showAchievementsGallery(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.75,
+        maxChildSize: 0.95,
+        minChildSize: 0.4,
+        builder: (_, scrollController) => const AchievementsGalleryWidget(),
       ),
     );
   }

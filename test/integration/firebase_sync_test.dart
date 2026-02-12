@@ -13,6 +13,7 @@
 /// To run against real Firebase (requires credentials):
 /// Set environment variable: FIREBASE_TEST_MODE=real
 /// flutter test test/integration/firebase_sync_test.dart
+library;
 
 import 'dart:convert';
 import 'dart:io';

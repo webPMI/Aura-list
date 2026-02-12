@@ -9,6 +9,7 @@ import '../models/note_model.dart';
 import '../models/notebook_model.dart';
 import '../models/user_preferences.dart';
 import '../models/sync_metadata.dart';
+import '../models/guide_achievement_model.dart';
 import '../core/cache/cache_policy.dart';
 import 'error_handler.dart';
 import 'hive_integrity_checker.dart';
@@ -144,6 +145,9 @@ class DatabaseService {
       }
       if (!Hive.isAdapterRegistered(7)) {
         Hive.registerAdapter(ChecklistItemAdapter());
+      }
+      if (!Hive.isAdapterRegistered(13)) {
+        Hive.registerAdapter(GuideAchievementAdapter());
       }
 
       // Open boxes safely - check if already open first
@@ -2526,10 +2530,162 @@ class DatabaseService {
     await _processNotesSyncQueue();
   }
 
-  /// Force sync all pending items (tasks + notes)
+  /// Force sync all pending items (tasks + notes + notebooks)
   Future<void> forceSyncAll() async {
     await _processSyncQueue();
     await _processNotesSyncQueue();
+    await _processNotebooksSyncQueue();
+  }
+
+  /// Process notebooks sync queue with retry logic
+  Future<void> _processNotebooksSyncQueue() async {
+    // Check if cloud sync is enabled
+    final syncEnabled = await isCloudSyncEnabled();
+    if (!syncEnabled) {
+      _logger.debug(
+        'Service',
+        '⚠️ [SYNC QUEUE] Cloud sync deshabilitado, saltando cola de notebooks',
+      );
+      return;
+    }
+
+    try {
+      final queue = _notebooksSyncQueueBox;
+      if (queue == null || queue.isEmpty) return;
+
+      _logger.debug(
+        'Service',
+        '🔄 [SYNC QUEUE] Procesando ${queue.length} notebooks pendientes',
+      );
+
+      final notebookBox = await _notebooks;
+      final keysToRemove = <dynamic>[];
+      final keysToUpdate = <dynamic, Map<String, dynamic>>{};
+      final now = DateTime.now();
+
+      for (var entry in queue.toMap().entries) {
+        try {
+          final data = Map<String, dynamic>.from(entry.value);
+          final notebookKey = data['notebookKey'];
+          final userId = data['userId'] as String;
+          final retryCount = data['retryCount'] as int? ?? 0;
+          final lastRetryAt = data['lastRetryAt'] as String?;
+          final timestamp = data['timestamp'] as String?;
+
+          // Verificar si el item es muy viejo (mas de 7 dias)
+          if (timestamp != null) {
+            final age = now.difference(DateTime.parse(timestamp));
+            if (age.inDays > 7) {
+              _logger.debug(
+                'Service',
+                '🗑️ [SYNC QUEUE] Notebook muy viejo, eliminando de cola',
+              );
+              keysToRemove.add(entry.key);
+              continue;
+            }
+          }
+
+          // Verificar si excede máximo de reintentos
+          if (retryCount >= _maxRetries) {
+            _logger.debug(
+              'Service',
+              '❌ [SYNC QUEUE] Notebook excede max reintentos ($_maxRetries), moviendo a dead-letter',
+            );
+            // TODO: Move to dead-letter queue when SyncOrchestrator is integrated
+            keysToRemove.add(entry.key);
+            continue;
+          }
+
+          // Implementar backoff exponencial
+          if (lastRetryAt != null && retryCount > 0) {
+            final lastRetryTime = DateTime.parse(lastRetryAt);
+            final timeSinceLastRetry = now.difference(lastRetryTime);
+            final backoffDelay = Duration(seconds: 2 * (1 << retryCount));
+            if (timeSinceLastRetry < backoffDelay) {
+              continue; // Saltar, todavía en backoff
+            }
+          }
+
+          // Buscar notebook en Hive
+          final notebook = notebookBox.get(notebookKey);
+
+          if (notebook == null) {
+            _logger.debug(
+              'Service',
+              '⚠️ [SYNC QUEUE] Notebook no encontrado localmente, eliminando de cola',
+            );
+            keysToRemove.add(entry.key);
+            continue;
+          }
+
+          // Intentar sincronizar
+          try {
+            await _syncNotebookWithRetry(notebook, userId);
+            keysToRemove.add(entry.key);
+            _logger.debug(
+              'Service',
+              '✅ [SYNC QUEUE] Notebook "${notebook.name}" sincronizado desde cola',
+            );
+          } catch (e) {
+            _logger.debug(
+              'Service',
+              '❌ [SYNC QUEUE] Error al sincronizar notebook (intento ${retryCount + 1}/$_maxRetries): $e',
+            );
+            keysToUpdate[entry.key] = {
+              'notebookKey': notebookKey,
+              'userId': userId,
+              'timestamp': timestamp ?? now.toIso8601String(),
+              'retryCount': retryCount + 1,
+              'lastRetryAt': now.toIso8601String(),
+            };
+          }
+        } catch (e) {
+          _logger.debug(
+            'Service',
+            '❌ [SYNC QUEUE] Error inesperado al procesar notebook: $e',
+          );
+        }
+      }
+
+      // Eliminar items procesados
+      for (var key in keysToRemove) {
+        await queue.delete(key);
+      }
+
+      // Actualizar items para retry
+      for (var entry in keysToUpdate.entries) {
+        await queue.put(entry.key, entry.value);
+      }
+
+      if (keysToRemove.isNotEmpty) {
+        _logger.debug(
+          'Service',
+          '✅ [SYNC QUEUE] ${keysToRemove.length} notebooks procesados',
+        );
+      }
+    } catch (e, stack) {
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        severity: ErrorSeverity.error,
+        message: 'Error al procesar cola de sincronizacion de notebooks',
+        stackTrace: stack,
+      );
+    }
+  }
+
+  /// Force sync pending notebooks manually
+  Future<void> forceSyncPendingNotebooks() async {
+    await _processNotebooksSyncQueue();
+  }
+
+  /// Get pending notebooks sync count
+  Future<int> getPendingNotebooksSyncCount() async {
+    try {
+      return _notebooksSyncQueueBox?.length ?? 0;
+    } catch (e) {
+      return 0;
+    }
   }
 
   // ==================== NOTEBOOKS ====================
@@ -3027,13 +3183,87 @@ class DatabaseService {
         errors++;
       }
 
+      // Sync notebooks from Firestore
+      int notebooksDownloaded = 0;
+      try {
+        final notebooksSnapshot = await userDoc
+            .collection('notebooks')
+            .get()
+            .timeout(
+              const Duration(seconds: 30),
+              onTimeout: () => throw TimeoutException('Firebase timeout'),
+            );
+
+        _logger.debug(
+          'Service',
+          '📥 [SYNC] Encontrados ${notebooksSnapshot.docs.length} notebooks en Firebase',
+        );
+
+        final notebookBox = await _notebooks;
+
+        for (final doc in notebooksSnapshot.docs) {
+          try {
+            final cloudNotebook = Notebook.fromFirestore(doc.id, doc.data());
+
+            // Check if notebook exists locally by firestoreId
+            final existingNotebook = notebookBox.values.cast<Notebook?>().firstWhere(
+              (n) => n?.firestoreId == doc.id,
+              orElse: () => null,
+            );
+
+            if (existingNotebook != null) {
+              // Notebook exists locally - check which is newer
+              final localUpdated = existingNotebook.updatedAt;
+              final cloudUpdated = cloudNotebook.updatedAt;
+
+              if (cloudUpdated.isAfter(localUpdated)) {
+                // Cloud is newer - update local
+                existingNotebook.name = cloudNotebook.name;
+                existingNotebook.icon = cloudNotebook.icon;
+                existingNotebook.color = cloudNotebook.color;
+                existingNotebook.isFavorited = cloudNotebook.isFavorited;
+                existingNotebook.parentId = cloudNotebook.parentId;
+                existingNotebook.updatedAt = cloudNotebook.updatedAt;
+                await existingNotebook.save();
+                notebooksDownloaded++;
+                _logger.debug(
+                  'Service',
+                  '📥 [SYNC] Notebook actualizado: "${cloudNotebook.name}"',
+                );
+              }
+            } else {
+              // Notebook doesn't exist locally - add it
+              await notebookBox.add(cloudNotebook);
+              notebooksDownloaded++;
+              _logger.debug(
+                'Service',
+                '📥 [SYNC] Notebook nuevo descargado: "${cloudNotebook.name}"',
+              );
+            }
+          } catch (e) {
+            _logger.debug(
+              'Service',
+              '❌ [SYNC] Error procesando notebook ${doc.id}: $e',
+            );
+            errors++;
+          }
+        }
+      } catch (e) {
+        _logger.debug(
+          'Service',
+          '❌ [SYNC] Error al obtener notebooks de Firebase: $e',
+        );
+        errors++;
+      }
+
       // Update collection sync timestamp
       updateCollectionSync('tasks');
       updateCollectionSync('notes');
+      updateCollectionSync('notebooks');
 
       _logger.debug(
         'Service',
-        '✅ [SYNC] Sync desde nube completado: $tasksDownloaded tareas, $notesDownloaded notas, $errors errores',
+        '✅ [SYNC] Sync desde nube completado: $tasksDownloaded tareas, $notesDownloaded notas, $notebooksDownloaded notebooks, $errors errores',
       );
     } catch (e, stack) {
       _errorHandler.handle(
@@ -3140,6 +3370,29 @@ class DatabaseService {
             _logger.debug(
               'Service',
               '❌ [SYNC] Error sincronizando nota local: $e',
+            );
+          }
+        }
+      }
+
+      // Find and sync notebooks without firestoreId
+      final notebookBox = await _notebooks;
+      final localOnlyNotebooks = notebookBox.values
+          .where((n) => n.firestoreId.isEmpty)
+          .toList();
+
+      if (localOnlyNotebooks.isNotEmpty) {
+        _logger.debug(
+          'Service',
+          '📤 [SYNC] Sincronizando ${localOnlyNotebooks.length} notebooks locales',
+        );
+        for (final notebook in localOnlyNotebooks) {
+          try {
+            await syncNotebookToCloud(notebook, userId);
+          } catch (e) {
+            _logger.debug(
+              'Service',
+              '❌ [SYNC] Error sincronizando notebook local: $e',
             );
           }
         }

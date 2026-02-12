@@ -41,6 +41,7 @@ class SyncState {
   final SyncStatus status;
   final int pendingTasksCount;
   final int pendingNotesCount;
+  final int pendingNotebooksCount;
   final DateTime? lastSyncTime;
   final String? errorMessage;
 
@@ -48,12 +49,14 @@ class SyncState {
     this.status = SyncStatus.idle,
     this.pendingTasksCount = 0,
     this.pendingNotesCount = 0,
+    this.pendingNotebooksCount = 0,
     this.lastSyncTime,
     this.errorMessage,
   });
 
   /// Total number of pending items
-  int get totalPendingCount => pendingTasksCount + pendingNotesCount;
+  int get totalPendingCount =>
+      pendingTasksCount + pendingNotesCount + pendingNotebooksCount;
 
   /// Whether there are any pending changes
   bool get hasPendingChanges => totalPendingCount > 0;
@@ -69,6 +72,7 @@ class SyncState {
     SyncStatus? status,
     int? pendingTasksCount,
     int? pendingNotesCount,
+    int? pendingNotebooksCount,
     DateTime? lastSyncTime,
     String? errorMessage,
   }) {
@@ -76,6 +80,7 @@ class SyncState {
       status: status ?? this.status,
       pendingTasksCount: pendingTasksCount ?? this.pendingTasksCount,
       pendingNotesCount: pendingNotesCount ?? this.pendingNotesCount,
+      pendingNotebooksCount: pendingNotebooksCount ?? this.pendingNotebooksCount,
       lastSyncTime: lastSyncTime ?? this.lastSyncTime,
       errorMessage: errorMessage,
     );
@@ -247,10 +252,12 @@ class SyncWatcher {
     try {
       final tasksCount = await _database.getPendingSyncCount();
       final notesCount = await _database.getPendingNotesSyncCount();
+      final notebooksCount = await _database.getPendingNotebooksSyncCount();
 
       _updateState(_currentState.copyWith(
         pendingTasksCount: tasksCount,
         pendingNotesCount: notesCount,
+        pendingNotebooksCount: notebooksCount,
       ));
     } catch (e) {
       _logger.debug('Service', '[SyncWatcher] Error getting pending count: $e');

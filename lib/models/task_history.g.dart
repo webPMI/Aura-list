@@ -21,13 +21,17 @@ class TaskHistoryAdapter extends TypeAdapter<TaskHistory> {
       date: fields[1] as DateTime,
       wasCompleted: fields[2] as bool,
       completedAt: fields[3] as DateTime?,
+      firestoreId: fields[4] as String?,
+      lastUpdatedAt: fields[5] as DateTime?,
+      deleted: fields[6] as bool,
+      deletedAt: fields[7] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, TaskHistory obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.taskId)
       ..writeByte(1)
@@ -35,7 +39,15 @@ class TaskHistoryAdapter extends TypeAdapter<TaskHistory> {
       ..writeByte(2)
       ..write(obj.wasCompleted)
       ..writeByte(3)
-      ..write(obj.completedAt);
+      ..write(obj.completedAt)
+      ..writeByte(4)
+      ..write(obj.firestoreId)
+      ..writeByte(5)
+      ..write(obj.lastUpdatedAt)
+      ..writeByte(6)
+      ..write(obj.deleted)
+      ..writeByte(7)
+      ..write(obj.deletedAt);
   }
 
   @override

@@ -85,6 +85,67 @@ class TaskTile extends ConsumerWidget {
     return false;
   }
 
+  /// Verifica y muestra logros recien obtenidos.
+  void _checkAndShowAchievements(BuildContext context, WidgetRef ref) async {
+    final activeGuide = ref.read(activeGuideProvider);
+    if (activeGuide == null) return;
+
+    final currentStreak = ref.read(streakProvider).currentStreak;
+
+    // Verificar logros (simplificado - en produccion se necesita mas contexto)
+    final newAchievements = await ref
+        .read(guideAchievementsProvider.notifier)
+        .checkAndAwardAchievements(
+          activeGuideId: activeGuide.id,
+          lastCompletedTask: task,
+          currentStreak: currentStreak,
+          totalTasksCompletedToday: 0, // TODO: obtener del provider de stats
+          totalTasksWithGuide: 0, // TODO: obtener del provider de affinity
+          categoriesCompletedToday: {}, // TODO: obtener del provider de stats
+          totalRecurrentTasks: 0, // TODO: obtener del provider de tasks
+          allTasksCompleted: false, // TODO: verificar si todas las tareas estan completadas
+          daysWithGuide: 0, // TODO: obtener del provider de affinity
+        );
+
+    // Mostrar logros obtenidos con delay para no solaparse
+    if (newAchievements.isNotEmpty && context.mounted) {
+      Future.delayed(const Duration(milliseconds: 1200), () {
+        if (context.mounted) {
+          for (final achievement in newAchievements) {
+            AchievementEarnedWidget.show(context, achievement);
+          }
+        }
+      });
+    }
+  }
+
+  /// Incrementa el contador de afinidad con el guia activo.
+  /// Muestra el modal de subida de nivel si corresponde.
+  void _incrementGuideAffinity(BuildContext context, WidgetRef ref) async {
+    try {
+      final newLevel = await ref.read(incrementTaskCountProvider)();
+      if (newLevel != null && context.mounted) {
+        // Subio de nivel - mostrar celebracion especial
+        final guide = ref.read(activeGuideProvider);
+        if (guide != null) {
+          // Delay para no solaparse con otras celebraciones
+          // (bendicion ~400ms, racha ~800ms, logros ~1200ms)
+          Future.delayed(const Duration(milliseconds: 1600), () {
+            if (context.mounted) {
+              AffinityLevelUpWidget.show(
+                context,
+                newLevel: newLevel,
+                guide: guide,
+              );
+            }
+          });
+        }
+      }
+    } catch (e) {
+      // Silently fail - no queremos interrumpir el flujo del usuario
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -177,6 +238,10 @@ class TaskTile extends ConsumerWidget {
                   _checkAndShowBlessingFeedback(context, ref);
                   // Verificar y actualizar racha de dias
                   _checkAndShowStreakCelebration(context, ref);
+                  // Incrementar contador de afinidad con el guia activo
+                  _incrementGuideAffinity(context, ref);
+                  // Verificar y mostrar logros obtenidos
+                  _checkAndShowAchievements(context, ref);
                 }
                 onFeedback?.call('Tarea completada');
               } else {
@@ -269,6 +334,12 @@ class TaskTile extends ConsumerWidget {
                         _showCelebrationOverlay(context, ref);
                         // Verificar y mostrar bendicion si hay guia activo
                         _checkAndShowBlessingFeedback(context, ref);
+                        // Verificar y actualizar racha de dias
+                        _checkAndShowStreakCelebration(context, ref);
+                        // Incrementar contador de afinidad con el guia activo
+                        _incrementGuideAffinity(context, ref);
+                        // Verificar y mostrar logros obtenidos
+                        _checkAndShowAchievements(context, ref);
                       }
                       onFeedback?.call('Tarea completada');
                     } else {

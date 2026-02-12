@@ -1,5 +1,32 @@
 # Personajes Misticos - Plan de Trabajo
 
+## Índice de Documentación
+
+### Documentos Principales
+- **[00-todo.md](00-todo.md)** - Este archivo. Plan de trabajo y notas de sesiones
+- **[RESUMEN_EJECUTIVO.md](RESUMEN_EJECUTIVO.md)** - Resumen ejecutivo del estado del sistema
+- **[GUIA_IMPLEMENTACION.md](GUIA_IMPLEMENTACION.md)** - Guía paso a paso para extender el sistema
+
+### Análisis y Planificación
+- **[ANALISIS_UX_PILARES.md](ANALISIS_UX_PILARES.md)** - Análisis UX y plan de mejora por fases
+- **[VERIFICACION_CONSISTENCIA.md](VERIFICACION_CONSISTENCIA.md)** - Validación de IDs y sinergias
+- **[MEJORAS_FUTURAS.md](MEJORAS_FUTURAS.md)** - Roadmap y recomendaciones detalladas
+
+### Arquitectura Técnica
+- **[ARQUITECTURA_GUIAS_EN_APP.md](ARQUITECTURA_GUIAS_EN_APP.md)** - Diseño de implementación
+- **[lib/features/guides/README.md](../../lib/features/guides/README.md)** - Documentación del feature
+
+### Lore y Diseño
+- **[0-introduction.md](0-introduction.md)** - Introducción al sistema de Guías Celestiales
+- **[consejo-pilares.md](consejo-pilares.md)** - Filosofía y diseño del sistema
+- **[correspondencias-mitologia-astronomia.md](correspondencias-mitologia-astronomia.md)** - Referencias mitológicas
+- **[implementacion-bendiciones.md](implementacion-bendiciones.md)** - Diseño de bendiciones
+
+### Fichas de Personajes (21 implementados)
+1-21: Aethel, Crono-Velo, Luna-Vacía, Helioforja, Leona-Nova, Chispa-Azul, Gloria-Sincro, Pacha-Nexo, Gea-Métrica, Selene-Fase, Viento-Estación, Atlas-Orbital, Érebo-Lógica, Ánima-Suave, Morfeo-Astral, Shiva-Fluido, Loki-Error, Eris-Núcleo, Anubis-Vínculo, Zenit-Cero, Océano-Bit
+
+---
+
 ## Estado Actual
 
 ### Fichas Completadas (21/40) — pausa en personajes; foco en implementación
@@ -125,18 +152,33 @@ Ver documento completo: `ANALISIS_UX_PILARES.md`
 - [x] **Mensajes diferenciados:** Cada guia celebra con su propia voz
 - [x] **Momentos rituales:** Saludo al abrir app, celebracion de racha, despedida
 
-### Fase 3: Conexion Profunda (Prioridad Baja)
+### Fase 3: Conexion Profunda (Prioridad Baja) — PENDIENTE
 - [ ] **Sistema de afinidad:** Modelo GuideAffinity (niveles 0-5)
 - [ ] **Sinergias activas:** Mostrar aliados recomendados
 - [ ] **Logros narrativos:** Titulos otorgados por el guia (sin XP/puntos)
 
-### Fase 4: Onboarding
+**Nota:** Fase 3 tiene requisitos bien definidos en ANALISIS_UX_PILARES.md pero aún no se ha iniciado implementación.
+
+### Fase 4: Onboarding (Prioridad Media) — PENDIENTE
 - [ ] **Intro modal:** Pantalla "Tu Guardian Celestial" con 3 cards
 - [ ] **Welcome screen:** Integrar presentacion de guias
+- [ ] **Tutorial interactivo:** Primera selección de guía con explicación de afinidades
+
+**Nota:** Onboarding es crítico para reducir abandono en primer contacto. Ver ANALISIS_UX_PILARES.md sección "Problemas Críticos".
 
 ---
 
 ## Notas de Sesion
+
+### 2026-02-12 (Sesion 5: Documentacion y Analisis)
+- Analisis completo del sistema de Guias Celestiales
+- Actualizacion de documentacion (00-todo.md, ANALISIS_UX_PILARES.md)
+- Creacion de GUIA_IMPLEMENTACION.md con paso a paso
+- Verificacion de consistencia de synergyIds y blessingIds
+- Informe de mejoras futuras y recomendaciones
+- Estado: 21 guias implementados, Fase 1 y 2 COMPLETADAS, Fase 3 y 4 PENDIENTES
+- Todos los guias tienen voces completas (692 lineas en guide_voice_service.dart)
+- Sistema de rachas y ciclo del dia funcionando correctamente
 
 ### 2026-02-12 (Sesion 4: Implementacion Fase 2 - Momentos Rituales)
 - Fase 2 COMPLETADA: Todos los momentos rituales implementados

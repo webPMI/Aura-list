@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:checklist_app/core/utils/color_utils.dart';
 import 'package:checklist_app/features/guides/providers/active_guide_provider.dart';
 import 'package:checklist_app/features/guides/widgets/guide_avatar.dart';
+import 'package:checklist_app/features/guides/widgets/guide_intro_modal.dart';
+import 'package:checklist_app/features/guides/widgets/affinity_level_indicator.dart';
+import 'package:checklist_app/features/guides/widgets/synergy_allies_widget.dart';
 import 'package:checklist_app/models/guide_model.dart';
+import 'package:checklist_app/services/guide_synergy_service.dart';
 
 /// Orden de las familias para mostrar en el selector.
 const _familyOrder = [
@@ -41,6 +46,7 @@ class _GuideSelectorSheetState extends ConsumerState<_GuideSelectorSheet> {
   Widget build(BuildContext context) {
     final guides = ref.watch(availableGuidesProvider);
     final activeId = ref.watch(activeGuideIdProvider);
+    final activeGuide = ref.watch(activeGuideProvider);
 
     // Agrupar guías por classFamily
     final groupedGuides = <String, List<Guide>>{};
@@ -59,6 +65,11 @@ class _GuideSelectorSheetState extends ConsumerState<_GuideSelectorSheet> {
         final effectiveB = indexB == -1 ? 999 : indexB;
         return effectiveA.compareTo(effectiveB);
       });
+
+    // Obtener aliados con sinergia si hay guía activo
+    final synergyAllies = activeGuide != null
+        ? GuideSynergyService.instance.getRecommendedAllies(activeGuide.id)
+        : <Guide>[];
 
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
@@ -80,17 +91,61 @@ class _GuideSelectorSheetState extends ConsumerState<_GuideSelectorSheet> {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text(
-                'Elige tu guía celestial',
-                style: Theme.of(context).textTheme.titleLarge,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Elige tu guía celestial',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.info_outline),
+                    tooltip: '¿Qué es un Guía Celestial?',
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      // Reabrir el intro modal
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (context.mounted) {
+                          showGuideIntroModal(context, ref);
+                        }
+                      });
+                    },
+                  ),
+                ],
               ),
             ),
             Expanded(
               child: ListView.builder(
                 controller: scrollController,
-                itemCount: sortedFamilies.length,
+                itemCount: sortedFamilies.length + (synergyAllies.isNotEmpty ? 1 : 0),
                 itemBuilder: (context, index) {
-                  final family = sortedFamilies[index];
+                  // Si hay aliados con sinergia, mostrar sección arriba
+                  if (synergyAllies.isNotEmpty && index == 0) {
+                    return _SynergyAlliesSection(
+                      activeGuide: activeGuide!,
+                      allies: synergyAllies,
+                      onAllySelected: (guide) {
+                        HapticFeedback.mediumImpact();
+                        // Mostrar dialog de sinergia
+                        SynergyInfoDialog.show(
+                          context,
+                          guide1: activeGuide,
+                          guide2: guide,
+                          onActivateGuide: (selectedGuide) {
+                            HapticFeedback.mediumImpact();
+                            ref.read(activeGuideIdProvider.notifier)
+                                .setActiveGuide(selectedGuide.id);
+                            Navigator.of(context).pop();
+                          },
+                        );
+                      },
+                    );
+                  }
+
+                  // Ajustar índice si hay sección de aliados
+                  final familyIndex = synergyAllies.isNotEmpty ? index - 1 : index;
+                  final family = sortedFamilies[familyIndex];
                   final familyGuides = groupedGuides[family]!;
                   final isExpanded = _expandedFamilies.contains(family);
 
@@ -100,6 +155,7 @@ class _GuideSelectorSheetState extends ConsumerState<_GuideSelectorSheet> {
                     isExpanded: isExpanded,
                     activeGuideId: activeId,
                     onToggle: () {
+                      HapticFeedback.selectionClick();
                       setState(() {
                         if (isExpanded) {
                           _expandedFamilies.remove(family);
@@ -109,6 +165,7 @@ class _GuideSelectorSheetState extends ConsumerState<_GuideSelectorSheet> {
                       });
                     },
                     onGuideSelected: (guide) {
+                      HapticFeedback.mediumImpact();
                       ref.read(activeGuideIdProvider.notifier).setActiveGuide(guide.id);
                       Navigator.of(context).pop();
                     },
@@ -214,7 +271,171 @@ class _FamilySection extends StatelessWidget {
   }
 }
 
-class _GuideTile extends StatelessWidget {
+/// Sección que muestra los aliados con sinergia del guía activo.
+class _SynergyAlliesSection extends ConsumerWidget {
+  const _SynergyAlliesSection({
+    required this.activeGuide,
+    required this.allies,
+    required this.onAllySelected,
+  });
+
+  final Guide activeGuide;
+  final List<Guide> allies;
+  final void Function(Guide) onAllySelected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final activeColor =
+        parseHexColor(activeGuide.themeAccentHex ?? activeGuide.themePrimaryHex) ??
+            theme.colorScheme.primary;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: activeColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: activeColor.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.auto_awesome,
+                size: 20,
+                color: activeColor,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Aliados de ${activeGuide.name}',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: activeColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Estos guías comparten sinergia con tu elección actual',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: allies.map((ally) {
+                return _SynergyAllyCard(
+                  ally: ally,
+                  activeGuide: activeGuide,
+                  onTap: () => onAllySelected(ally),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Tarjeta compacta de un aliado con sinergia.
+class _SynergyAllyCard extends StatelessWidget {
+  const _SynergyAllyCard({
+    required this.ally,
+    required this.activeGuide,
+    required this.onTap,
+  });
+
+  final Guide ally;
+  final Guide activeGuide;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final allyColor =
+        parseHexColor(ally.themeAccentHex ?? ally.themePrimaryHex) ??
+            theme.colorScheme.primary;
+
+    final synergyService = GuideSynergyService.instance;
+    final affinity = synergyService.calculateAffinityLevel(
+      activeGuide.id,
+      ally.id,
+    );
+    final stars = (affinity * 3).round().clamp(0, 3);
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 90,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: allyColor.withValues(alpha: 0.4),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: allyColor.withValues(alpha: 0.1),
+                blurRadius: 4,
+                spreadRadius: 0,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GuideAvatar(guide: ally, size: 44, showBorder: true),
+              const SizedBox(height: 6),
+              Text(
+                ally.name,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: allyColor,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(3, (i) {
+                  return Icon(
+                    i < stars ? Icons.star : Icons.star_border,
+                    size: 10,
+                    color: i < stars
+                        ? allyColor
+                        : theme.colorScheme.outlineVariant,
+                  );
+                }),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GuideTile extends ConsumerWidget {
   const _GuideTile({
     required this.guide,
     required this.isSelected,
@@ -226,15 +447,49 @@ class _GuideTile extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final guideColor =
         parseHexColor(guide.themeAccentHex ?? guide.themePrimaryHex) ??
             theme.colorScheme.primary;
 
+    final activeGuide = ref.watch(activeGuideProvider);
+    final synergyService = GuideSynergyService.instance;
+
+    // Verificar si hay sinergia con el guía activo
+    final hasSynergyWithActive = activeGuide != null &&
+        activeGuide.id != guide.id &&
+        synergyService.hasSynergy(activeGuide.id, guide.id);
+
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: GuideAvatar(guide: guide, size: 48, showBorder: isSelected),
+      leading: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          GuideAvatar(guide: guide, size: 48, showBorder: isSelected),
+          if (hasSynergyWithActive)
+            Positioned(
+              right: -4,
+              top: -4,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: theme.colorScheme.surface,
+                    width: 1.5,
+                  ),
+                ),
+                child: Icon(
+                  Icons.auto_awesome,
+                  size: 12,
+                  color: theme.colorScheme.onPrimary,
+                ),
+              ),
+            ),
+        ],
+      ),
       title: Text(
         guide.name,
         style: theme.textTheme.titleSmall?.copyWith(
@@ -252,10 +507,18 @@ class _GuideTile extends StatelessWidget {
               color: guideColor,
             ),
           ),
+          // Mostrar indicador de afinidad
+          const SizedBox(height: 4),
+          AffinityLevelIndicator(
+            guide: guide,
+            size: AffinityIndicatorSize.small,
+            showLabel: false,
+            showProgress: false,
+          ),
           if (guide.descriptionShort != null &&
               guide.descriptionShort!.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 2),
+              padding: const EdgeInsets.only(top: 4),
               child: Text(
                 guide.descriptionShort!,
                 maxLines: 2,
@@ -268,8 +531,7 @@ class _GuideTile extends StatelessWidget {
             ),
         ],
       ),
-      isThreeLine: guide.descriptionShort != null &&
-          guide.descriptionShort!.isNotEmpty,
+      isThreeLine: true,
       trailing: isSelected
           ? Icon(Icons.check_circle, color: guideColor)
           : Icon(

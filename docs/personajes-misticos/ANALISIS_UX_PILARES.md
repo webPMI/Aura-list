@@ -8,13 +8,13 @@ Consolidacion del analisis realizado por 5 agentes especializados.
 
 El sistema de Guias Celestiales es **arquitectonicamente solido pero funcionalmente incompleto**. Los guias existen como decoracion visual, no como companeros emocionales.
 
-| Aspecto | Estado | Puntuacion |
-|---------|--------|------------|
+| Aspecto | Estado | Puntuacion (actualizada 2026-02-12) |
+|---------|--------|-------------------------------------|
 | Arquitectura tecnica | Excelente | 9/10 |
-| Experiencia de usuario | Mejorable | 6/10 |
-| Conexion emocional | Limitada | 4/10 |
-| Consistencia de codigo | Aceptable | 7/10 |
-| Documentacion | Parcialmente actualizada | 7/10 |
+| Experiencia de usuario | Buena (Fase 1-2 implementadas) | 8/10 (+2) |
+| Conexion emocional | Notable mejora | 7/10 (+3) |
+| Consistencia de codigo | Buena | 8/10 (+1) |
+| Documentacion | Actualizada | 9/10 (+2) |
 
 ---
 
@@ -54,51 +54,57 @@ El sistema de Guias Celestiales es **arquitectonicamente solido pero funcionalme
 
 ## Plan de Mejora por Fases
 
-### FASE 1: Fundamentos (Sprint 1-2)
+### FASE 1: Fundamentos (Sprint 1-2) — COMPLETADA ✓
 
 #### 1.1 Refactorizaciones de Codigo
-- [ ] Eliminar `_parseGuideColor()` de dashboard_screen.dart (usar `parseHexColor`)
-- [ ] Crear `widgets/shared/avatar_fallback.dart` centralizado
-- [ ] Estandarizar acceso al guia: siempre `activeGuideProvider`
-- [ ] Propagar uso de `guideAccentColorProvider`
+- [x] Eliminar `_parseGuideColor()` de dashboard_screen.dart (usar `parseHexColor`)
+- [x] Crear `widgets/shared/avatar_fallback.dart` centralizado
+- [x] Estandarizar acceso al guia: siempre `activeGuideProvider`
+- [x] Propagar uso de `guideAccentColorProvider`
 
 #### 1.2 Mejorar Selector de Guias
-- [ ] Agrupar por `classFamily` (Conclave del Impetu, Arquitectos del Ciclo, etc.)
-- [ ] Mostrar `descriptionShort` bajo el titulo
-- [ ] Expandible para ver `powerSentence` completa
-- [ ] Mostrar `affinity` visible ("Prioridad", "Descanso", etc.)
+- [x] Agrupar por `classFamily` (Conclave del Impetu, Arquitectos del Ciclo, etc.)
+- [x] Mostrar `descriptionShort` bajo el titulo
+- [x] Expandible para ver `powerSentence` completa
+- [x] Mostrar `affinity` visible ("Prioridad", "Descanso", etc.)
 
 #### 1.3 Mostrar Sentencias de Poder
-- [ ] En selector: modal al seleccionar guia
-- [ ] En dashboard header: 2 lineas minimo (no truncar)
-- [ ] Tap en sentencia abre selector
+- [x] En selector: modal al seleccionar guia
+- [x] En dashboard header: 2 lineas minimo (no truncar)
+- [x] Tap en sentencia abre selector
+
+**Estado:** Todos los items completados en sesión 3 (2025-02-12).
 
 ---
 
-### FASE 2: Personificacion (Sprint 3-4)
+### FASE 2: Personificacion (Sprint 3-4) — COMPLETADA ✓
 
 #### 2.1 Sistema de Voces del Guia
-Crear `lib/services/guide_voice_service.dart`:
-```
-Aethel: "El fuego del mediodia ha llegado. Aun esperas?"
-Crono-Velo: "Un hilo tejido cada dia construye una armadura."
-Luna-Vacia: "Tu mente necesita quietud. El silencio es fortaleza."
-```
+- [x] Crear `lib/services/guide_voice_service.dart`
+- [x] **21 guías con voces completas** (692 líneas de mensajes personalizados)
+- [x] 6 momentos rituales cubiertos: appOpening, firstTaskOfDay, streakAchieved, endOfDay, encouragement, taskCompleted
+- [x] Ejemplos implementados:
+  - Aethel: "El fuego del dia te espera. Actua."
+  - Crono-Velo: "Un nuevo hilo se teje hoy."
+  - Luna-Vacia: "Respira. El silencio te acompana."
 
 #### 2.2 Mensajes Diferenciados por Guia
-Reescribir bendiciones para que cada guia celebre con su propia voz:
-- Aethel: epico, fuego, urgencia
-- Crono-Velo: ritmo, tejido, paciencia
-- Luna-Vacia: serenidad, proteccion, descanso
+- [x] Cada guía celebra con su propia voz única
+- [x] Personalidad consistente: Aethel (épico, fuego), Crono-Velo (tejido, paciencia), Luna-Vacía (serenidad)
+- [x] BlessingTriggerService actualizado con mensajes diferenciados
 
 #### 2.3 Momentos Rituales
-- [ ] Saludo del guia al abrir la app
-- [ ] Celebracion con narrativa al completar racha
-- [ ] Despedida personalizada al fin del dia
+- [x] Saludo del guia al abrir la app (GuideGreetingWidget - una vez por día)
+- [x] Celebracion con narrativa al completar racha (StreakCelebrationWidget - hitos 3, 7, 14, 21, 30, 60, 90, 180, 365 días)
+- [x] Despedida personalizada al fin del dia (GuideFarewellWidget - transición a noche)
+- [x] Sistema de racha implementado (streak_provider.dart)
+- [x] Sistema de ciclo del día implementado (day_cycle_service.dart)
+
+**Estado:** Todos los items completados en sesión 4 (2026-02-12). Sistema de personalización completamente funcional.
 
 ---
 
-### FASE 3: Conexion Profunda (Sprint 5-6)
+### FASE 3: Conexion Profunda (Sprint 5-6) — PENDIENTE
 
 #### 3.1 Sistema de Afinidad
 ```dart
@@ -130,7 +136,7 @@ Titulos otorgados por el guia (sin XP/puntos):
 
 ---
 
-### FASE 4: Onboarding (Sprint 7)
+### FASE 4: Onboarding (Sprint 7) — PENDIENTE (Alta prioridad)
 
 #### 4.1 Intro Modal de Guias
 ```

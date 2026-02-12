@@ -27,15 +27,19 @@ void main() {
       // Register all adapters if not already
       if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(TaskAdapter());
       if (!Hive.isAdapterRegistered(2)) Hive.registerAdapter(NoteAdapter());
-      if (!Hive.isAdapterRegistered(3))
+      if (!Hive.isAdapterRegistered(3)) {
         Hive.registerAdapter(TaskHistoryAdapter());
-      if (!Hive.isAdapterRegistered(4))
+      }
+      if (!Hive.isAdapterRegistered(4)) {
         Hive.registerAdapter(UserPreferencesAdapter());
-      if (!Hive.isAdapterRegistered(5))
+      }
+      if (!Hive.isAdapterRegistered(5)) {
         Hive.registerAdapter(SyncMetadataAdapter());
+      }
       if (!Hive.isAdapterRegistered(6)) Hive.registerAdapter(NotebookAdapter());
-      if (!Hive.isAdapterRegistered(7))
+      if (!Hive.isAdapterRegistered(7)) {
         Hive.registerAdapter(ChecklistItemAdapter());
+      }
     });
 
     setUp(() async {

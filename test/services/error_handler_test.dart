@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:checklist_app/services/error_handler.dart';
-import 'package:checklist_app/core/exceptions/app_exceptions.dart';
 
 void main() {
   group('ErrorHandler Tests', () {

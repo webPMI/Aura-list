@@ -40,6 +40,12 @@ class UserPreferences extends HiveObject {
   @HiveField(11)
   late bool cloudSyncEnabled;
 
+  @HiveField(12)
+  late String firestoreId; // Firestore document ID for cloud sync
+
+  @HiveField(13)
+  DateTime? lastUpdatedAt; // For conflict resolution
+
   UserPreferences({
     this.odId = 'default',
     this.hasAcceptedTerms = false,
@@ -53,7 +59,10 @@ class UserPreferences extends HiveObject {
     this.syncOnMobileData = true,
     this.syncDebounceMs = 3000,
     this.cloudSyncEnabled = false,
-  }) : collectionLastSync = collectionLastSync ?? {};
+    String? firestoreId,
+    this.lastUpdatedAt,
+  })  : collectionLastSync = collectionLastSync ?? {},
+        firestoreId = firestoreId ?? '';
 
   // Check if user has accepted all legal requirements
   bool get hasAcceptedAll => hasAcceptedTerms && hasAcceptedPrivacy;
@@ -114,6 +123,54 @@ class UserPreferences extends HiveObject {
     };
   }
 
+  /// Convert to Firestore document
+  Map<String, dynamic> toFirestore() {
+    return {
+      'hasAcceptedTerms': hasAcceptedTerms,
+      'hasAcceptedPrivacy': hasAcceptedPrivacy,
+      'termsAcceptedAt': termsAcceptedAt?.toIso8601String(),
+      'privacyAcceptedAt': privacyAcceptedAt?.toIso8601String(),
+      'notificationsEnabled': notificationsEnabled,
+      'calendarSyncEnabled': calendarSyncEnabled,
+      'lastSyncTimestamp': lastSyncTimestamp?.toIso8601String(),
+      'collectionLastSync': collectionLastSync,
+      'syncOnMobileData': syncOnMobileData,
+      'syncDebounceMs': syncDebounceMs,
+      'cloudSyncEnabled': cloudSyncEnabled,
+      'lastUpdatedAt': (lastUpdatedAt ?? DateTime.now()).toIso8601String(),
+    };
+  }
+
+  /// Create from Firestore document
+  factory UserPreferences.fromFirestore(String docId, Map<String, dynamic> data) {
+    return UserPreferences(
+      odId: 'default',
+      hasAcceptedTerms: data['hasAcceptedTerms'] as bool? ?? false,
+      hasAcceptedPrivacy: data['hasAcceptedPrivacy'] as bool? ?? false,
+      termsAcceptedAt: data['termsAcceptedAt'] != null
+          ? DateTime.parse(data['termsAcceptedAt'] as String)
+          : null,
+      privacyAcceptedAt: data['privacyAcceptedAt'] != null
+          ? DateTime.parse(data['privacyAcceptedAt'] as String)
+          : null,
+      notificationsEnabled: data['notificationsEnabled'] as bool? ?? false,
+      calendarSyncEnabled: data['calendarSyncEnabled'] as bool? ?? false,
+      lastSyncTimestamp: data['lastSyncTimestamp'] != null
+          ? DateTime.parse(data['lastSyncTimestamp'] as String)
+          : null,
+      collectionLastSync: data['collectionLastSync'] != null
+          ? Map<String, String>.from(data['collectionLastSync'] as Map)
+          : {},
+      syncOnMobileData: data['syncOnMobileData'] as bool? ?? true,
+      syncDebounceMs: data['syncDebounceMs'] as int? ?? 3000,
+      cloudSyncEnabled: data['cloudSyncEnabled'] as bool? ?? false,
+      firestoreId: docId,
+      lastUpdatedAt: data['lastUpdatedAt'] != null
+          ? DateTime.parse(data['lastUpdatedAt'] as String)
+          : null,
+    );
+  }
+
   factory UserPreferences.fromJson(Map<String, dynamic> data) {
     return UserPreferences(
       hasAcceptedTerms: data['hasAcceptedTerms'] ?? false,
@@ -147,6 +204,8 @@ class UserPreferences extends HiveObject {
     bool? syncOnMobileData,
     int? syncDebounceMs,
     bool? cloudSyncEnabled,
+    String? firestoreId,
+    DateTime? lastUpdatedAt,
   }) {
     return UserPreferences(
       odId: odId,
@@ -161,6 +220,13 @@ class UserPreferences extends HiveObject {
       syncOnMobileData: syncOnMobileData ?? this.syncOnMobileData,
       syncDebounceMs: syncDebounceMs ?? this.syncDebounceMs,
       cloudSyncEnabled: cloudSyncEnabled ?? this.cloudSyncEnabled,
+      firestoreId: firestoreId ?? this.firestoreId,
+      lastUpdatedAt: lastUpdatedAt ?? this.lastUpdatedAt,
     );
+  }
+
+  /// Update lastUpdatedAt timestamp
+  void touch() {
+    lastUpdatedAt = DateTime.now();
   }
 }
