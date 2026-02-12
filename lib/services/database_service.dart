@@ -105,7 +105,7 @@ class DatabaseService {
     return _firestore;
   }
 
-  Future<void> init() async {
+  Future<void> init({String? path}) async {
     // Already initialized, return immediately
     if (_initialized) return;
 
@@ -118,7 +118,11 @@ class DatabaseService {
     _initCompleter = Completer<void>();
 
     try {
-      await Hive.initFlutter();
+      if (path != null) {
+        Hive.init(path);
+      } else {
+        await Hive.initFlutter();
+      }
 
       if (!Hive.isAdapterRegistered(0)) {
         Hive.registerAdapter(TaskAdapter());
@@ -173,7 +177,11 @@ class DatabaseService {
         _firebaseAvailable = Firebase.apps.isNotEmpty;
       } catch (e) {
         _firebaseAvailable = false;
-        _logger.warning('DatabaseService', 'Firebase no disponible', metadata: {'error': e.toString()});
+        _logger.warning(
+          'DatabaseService',
+          'Firebase no disponible',
+          metadata: {'error': e.toString()},
+        );
       }
 
       // Initialize performance components (only if not already initialized)
@@ -231,7 +239,10 @@ class DatabaseService {
     }
 
     _isReinitializing = true;
-    _logger.info('DatabaseService', 'Reinitializando conexión a base de datos...');
+    _logger.info(
+      'DatabaseService',
+      'Reinitializando conexión a base de datos...',
+    );
 
     try {
       // Close existing boxes if they exist
@@ -309,7 +320,10 @@ class DatabaseService {
         attempts++;
 
         if (_isConnectionClosedError(e) && attempts <= maxRetries) {
-          _logger.debug('Service', '🔄 [Database] Conexión cerrada detectada en $operationName, reintentando ($attempts/$maxRetries)...');
+          _logger.debug(
+            'Service',
+            '🔄 [Database] Conexión cerrada detectada en $operationName, reintentando ($attempts/$maxRetries)...',
+          );
           await _reinitializeBoxes();
           continue;
         }
@@ -328,7 +342,10 @@ class DatabaseService {
       _lastIntegrityReport = await checker.checkAllBoxes();
 
       if (!_lastIntegrityReport!.allHealthy) {
-        _logger.debug('Service', '[Database] Some boxes need attention, attempting repair...');
+        _logger.debug(
+          'Service',
+          '[Database] Some boxes need attention, attempting repair...',
+        );
         _lastIntegrityReport = await checker.repairAllBoxes();
 
         if (!_lastIntegrityReport!.allUsable) {
@@ -456,7 +473,10 @@ class DatabaseService {
       }
 
       if (tasksToDelete.isNotEmpty) {
-        _logger.debug('Service', 'Eliminados ${tasksToDelete.length} tareas duplicadas');
+        _logger.debug(
+          'Service',
+          'Eliminados ${tasksToDelete.length} tareas duplicadas',
+        );
       }
 
       // Clean up duplicate notes
@@ -493,7 +513,10 @@ class DatabaseService {
       }
 
       if (notesToDelete.isNotEmpty) {
-        _logger.debug('Service', 'Eliminadas ${notesToDelete.length} notas duplicadas');
+        _logger.debug(
+          'Service',
+          'Eliminadas ${notesToDelete.length} notas duplicadas',
+        );
       }
     } catch (e) {
       _logger.debug('Service', 'Error limpiando duplicados: $e');
@@ -579,7 +602,10 @@ class DatabaseService {
     final prefs = await getUserPreferences();
     prefs.cloudSyncEnabled = enabled;
     await prefs.save();
-    _logger.debug('Service', 'Cloud sync ${enabled ? "habilitado" : "deshabilitado"}');
+    _logger.debug(
+      'Service',
+      'Cloud sync ${enabled ? "habilitado" : "deshabilitado"}',
+    );
   }
 
   // Local Operations
@@ -673,17 +699,26 @@ class DatabaseService {
     // Check if cloud sync is enabled
     final syncEnabled = await isCloudSyncEnabled();
     if (!syncEnabled) {
-      _logger.debug('Service', '⚠️ [SYNC] Cloud sync deshabilitado, tarea guardada solo localmente');
+      _logger.debug(
+        'Service',
+        '⚠️ [SYNC] Cloud sync deshabilitado, tarea guardada solo localmente',
+      );
       return;
     }
 
     if (!_firebaseAvailable || firestore == null) {
-      _logger.debug('Service', '⚠️ [SYNC] Firebase no disponible, tarea guardada solo localmente');
+      _logger.debug(
+        'Service',
+        '⚠️ [SYNC] Firebase no disponible, tarea guardada solo localmente',
+      );
       return;
     }
 
     if (userId.isEmpty) {
-      _logger.debug('Service', '⚠️ [SYNC] Usuario no autenticado (userId vacío), tarea guardada solo localmente');
+      _logger.debug(
+        'Service',
+        '⚠️ [SYNC] Usuario no autenticado (userId vacío), tarea guardada solo localmente',
+      );
       _errorHandler.handle(
         'Usuario no autenticado',
         type: ErrorType.auth,
@@ -694,7 +729,10 @@ class DatabaseService {
       return;
     }
 
-    _logger.debug('Service', '🔄 [SYNC] Iniciando sincronización de tarea "${task.title}" para usuario $userId');
+    _logger.debug(
+      'Service',
+      '🔄 [SYNC] Iniciando sincronización de tarea "${task.title}" para usuario $userId',
+    );
 
     try {
       await _syncTaskWithRetry(task, userId);
@@ -749,12 +787,21 @@ class DatabaseService {
           if (existingTask != null && existingTask.isInBox) {
             existingTask.firestoreId = newFirestoreId;
             await existingTask.save();
-            _logger.debug('Service', '✅ [SYNC] firestoreId guardado en tarea existente: $newFirestoreId');
+            _logger.debug(
+              'Service',
+              '✅ [SYNC] firestoreId guardado en tarea existente: $newFirestoreId',
+            );
           } else {
-            _logger.debug('Service', '⚠️ [SYNC] No se pudo guardar firestoreId - tarea no encontrada en Hive');
+            _logger.debug(
+              'Service',
+              '⚠️ [SYNC] No se pudo guardar firestoreId - tarea no encontrada en Hive',
+            );
           }
         }
-        _logger.debug('Service', '✅ Tarea sincronizada con Firebase (nueva) - ID: $newFirestoreId');
+        _logger.debug(
+          'Service',
+          '✅ Tarea sincronizada con Firebase (nueva) - ID: $newFirestoreId',
+        );
       } else {
         // Actualizar tarea existente
         await docRef
@@ -763,7 +810,10 @@ class DatabaseService {
               const Duration(seconds: 10),
               onTimeout: () => throw TimeoutException('Firebase timeout'),
             );
-        _logger.debug('Service', '✅ Tarea sincronizada con Firebase (actualizada)');
+        _logger.debug(
+          'Service',
+          '✅ Tarea sincronizada con Firebase (actualizada)',
+        );
       }
     } on FirebaseException catch (e, stack) {
       if (retryCount < _maxRetries &&
@@ -822,7 +872,10 @@ class DatabaseService {
     // Check if cloud sync is enabled - FIX 4
     final syncEnabled = await isCloudSyncEnabled();
     if (!syncEnabled) {
-      _logger.debug('Service', '⚠️ [SYNC QUEUE] Cloud sync deshabilitado, saltando procesamiento de cola');
+      _logger.debug(
+        'Service',
+        '⚠️ [SYNC QUEUE] Cloud sync deshabilitado, saltando procesamiento de cola',
+      );
       return;
     }
 
@@ -830,7 +883,10 @@ class DatabaseService {
       final queue = await _syncQueue;
       if (queue.isEmpty) return;
 
-      _logger.debug('Service', '🔄 [SYNC QUEUE] Procesando ${queue.length} tareas pendientes');
+      _logger.debug(
+        'Service',
+        '🔄 [SYNC QUEUE] Procesando ${queue.length} tareas pendientes',
+      );
       final box = await _box;
       final keysToRemove = <dynamic>[];
       final keysToUpdate = <dynamic, Map<String, dynamic>>{};
@@ -851,7 +907,10 @@ class DatabaseService {
               DateTime.fromMillisecondsSinceEpoch(timestamp),
             );
             if (age.inDays > 7) {
-              _logger.debug('Service', '🗑️ [SYNC QUEUE] Item muy viejo, eliminando');
+              _logger.debug(
+                'Service',
+                '🗑️ [SYNC QUEUE] Item muy viejo, eliminando',
+              );
               keysToRemove.add(entry.key);
               continue;
             }
@@ -859,7 +918,10 @@ class DatabaseService {
 
           // Verificar si excede máximo de reintentos
           if (retryCount >= _maxRetries) {
-            _logger.debug('Service', '❌ [SYNC QUEUE] Item excede max reintentos ($_maxRetries), eliminando');
+            _logger.debug(
+              'Service',
+              '❌ [SYNC QUEUE] Item excede max reintentos ($_maxRetries), eliminando',
+            );
             keysToRemove.add(entry.key);
             continue;
           }
@@ -871,7 +933,10 @@ class DatabaseService {
               seconds: 2 * (1 << retryCount),
             ); // 2s, 4s, 8s
             if (timeSinceLastRetry < backoffDelay.inMilliseconds) {
-              _logger.debug('Service', '⏸️ [SYNC QUEUE] Item en backoff (intento ${retryCount + 1}/$_maxRetries), saltando');
+              _logger.debug(
+                'Service',
+                '⏸️ [SYNC QUEUE] Item en backoff (intento ${retryCount + 1}/$_maxRetries), saltando',
+              );
               continue; // Saltar este item, todavía no es tiempo
             }
           }
@@ -892,7 +957,10 @@ class DatabaseService {
 
           // Si la tarea fue eliminada localmente, eliminar de la cola
           if (currentTask == null) {
-            _logger.debug('Service', '⚠️ [SYNC QUEUE] Tarea no encontrada localmente, eliminando de cola');
+            _logger.debug(
+              'Service',
+              '⚠️ [SYNC QUEUE] Tarea no encontrada localmente, eliminando de cola',
+            );
             keysToRemove.add(entry.key);
             continue;
           }
@@ -907,10 +975,16 @@ class DatabaseService {
             }
 
             keysToRemove.add(entry.key);
-            _logger.debug('Service', '✅ [SYNC QUEUE] Tarea "${currentTask.title}" sincronizada desde cola (intento ${retryCount + 1})');
+            _logger.debug(
+              'Service',
+              '✅ [SYNC QUEUE] Tarea "${currentTask.title}" sincronizada desde cola (intento ${retryCount + 1})',
+            );
           } catch (e) {
             // Incrementar contador de reintentos y actualizar lastRetryAt
-            _logger.debug('Service', '❌ [SYNC QUEUE] Error al procesar item (intento ${retryCount + 1}/$_maxRetries): $e');
+            _logger.debug(
+              'Service',
+              '❌ [SYNC QUEUE] Error al procesar item (intento ${retryCount + 1}/$_maxRetries): $e',
+            );
             keysToUpdate[entry.key] = {
               'task': queuedTask,
               'userId': userId,
@@ -920,7 +994,10 @@ class DatabaseService {
             };
           }
         } catch (e) {
-          _logger.debug('Service', '❌ [SYNC QUEUE] Error inesperado al procesar item: $e');
+          _logger.debug(
+            'Service',
+            '❌ [SYNC QUEUE] Error inesperado al procesar item: $e',
+          );
           // Mantener en la cola para reintentar despues
         }
       }
@@ -936,10 +1013,16 @@ class DatabaseService {
       }
 
       if (keysToRemove.isNotEmpty) {
-        _logger.debug('Service', '✅ [SYNC QUEUE] ${keysToRemove.length} items procesados');
+        _logger.debug(
+          'Service',
+          '✅ [SYNC QUEUE] ${keysToRemove.length} items procesados',
+        );
       }
       if (keysToUpdate.isNotEmpty) {
-        _logger.debug('Service', '🔄 [SYNC QUEUE] ${keysToUpdate.length} items reintentarán más tarde');
+        _logger.debug(
+          'Service',
+          '🔄 [SYNC QUEUE] ${keysToUpdate.length} items reintentarán más tarde',
+        );
       }
     } catch (e, stack) {
       _errorHandler.handle(
@@ -973,17 +1056,21 @@ class DatabaseService {
 
       // Filter non-deleted tasks
       List<Task> getFilteredTasks() {
-        return box.values
-            .where((task) => task.type == type && !task.deleted)
-            .toList()
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        final tasks =
+            box.values
+                .where((task) => task.type == type && !task.deleted)
+                .toList()
+              ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return tasks;
       }
 
       // Emit initial data
       yield getFilteredTasks();
 
       // Watch for changes
-      yield* box.watch().map((_) => getFilteredTasks());
+      await for (final _ in box.watch()) {
+        yield getFilteredTasks();
+      }
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -1008,16 +1095,25 @@ class DatabaseService {
     }
 
     if (!_firebaseAvailable || firestore == null) {
-      _logger.debug('Service', '⚠️ [SYNC] Firebase no disponible, saltando debounce sync');
+      _logger.debug(
+        'Service',
+        '⚠️ [SYNC] Firebase no disponible, saltando debounce sync',
+      );
       return;
     }
 
     if (userId.isEmpty) {
-      _logger.debug('Service', '⚠️ [SYNC] Usuario vacío en debounce sync, saltando');
+      _logger.debug(
+        'Service',
+        '⚠️ [SYNC] Usuario vacío en debounce sync, saltando',
+      );
       return;
     }
 
-    _logger.debug('Service', '⏱️ [SYNC] Agregando tarea "${task.title}" a cola de sincronización (debounced)');
+    _logger.debug(
+      'Service',
+      '⏱️ [SYNC] Agregando tarea "${task.title}" a cola de sincronización (debounced)',
+    );
 
     // Update lastUpdatedAt
     task.lastUpdatedAt = DateTime.now();
@@ -1078,7 +1174,10 @@ class DatabaseService {
 
       final userId = _pendingSyncUserId;
       if (userId == null || userId.isEmpty) {
-        _logger.debug('Service', '⚠️ [SYNC] No hay userId para flush pending syncs');
+        _logger.debug(
+          'Service',
+          '⚠️ [SYNC] No hay userId para flush pending syncs',
+        );
         return;
       }
 
@@ -1089,11 +1188,17 @@ class DatabaseService {
       _pendingSyncNoteKeys.clear();
 
       if (taskKeys.isEmpty && noteKeys.isEmpty) {
-        _logger.debug('Service', '⏱️ [SYNC] No hay elementos pendientes para sincronizar');
+        _logger.debug(
+          'Service',
+          '⏱️ [SYNC] No hay elementos pendientes para sincronizar',
+        );
         return;
       }
 
-      _logger.debug('Service', '🔄 [SYNC] Flushing ${taskKeys.length} tareas y ${noteKeys.length} notas pendientes');
+      _logger.debug(
+        'Service',
+        '🔄 [SYNC] Flushing ${taskKeys.length} tareas y ${noteKeys.length} notas pendientes',
+      );
 
       // Collect tasks to sync
       final box = await _box;
@@ -1121,7 +1226,10 @@ class DatabaseService {
 
       // Batch sync
       if (tasksToSync.isNotEmpty || notesToSync.isNotEmpty) {
-        _logger.debug('Service', '📦 [SYNC] Sincronizando lote: ${tasksToSync.length} tareas, ${notesToSync.length} notas');
+        _logger.debug(
+          'Service',
+          '📦 [SYNC] Sincronizando lote: ${tasksToSync.length} tareas, ${notesToSync.length} notas',
+        );
         await _batchSync(tasksToSync, notesToSync, userId);
       }
     } catch (e, stack) {
@@ -1153,7 +1261,10 @@ class DatabaseService {
     // Check if cloud sync is enabled - FIX 4
     final syncEnabled = await isCloudSyncEnabled();
     if (!syncEnabled) {
-      _logger.debug('Service', '⚠️ [BATCH SYNC] Cloud sync deshabilitado, saltando sincronización por lotes');
+      _logger.debug(
+        'Service',
+        '⚠️ [BATCH SYNC] Cloud sync deshabilitado, saltando sincronización por lotes',
+      );
       return;
     }
 
@@ -1206,7 +1317,10 @@ class DatabaseService {
           if (existingTask != null && existingTask.isInBox) {
             existingTask.firestoreId = task.firestoreId;
             await existingTask.save();
-            _logger.debug('Service', '✅ [BATCH] firestoreId guardado en tarea: ${task.firestoreId}');
+            _logger.debug(
+              'Service',
+              '✅ [BATCH] firestoreId guardado en tarea: ${task.firestoreId}',
+            );
           }
         }
       }
@@ -1219,12 +1333,18 @@ class DatabaseService {
           if (existingNote != null && existingNote.isInBox) {
             existingNote.firestoreId = note.firestoreId;
             await existingNote.save();
-            _logger.debug('Service', '✅ [BATCH] firestoreId guardado en nota: ${note.firestoreId}');
+            _logger.debug(
+              'Service',
+              '✅ [BATCH] firestoreId guardado en nota: ${note.firestoreId}',
+            );
           }
         }
       }
 
-      _logger.debug('Service', 'Batch sync completado: ${tasks.length} tareas, ${notes.length} notas');
+      _logger.debug(
+        'Service',
+        'Batch sync completado: ${tasks.length} tareas, ${notes.length} notas',
+      );
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -1387,7 +1507,10 @@ class DatabaseService {
         await notesBox.delete(key);
       }
 
-      _logger.debug('Service', 'Purged ${taskKeysToDelete.length} tasks, ${noteKeysToDelete.length} notes');
+      _logger.debug(
+        'Service',
+        'Purged ${taskKeysToDelete.length} tasks, ${noteKeysToDelete.length} notes',
+      );
     } catch (e) {
       _logger.debug('Service', 'Error purging soft-deleted items: $e');
     }
@@ -1708,7 +1831,10 @@ class DatabaseService {
         await box.delete(key);
       }
 
-      _logger.debug('Service', 'Cleaned up ${keysToDelete.length} old history entries');
+      _logger.debug(
+        'Service',
+        'Cleaned up ${keysToDelete.length} old history entries',
+      );
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -1854,6 +1980,11 @@ class DatabaseService {
             tags: note.tags,
             deleted: note.deleted,
             deletedAt: note.deletedAt,
+            checklist: note.checklist,
+            notebookId: note.notebookId,
+            status: note.status,
+            richContent: note.richContent,
+            contentType: note.contentType,
           );
           await existing.save();
           // IMPORTANT: Exit to avoid box.add() creating a duplicate
@@ -2046,7 +2177,10 @@ class DatabaseService {
     }
 
     if (!_firebaseAvailable || firestore == null) {
-      _logger.debug('Service', 'Firebase no configurado, nota guardada solo localmente');
+      _logger.debug(
+        'Service',
+        'Firebase no configurado, nota guardada solo localmente',
+      );
       return;
     }
 
@@ -2105,12 +2239,21 @@ class DatabaseService {
           if (existingNote != null && existingNote.isInBox) {
             existingNote.firestoreId = newFirestoreId;
             await existingNote.save();
-            _logger.debug('Service', '✅ [SYNC] firestoreId guardado en nota existente: $newFirestoreId');
+            _logger.debug(
+              'Service',
+              '✅ [SYNC] firestoreId guardado en nota existente: $newFirestoreId',
+            );
           } else {
-            _logger.debug('Service', '⚠️ [SYNC] No se pudo guardar firestoreId - nota no encontrada en Hive');
+            _logger.debug(
+              'Service',
+              '⚠️ [SYNC] No se pudo guardar firestoreId - nota no encontrada en Hive',
+            );
           }
         }
-        _logger.debug('Service', 'Nota sincronizada con Firebase (nueva) - ID: $newFirestoreId');
+        _logger.debug(
+          'Service',
+          'Nota sincronizada con Firebase (nueva) - ID: $newFirestoreId',
+        );
       } else {
         await docRef
             .update(note.toFirestore())
@@ -2118,7 +2261,10 @@ class DatabaseService {
               const Duration(seconds: 10),
               onTimeout: () => throw TimeoutException('Firebase timeout'),
             );
-        _logger.debug('Service', 'Nota sincronizada con Firebase (actualizada)');
+        _logger.debug(
+          'Service',
+          'Nota sincronizada con Firebase (actualizada)',
+        );
       }
     } on FirebaseException catch (e) {
       if (retryCount < _maxRetries &&
@@ -2212,7 +2358,10 @@ class DatabaseService {
     // Check if cloud sync is enabled - FIX 4
     final syncEnabled = await isCloudSyncEnabled();
     if (!syncEnabled) {
-      _logger.debug('Service', '⚠️ [SYNC QUEUE] Cloud sync deshabilitado, saltando procesamiento de cola de notas');
+      _logger.debug(
+        'Service',
+        '⚠️ [SYNC QUEUE] Cloud sync deshabilitado, saltando procesamiento de cola de notas',
+      );
       return;
     }
 
@@ -2220,7 +2369,10 @@ class DatabaseService {
       final queue = await _notesSyncQueue;
       if (queue.isEmpty) return;
 
-      _logger.debug('Service', '🔄 [SYNC QUEUE] Procesando ${queue.length} notas pendientes');
+      _logger.debug(
+        'Service',
+        '🔄 [SYNC QUEUE] Procesando ${queue.length} notas pendientes',
+      );
       final notesBox = await _notes;
       final keysToRemove = <dynamic>[];
       final keysToUpdate = <dynamic, Map<String, dynamic>>{};
@@ -2241,7 +2393,10 @@ class DatabaseService {
               DateTime.fromMillisecondsSinceEpoch(timestamp),
             );
             if (age.inDays > 7) {
-              _logger.debug('Service', '🗑️ [SYNC QUEUE] Nota muy vieja, eliminando');
+              _logger.debug(
+                'Service',
+                '🗑️ [SYNC QUEUE] Nota muy vieja, eliminando',
+              );
               keysToRemove.add(entry.key);
               continue;
             }
@@ -2249,7 +2404,10 @@ class DatabaseService {
 
           // Verificar si excede máximo de reintentos
           if (retryCount >= _maxRetries) {
-            _logger.debug('Service', '❌ [SYNC QUEUE] Nota excede max reintentos ($_maxRetries), eliminando');
+            _logger.debug(
+              'Service',
+              '❌ [SYNC QUEUE] Nota excede max reintentos ($_maxRetries), eliminando',
+            );
             keysToRemove.add(entry.key);
             continue;
           }
@@ -2261,7 +2419,10 @@ class DatabaseService {
               seconds: 2 * (1 << retryCount),
             ); // 2s, 4s, 8s
             if (timeSinceLastRetry < backoffDelay.inMilliseconds) {
-              _logger.debug('Service', '⏸️ [SYNC QUEUE] Nota en backoff (intento ${retryCount + 1}/$_maxRetries), saltando');
+              _logger.debug(
+                'Service',
+                '⏸️ [SYNC QUEUE] Nota en backoff (intento ${retryCount + 1}/$_maxRetries), saltando',
+              );
               continue; // Saltar este item, todavía no es tiempo
             }
           }
@@ -2282,7 +2443,10 @@ class DatabaseService {
 
           // Si la nota fue eliminada localmente, eliminar de la cola
           if (currentNote == null) {
-            _logger.debug('Service', '⚠️ [SYNC QUEUE] Nota no encontrada localmente, eliminando de cola');
+            _logger.debug(
+              'Service',
+              '⚠️ [SYNC QUEUE] Nota no encontrada localmente, eliminando de cola',
+            );
             keysToRemove.add(entry.key);
             continue;
           }
@@ -2297,10 +2461,16 @@ class DatabaseService {
             }
 
             keysToRemove.add(entry.key);
-            _logger.debug('Service', '✅ [SYNC QUEUE] Nota "${currentNote.title}" sincronizada desde cola (intento ${retryCount + 1})');
+            _logger.debug(
+              'Service',
+              '✅ [SYNC QUEUE] Nota "${currentNote.title}" sincronizada desde cola (intento ${retryCount + 1})',
+            );
           } catch (e) {
             // Incrementar contador de reintentos y actualizar lastRetryAt
-            _logger.debug('Service', '❌ [SYNC QUEUE] Error al procesar nota (intento ${retryCount + 1}/$_maxRetries): $e');
+            _logger.debug(
+              'Service',
+              '❌ [SYNC QUEUE] Error al procesar nota (intento ${retryCount + 1}/$_maxRetries): $e',
+            );
             keysToUpdate[entry.key] = {
               'note': queuedNote,
               'userId': userId,
@@ -2310,7 +2480,10 @@ class DatabaseService {
             };
           }
         } catch (e) {
-          _logger.debug('Service', '❌ [SYNC QUEUE] Error inesperado al procesar nota: $e');
+          _logger.debug(
+            'Service',
+            '❌ [SYNC QUEUE] Error inesperado al procesar nota: $e',
+          );
           // Mantener en la cola para reintentar despues
         }
       }
@@ -2326,10 +2499,16 @@ class DatabaseService {
       }
 
       if (keysToRemove.isNotEmpty) {
-        _logger.debug('Service', '✅ [SYNC QUEUE] ${keysToRemove.length} notas procesadas');
+        _logger.debug(
+          'Service',
+          '✅ [SYNC QUEUE] ${keysToRemove.length} notas procesadas',
+        );
       }
       if (keysToUpdate.isNotEmpty) {
-        _logger.debug('Service', '🔄 [SYNC QUEUE] ${keysToUpdate.length} notas reintentarán más tarde');
+        _logger.debug(
+          'Service',
+          '🔄 [SYNC QUEUE] ${keysToUpdate.length} notas reintentarán más tarde',
+        );
       }
     } catch (e, stack) {
       _errorHandler.handle(
@@ -2434,7 +2613,10 @@ class DatabaseService {
   }
 
   /// Move all notes out of a notebook (set notebookId to null)
-  Future<void> moveNotesOutOfNotebook(String notebookId) async {
+  Future<void> moveNotesOutOfNotebook(
+    String notebookId, {
+    String? userId,
+  }) async {
     try {
       final box = await _notes;
       final notesInNotebook = box.values
@@ -2444,6 +2626,10 @@ class DatabaseService {
       for (final note in notesInNotebook) {
         note.updateInPlace(clearNotebookId: true);
         await note.save();
+        // Sync the note update to cloud if userId is provided
+        if (userId != null && userId.isNotEmpty) {
+          await syncNoteToCloudDebounced(note, userId);
+        }
       }
     } catch (e, stack) {
       _errorHandler.handle(
@@ -2464,7 +2650,10 @@ class DatabaseService {
     }
 
     if (!_firebaseAvailable || firestore == null) {
-      _logger.debug('Service', 'Firebase no configurado, notebook guardado solo localmente');
+      _logger.debug(
+        'Service',
+        'Firebase no configurado, notebook guardado solo localmente',
+      );
       return;
     }
 
@@ -2610,21 +2799,33 @@ class DatabaseService {
     // Check if cloud sync is enabled
     final syncEnabled = await isCloudSyncEnabled();
     if (!syncEnabled) {
-      _logger.debug('Service', '⚠️ [SYNC] Cloud sync deshabilitado, saltando sync desde nube');
+      _logger.debug(
+        'Service',
+        '⚠️ [SYNC] Cloud sync deshabilitado, saltando sync desde nube',
+      );
       return SyncResult(tasksDownloaded: 0, notesDownloaded: 0, errors: 0);
     }
 
     if (!_firebaseAvailable || firestore == null) {
-      _logger.debug('Service', '⚠️ [SYNC] Firebase no disponible, saltando sync desde nube');
+      _logger.debug(
+        'Service',
+        '⚠️ [SYNC] Firebase no disponible, saltando sync desde nube',
+      );
       return SyncResult(tasksDownloaded: 0, notesDownloaded: 0, errors: 0);
     }
 
     if (userId.isEmpty) {
-      _logger.debug('Service', '⚠️ [SYNC] Usuario vacío, saltando sync desde nube');
+      _logger.debug(
+        'Service',
+        '⚠️ [SYNC] Usuario vacío, saltando sync desde nube',
+      );
       return SyncResult(tasksDownloaded: 0, notesDownloaded: 0, errors: 0);
     }
 
-    _logger.debug('Service', '🔄 [SYNC] Iniciando sincronización desde Firebase para usuario $userId');
+    _logger.debug(
+      'Service',
+      '🔄 [SYNC] Iniciando sincronización desde Firebase para usuario $userId',
+    );
     int tasksDownloaded = 0;
     int notesDownloaded = 0;
     int errors = 0;
@@ -2644,7 +2845,10 @@ class DatabaseService {
               onTimeout: () => throw TimeoutException('Firebase timeout'),
             );
 
-        _logger.debug('Service', '📥 [SYNC] Encontradas ${tasksSnapshot.docs.length} tareas en Firebase');
+        _logger.debug(
+          'Service',
+          '📥 [SYNC] Encontradas ${tasksSnapshot.docs.length} tareas en Firebase',
+        );
 
         for (final doc in tasksSnapshot.docs) {
           try {
@@ -2698,22 +2902,34 @@ class DatabaseService {
                 );
                 await existingTask.save();
                 tasksDownloaded++;
-                _logger.debug('Service', '📥 [SYNC] Tarea actualizada: "${cloudTask.title}"');
+                _logger.debug(
+                  'Service',
+                  '📥 [SYNC] Tarea actualizada: "${cloudTask.title}"',
+                );
               }
               // else: local is newer or same - will be synced to cloud later
             } else {
               // Task doesn't exist locally - add it
               await box.add(cloudTask);
               tasksDownloaded++;
-              _logger.debug('Service', '📥 [SYNC] Tarea nueva descargada: "${cloudTask.title}"');
+              _logger.debug(
+                'Service',
+                '📥 [SYNC] Tarea nueva descargada: "${cloudTask.title}"',
+              );
             }
           } catch (e) {
-            _logger.debug('Service', '❌ [SYNC] Error procesando tarea ${doc.id}: $e');
+            _logger.debug(
+              'Service',
+              '❌ [SYNC] Error procesando tarea ${doc.id}: $e',
+            );
             errors++;
           }
         }
       } catch (e) {
-        _logger.debug('Service', '❌ [SYNC] Error al obtener tareas de Firebase: $e');
+        _logger.debug(
+          'Service',
+          '❌ [SYNC] Error al obtener tareas de Firebase: $e',
+        );
         errors++;
       }
 
@@ -2727,7 +2943,10 @@ class DatabaseService {
               onTimeout: () => throw TimeoutException('Firebase timeout'),
             );
 
-        _logger.debug('Service', '📥 [SYNC] Encontradas ${notesSnapshot.docs.length} notas en Firebase');
+        _logger.debug(
+          'Service',
+          '📥 [SYNC] Encontradas ${notesSnapshot.docs.length} notas en Firebase',
+        );
 
         for (final doc in notesSnapshot.docs) {
           try {
@@ -2770,24 +2989,41 @@ class DatabaseService {
                   tags: cloudNote.tags,
                   deleted: cloudNote.deleted,
                   deletedAt: cloudNote.deletedAt,
+                  checklist: cloudNote.checklist,
+                  notebookId: cloudNote.notebookId,
+                  status: cloudNote.status,
+                  richContent: cloudNote.richContent,
+                  contentType: cloudNote.contentType,
                 );
                 await existingNote.save();
                 notesDownloaded++;
-                _logger.debug('Service', '📥 [SYNC] Nota actualizada: "${cloudNote.title}"');
+                _logger.debug(
+                  'Service',
+                  '📥 [SYNC] Nota actualizada: "${cloudNote.title}"',
+                );
               }
             } else {
               // Note doesn't exist locally - add it
               await notesBox.add(cloudNote);
               notesDownloaded++;
-              _logger.debug('Service', '📥 [SYNC] Nota nueva descargada: "${cloudNote.title}"');
+              _logger.debug(
+                'Service',
+                '📥 [SYNC] Nota nueva descargada: "${cloudNote.title}"',
+              );
             }
           } catch (e) {
-            _logger.debug('Service', '❌ [SYNC] Error procesando nota ${doc.id}: $e');
+            _logger.debug(
+              'Service',
+              '❌ [SYNC] Error procesando nota ${doc.id}: $e',
+            );
             errors++;
           }
         }
       } catch (e) {
-        _logger.debug('Service', '❌ [SYNC] Error al obtener notas de Firebase: $e');
+        _logger.debug(
+          'Service',
+          '❌ [SYNC] Error al obtener notas de Firebase: $e',
+        );
         errors++;
       }
 
@@ -2795,7 +3031,10 @@ class DatabaseService {
       updateCollectionSync('tasks');
       updateCollectionSync('notes');
 
-      _logger.debug('Service', '✅ [SYNC] Sync desde nube completado: $tasksDownloaded tareas, $notesDownloaded notas, $errors errores');
+      _logger.debug(
+        'Service',
+        '✅ [SYNC] Sync desde nube completado: $tasksDownloaded tareas, $notesDownloaded notas, $errors errores',
+      );
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -2822,7 +3061,10 @@ class DatabaseService {
     // Check if cloud sync is enabled
     final syncEnabled = await isCloudSyncEnabled();
     if (!syncEnabled) {
-      _logger.debug('Service', '⚠️ [SYNC] Cloud sync deshabilitado, saltando sync completo');
+      _logger.debug(
+        'Service',
+        '⚠️ [SYNC] Cloud sync deshabilitado, saltando sync completo',
+      );
       return SyncResult(tasksDownloaded: 0, notesDownloaded: 0, errors: 0);
     }
 
@@ -2830,7 +3072,10 @@ class DatabaseService {
       return SyncResult(tasksDownloaded: 0, notesDownloaded: 0, errors: 0);
     }
 
-    _logger.debug('Service', '🔄 [SYNC] Iniciando sincronización bidireccional completa');
+    _logger.debug(
+      'Service',
+      '🔄 [SYNC] Iniciando sincronización bidireccional completa',
+    );
 
     // First, download from cloud
     final downloadResult = await syncFromCloud(userId);
@@ -2862,12 +3107,18 @@ class DatabaseService {
           .toList();
 
       if (localOnlyTasks.isNotEmpty) {
-        _logger.debug('Service', '📤 [SYNC] Sincronizando ${localOnlyTasks.length} tareas locales');
+        _logger.debug(
+          'Service',
+          '📤 [SYNC] Sincronizando ${localOnlyTasks.length} tareas locales',
+        );
         for (final task in localOnlyTasks) {
           try {
             await syncTaskToCloud(task, userId);
           } catch (e) {
-            _logger.debug('Service', '❌ [SYNC] Error sincronizando tarea local: $e');
+            _logger.debug(
+              'Service',
+              '❌ [SYNC] Error sincronizando tarea local: $e',
+            );
           }
         }
       }
@@ -2878,12 +3129,18 @@ class DatabaseService {
           .toList();
 
       if (localOnlyNotes.isNotEmpty) {
-        _logger.debug('Service', '📤 [SYNC] Sincronizando ${localOnlyNotes.length} notas locales');
+        _logger.debug(
+          'Service',
+          '📤 [SYNC] Sincronizando ${localOnlyNotes.length} notas locales',
+        );
         for (final note in localOnlyNotes) {
           try {
             await syncNoteToCloud(note, userId);
           } catch (e) {
-            _logger.debug('Service', '❌ [SYNC] Error sincronizando nota local: $e');
+            _logger.debug(
+              'Service',
+              '❌ [SYNC] Error sincronizando nota local: $e',
+            );
           }
         }
       }
@@ -3010,7 +3267,10 @@ class DatabaseService {
       // Delete user document itself
       await userDoc.delete();
 
-      _logger.debug('Service', 'Todos los datos del usuario eliminados de Firebase');
+      _logger.debug(
+        'Service',
+        'Todos los datos del usuario eliminados de Firebase',
+      );
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -3110,7 +3370,10 @@ class DatabaseService {
       await flushPendingSyncs().timeout(
         const Duration(seconds: 5),
         onTimeout: () {
-          _logger.debug('Service', '[DatabaseService] Timeout flushing pending syncs on dispose');
+          _logger.debug(
+            'Service',
+            '[DatabaseService] Timeout flushing pending syncs on dispose',
+          );
         },
       );
 

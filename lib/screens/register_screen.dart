@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/auth_service.dart';
+import '../services/database_service.dart';
 import '../core/responsive/breakpoints.dart';
 import '../widgets/auth/password_strength_indicator.dart';
 import '../widgets/dialogs/legal_document_viewer.dart';
@@ -114,6 +115,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
       if (mounted) {
         if (result != null) {
+          // Enable cloud sync automatically when account is linked
+          final dbService = ref.read(databaseServiceProvider);
+          await dbService.setCloudSyncEnabled(true);
+
           // Registro exitoso
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -176,6 +181,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
       if (mounted) {
         if (credential != null) {
+          // Enable cloud sync automatically when account is linked
+          final dbService = ref.read(databaseServiceProvider);
+          await dbService.setCloudSyncEnabled(true);
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Cuenta creada con Google exitosamente'),

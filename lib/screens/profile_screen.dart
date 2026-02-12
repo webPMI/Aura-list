@@ -7,7 +7,8 @@ import '../core/constants/legal/terms_of_service.dart';
 import '../core/constants/legal/privacy_policy.dart';
 import '../providers/task_provider.dart';
 import '../widgets/navigation/drawer_menu_button.dart';
-import '../widgets/dialogs/link_account_dialog.dart';
+import '../widgets/auth/auth_action_sheet.dart';
+import '../widgets/auth/sync_toggle_tile.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -72,7 +73,7 @@ class ProfileScreen extends ConsumerWidget {
 
               // Privacy Controls Section
               _SectionHeader('Privacidad'),
-              _CloudSyncToggle(),
+              const SyncToggleTile(),
               ListTile(
                 leading: Icon(
                   Icons.remove_circle_outline,
@@ -395,84 +396,7 @@ class _AccountSection extends ConsumerWidget {
   }
 
   void _showLinkAccountOptions(BuildContext context, WidgetRef ref) {
-    showLinkAccountDialog(context: context, ref: ref);
-  }
-}
-
-class _CloudSyncToggle extends ConsumerStatefulWidget {
-  @override
-  ConsumerState<_CloudSyncToggle> createState() => _CloudSyncToggleState();
-}
-
-class _CloudSyncToggleState extends ConsumerState<_CloudSyncToggle> {
-  bool _cloudSyncEnabled = false;
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadPreferences();
-  }
-
-  Future<void> _loadPreferences() async {
-    final dbService = ref.read(databaseServiceProvider);
-    final prefs = await dbService.getUserPreferences();
-    if (mounted) {
-      setState(() {
-        _cloudSyncEnabled = prefs.cloudSyncEnabled;
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _toggleCloudSync(bool value) async {
-    final dbService = ref.read(databaseServiceProvider);
-    final prefs = await dbService.getUserPreferences();
-    prefs.cloudSyncEnabled = value;
-    await prefs.save();
-
-    if (mounted) {
-      setState(() {
-        _cloudSyncEnabled = value;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            value
-                ? 'Sincronizacion en la nube activada'
-                : 'Sincronizacion en la nube desactivada',
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const ListTile(
-        leading: SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-        title: Text('Sincronizacion en la nube'),
-      );
-    }
-
-    return SwitchListTile(
-      secondary: const Icon(Icons.cloud_sync_outlined),
-      title: const Text('Sincronizacion en la nube'),
-      subtitle: Text(
-        _cloudSyncEnabled
-            ? 'Tus datos se sincronizan automaticamente'
-            : 'Tus datos solo estan en este dispositivo',
-      ),
-      value: _cloudSyncEnabled,
-      onChanged: _toggleCloudSync,
-    );
+    showAuthActionSheet(context: context, ref: ref);
   }
 }
 

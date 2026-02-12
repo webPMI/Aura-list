@@ -4,6 +4,7 @@ import 'package:checklist_app/features/guides/guides.dart';
 import 'package:checklist_app/widgets/shared/avatar_fallback.dart';
 import '../../services/auth_service.dart';
 import '../../providers/navigation_provider.dart';
+import '../auth/auth_action_sheet.dart';
 
 /// Card de usuario para el dashboard.
 /// Muestra el estado de autenticacion y permite acceso rapido al perfil.
@@ -32,7 +33,7 @@ class UserCard extends ConsumerWidget {
           );
         } else {
           return _AnonymousCard(
-            onTap: () => ref.read(selectedRouteProvider.notifier).state = AppRoute.profile,
+            onTap: () => showAuthActionSheet(context: context, ref: ref),
           );
         }
       },

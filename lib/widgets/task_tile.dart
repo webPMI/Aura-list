@@ -7,10 +7,12 @@ import 'package:checklist_app/features/guides/guides.dart';
 import '../models/task_model.dart';
 import '../providers/task_provider.dart';
 import '../providers/stats_provider.dart';
+import '../providers/streak_provider.dart';
 import '../core/constants/task_constants.dart';
 import '../core/utils/time_utils.dart';
 import 'shared/blessing_feedback.dart';
 import 'shared/celebration_overlay.dart';
+import 'streak_celebration_widget.dart';
 import 'task_stats.dart';
 
 class TaskTile extends ConsumerWidget {
@@ -31,6 +33,20 @@ class TaskTile extends ConsumerWidget {
   void _showCelebrationOverlay(BuildContext context, WidgetRef ref) {
     final color = ref.read(guideAccentColorProvider);
     CelebrationOverlay.show(context, color: color);
+  }
+
+  /// Verifica y muestra celebracion de racha si corresponde.
+  void _checkAndShowStreakCelebration(BuildContext context, WidgetRef ref) async {
+    // Actualizar racha y verificar si alcanzamos un hito
+    final newStreak = await ref.read(checkStreakProvider)();
+    if (newStreak != null && isStreakMilestone(newStreak) && context.mounted) {
+      // Delay para no solaparse con otras celebraciones
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (context.mounted) {
+          showStreakCelebration(context, newStreak);
+        }
+      });
+    }
   }
 
   /// Evalua y muestra feedback de bendicion si corresponde.
@@ -159,6 +175,8 @@ class TaskTile extends ConsumerWidget {
                   _showCelebrationOverlay(context, ref);
                   // Verificar y mostrar bendicion si hay guia activo
                   _checkAndShowBlessingFeedback(context, ref);
+                  // Verificar y actualizar racha de dias
+                  _checkAndShowStreakCelebration(context, ref);
                 }
                 onFeedback?.call('Tarea completada');
               } else {

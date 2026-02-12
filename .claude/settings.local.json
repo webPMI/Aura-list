@@ -16,7 +16,19 @@
       "Bash(copy \"D:\\\\program\\\\checklist-app\\\\logo-aura-list.png\" \"D:\\\\program\\\\checklist-app\\\\assets\\\\images\\\\logo.png\")",
       "Bash(python generate_ios_icons.py:*)",
       "Bash(python generate_windows_icon.py:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(cat:*)",
+      "Bash(gcloud auth list:*)",
+      "Skill(init)",
+      "WebSearch",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(test:*)",
+      "Bash(find:*)",
+      "Bash(git reset:*)",
+      "Bash(ping:*)",
+      "Skill(run)",
+      "Bash(del \"D:\\\\program\\\\checklist-app\\\\lib\\\\widgets\\\\dialogs\\\\link_account_dialog.dart\")"
     ]
   }
 }

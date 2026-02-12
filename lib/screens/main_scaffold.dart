@@ -6,6 +6,8 @@ import '../providers/update_provider.dart';
 import '../services/auth_service.dart';
 import '../widgets/navigation/adaptive_navigation.dart';
 import '../widgets/dialogs/task_form_dialog.dart';
+import '../widgets/guide_greeting_widget.dart';
+import '../widgets/guide_farewell_widget.dart';
 import 'dashboard_screen.dart';
 import 'tasks_screen.dart';
 import 'notes_screen.dart';
@@ -43,9 +45,18 @@ class MainScaffold extends ConsumerWidget {
     AppRoute selectedRoute,
   ) {
     return UpdateChecker(
-      child: AdaptiveNavigation(
-        floatingActionButton: _buildFab(context, ref, selectedRoute),
-        child: _buildContent(selectedRoute),
+      child: GuideFarewellListener(
+        child: Stack(
+          children: [
+            AdaptiveNavigation(
+              floatingActionButton: _buildFab(context, ref, selectedRoute),
+              child: _buildContent(selectedRoute),
+            ),
+            // Greeting overlay - solo visible en dashboard
+            if (selectedRoute == AppRoute.dashboard)
+              const GuideGreetingWidget(),
+          ],
+        ),
       ),
     );
   }

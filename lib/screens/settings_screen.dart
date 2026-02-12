@@ -10,6 +10,8 @@ import '../providers/update_provider.dart';
 import '../services/database_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/navigation/drawer_menu_button.dart';
+import '../widgets/auth/auth_action_sheet.dart';
+import '../widgets/auth/sync_toggle_tile.dart';
 import 'profile_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -78,8 +80,8 @@ class SettingsScreen extends ConsumerWidget {
 
               // Data Section
               _SectionHeader('Datos'),
-              const _CloudSyncToggle(),
-              const _SyncStatusTile(),
+              const SyncToggleTile(),
+              const SyncStatusTile(),
               ListTile(
                 leading: const Icon(Icons.download_outlined),
                 title: const Text('Exportar datos'),
@@ -272,141 +274,6 @@ class _GuideCelestialTile extends ConsumerWidget {
   }
 }
 
-class _CloudSyncToggle extends ConsumerStatefulWidget {
-  const _CloudSyncToggle();
-
-  @override
-  ConsumerState<_CloudSyncToggle> createState() => _CloudSyncToggleState();
-}
-
-class _CloudSyncToggleState extends ConsumerState<_CloudSyncToggle> {
-  bool _isLoading = true;
-  bool _syncEnabled = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSyncPreference();
-  }
-
-  Future<void> _loadSyncPreference() async {
-    final dbService = ref.read(databaseServiceProvider);
-    final enabled = await dbService.isCloudSyncEnabled();
-    if (mounted) {
-      setState(() {
-        _syncEnabled = enabled;
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _toggleSync(bool value) async {
-    setState(() => _isLoading = true);
-
-    final dbService = ref.read(databaseServiceProvider);
-    await dbService.setCloudSyncEnabled(value);
-
-    // If enabling sync, trigger initial sync
-    if (value) {
-      final authService = ref.read(authServiceProvider);
-      final user = authService.currentUser;
-      if (user != null) {
-        await dbService.performFullSync(user.uid);
-      }
-    }
-
-    if (mounted) {
-      setState(() {
-        _syncEnabled = value;
-        _isLoading = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            value
-                ? 'Sincronizacion a la nube activada'
-                : 'Sincronizacion a la nube desactivada',
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(
-        _syncEnabled ? Icons.cloud_outlined : Icons.cloud_off_outlined,
-      ),
-      title: const Text('Sincronizar a la nube'),
-      subtitle: Text(
-        _syncEnabled
-            ? 'Tus datos se sincronizan con Firebase'
-            : 'Tus datos solo se guardan localmente',
-      ),
-      trailing: _isLoading
-          ? const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : Switch(
-              value: _syncEnabled,
-              onChanged: _toggleSync,
-            ),
-    );
-  }
-}
-
-class _SyncStatusTile extends ConsumerWidget {
-  const _SyncStatusTile();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final dbService = ref.watch(databaseServiceProvider);
-
-    return FutureBuilder<int>(
-      future: dbService.getTotalPendingSyncCount(),
-      builder: (context, snapshot) {
-        final syncCount = snapshot.data ?? 0;
-
-        return ListTile(
-          leading: syncCount > 0
-              ? Badge(
-                  label: Text('$syncCount'),
-                  child: const Icon(Icons.cloud_sync_outlined),
-                )
-              : Icon(Icons.cloud_done_outlined, color: Colors.green.shade600),
-          title: const Text('Sincronizacion'),
-          subtitle: Text(
-            syncCount > 0
-                ? '$syncCount elementos pendientes'
-                : 'Todo sincronizado',
-          ),
-          trailing: syncCount > 0
-              ? TextButton(
-                  onPressed: () async {
-                    await dbService.forceSyncPendingTasks();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Sincronizando...'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
-                  },
-                  child: const Text('Sincronizar'),
-                )
-              : null,
-        );
-      },
-    );
-  }
-}
-
 class _AccountTile extends ConsumerWidget {
   const _AccountTile();
 
@@ -473,32 +340,7 @@ class _AccountTile extends ConsumerWidget {
   }
 
   void _showSignInDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Iniciar sesion'),
-        content: const Text(
-          'Para iniciar sesion con una cuenta existente, '
-          've a la pantalla de Perfil y vincula tu cuenta.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ProfileScreen()),
-              );
-            },
-            child: const Text('Ir a Perfil'),
-          ),
-        ],
-      ),
-    );
+    showAuthActionSheet(context: context, ref: ref);
   }
 }
 

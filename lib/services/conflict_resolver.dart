@@ -83,6 +83,7 @@ class ConflictLog {
 /// cuando hay diferencias entre la version local (Hive) y la remota (Firebase).
 class ConflictResolver {
   final _logger = LoggerService();
+
   /// Estrategia por defecto a utilizar
   final ConflictStrategy defaultStrategy;
 
@@ -92,9 +93,7 @@ class ConflictResolver {
   /// Maximo de registros en historial
   static const int _maxHistorySize = 100;
 
-  ConflictResolver({
-    this.defaultStrategy = ConflictStrategy.lastWriteWins,
-  });
+  ConflictResolver({this.defaultStrategy = ConflictStrategy.lastWriteWins});
 
   /// Obtiene el historial de conflictos
   List<ConflictLog> get conflictHistory => List.unmodifiable(_conflictHistory);
@@ -176,7 +175,14 @@ class ConflictResolver {
     }
 
     // Registrar el conflicto
-    logConflict('task', local.firestoreId, local, remote, resolved);
+    logConflict(
+      'task',
+      local.firestoreId,
+      local,
+      remote,
+      resolved,
+      effectiveStrategy,
+    );
 
     return ConflictResolution(
       resolved: resolved,
@@ -241,7 +247,14 @@ class ConflictResolver {
     }
 
     // Registrar el conflicto
-    logConflict('note', local.firestoreId, local, remote, resolved);
+    logConflict(
+      'note',
+      local.firestoreId,
+      local,
+      remote,
+      resolved,
+      effectiveStrategy,
+    );
 
     return ConflictResolution(
       resolved: resolved,
@@ -258,12 +271,13 @@ class ConflictResolver {
     dynamic local,
     dynamic remote,
     dynamic resolved,
+    ConflictStrategy strategy,
   ) {
     final log = ConflictLog(
       recordType: type,
       recordId: id,
       timestamp: DateTime.now(),
-      strategyUsed: defaultStrategy,
+      strategyUsed: strategy,
       localVersion: _toJsonSafe(local),
       remoteVersion: _toJsonSafe(remote),
       resolvedVersion: _toJsonSafe(resolved),
@@ -277,10 +291,18 @@ class ConflictResolver {
     }
 
     if (kDebugMode) {
+      final localStr = local?.toString() ?? 'null';
+      final remoteStr = remote?.toString() ?? 'null';
       _logger.debug('ConflictResolver', '[CONFLICT] $type: $id');
-      _logger.debug('ConflictResolver', '  Estrategia: ${defaultStrategy.name}');
-      _logger.debug('ConflictResolver', '  Local: ${local?.toString().substring(0, 50)}...');
-      _logger.debug('ConflictResolver', '  Remote: ${remote?.toString().substring(0, 50)}...');
+      _logger.debug('ConflictResolver', '  Estrategia: ${strategy.name}');
+      _logger.debug(
+        'ConflictResolver',
+        '  Local: ${localStr.length > 50 ? localStr.substring(0, 50) : localStr}...',
+      );
+      _logger.debug(
+        'ConflictResolver',
+        '  Remote: ${remoteStr.length > 50 ? remoteStr.substring(0, 50) : remoteStr}...',
+      );
     }
   }
 
@@ -304,8 +326,9 @@ class ConflictResolver {
       return local;
     }
     return remote.copyWith(
-      firestoreId:
-          remote.firestoreId.isNotEmpty ? remote.firestoreId : local.firestoreId,
+      firestoreId: remote.firestoreId.isNotEmpty
+          ? remote.firestoreId
+          : local.firestoreId,
     );
   }
 
@@ -314,8 +337,9 @@ class ConflictResolver {
       return local;
     }
     return remote.copyWith(
-      firestoreId:
-          remote.firestoreId.isNotEmpty ? remote.firestoreId : local.firestoreId,
+      firestoreId: remote.firestoreId.isNotEmpty
+          ? remote.firestoreId
+          : local.firestoreId,
     );
   }
 
@@ -331,8 +355,9 @@ class ConflictResolver {
     final remoteTime = remote.lastUpdatedAt ?? remote.createdAt;
 
     return Task(
-      firestoreId:
-          remote.firestoreId.isNotEmpty ? remote.firestoreId : local.firestoreId,
+      firestoreId: remote.firestoreId.isNotEmpty
+          ? remote.firestoreId
+          : local.firestoreId,
       // Titulo: usar el mas reciente
       title: localTime.isAfter(remoteTime) ? local.title : remote.title,
       type: local.type, // Tipo no deberia cambiar
@@ -342,9 +367,13 @@ class ConflictResolver {
           ? local.createdAt
           : remote.createdAt,
       dueDate: local.dueDate ?? remote.dueDate,
-      category: localTime.isAfter(remoteTime) ? local.category : remote.category,
+      category: localTime.isAfter(remoteTime)
+          ? local.category
+          : remote.category,
       // Prioridad: usar la mas alta (mas urgente)
-      priority: local.priority > remote.priority ? local.priority : remote.priority,
+      priority: local.priority > remote.priority
+          ? local.priority
+          : remote.priority,
       dueTimeMinutes: local.dueTimeMinutes ?? remote.dueTimeMinutes,
       motivation: local.motivation ?? remote.motivation,
       reward: local.reward ?? remote.reward,
@@ -378,20 +407,26 @@ class ConflictResolver {
       mergedContent = remote.content;
     } else {
       // Contenidos diferentes, concatenar con separador
-      mergedContent = '${local.content}\n\n---\n[Contenido sincronizado]\n${remote.content}';
+      mergedContent =
+          '${local.content}\n\n---\n[Contenido sincronizado]\n${remote.content}';
     }
 
     return Note(
-      firestoreId:
-          remote.firestoreId.isNotEmpty ? remote.firestoreId : local.firestoreId,
-      title: local.updatedAt.isAfter(remote.updatedAt) ? local.title : remote.title,
+      firestoreId: remote.firestoreId.isNotEmpty
+          ? remote.firestoreId
+          : local.firestoreId,
+      title: local.updatedAt.isAfter(remote.updatedAt)
+          ? local.title
+          : remote.title,
       content: mergedContent,
       createdAt: local.createdAt.isBefore(remote.createdAt)
           ? local.createdAt
           : remote.createdAt,
       updatedAt: DateTime.now(),
       taskId: local.taskId ?? remote.taskId,
-      color: local.updatedAt.isAfter(remote.updatedAt) ? local.color : remote.color,
+      color: local.updatedAt.isAfter(remote.updatedAt)
+          ? local.color
+          : remote.color,
       isPinned: local.isPinned || remote.isPinned,
       tags: mergedTags,
       deleted: local.deleted || remote.deleted,
@@ -425,5 +460,5 @@ final conflictResolverProvider = Provider<ConflictResolver>((ref) {
 /// Provider con estrategia configurable
 final conflictResolverWithStrategyProvider =
     Provider.family<ConflictResolver, ConflictStrategy>((ref, strategy) {
-  return ConflictResolver(defaultStrategy: strategy);
-});
+      return ConflictResolver(defaultStrategy: strategy);
+    });

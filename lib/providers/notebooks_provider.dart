@@ -148,15 +148,20 @@ class NotebooksNotifier extends StateNotifier<List<Notebook>> {
   /// Eliminar un notebook (mover notas a "sin carpeta")
   Future<void> deleteNotebook(Notebook notebook) async {
     try {
+      // Get user for syncing notes
+      final user = _auth.currentUser;
+
       // Primero, desasociar todas las notas de este notebook
-      await _db.moveNotesOutOfNotebook(notebook.key.toString());
+      await _db.moveNotesOutOfNotebook(
+        notebook.key.toString(),
+        userId: user?.uid,
+      );
 
       // Luego, eliminar el notebook
       final firestoreId = notebook.firestoreId;
       await _db.deleteNotebookLocally(notebook.key);
 
       // También eliminar de Firestore si está sincronizado
-      final user = _auth.currentUser;
       if (user != null && firestoreId.isNotEmpty) {
         await _db.deleteNotebookFromCloud(firestoreId, user.uid);
       }
