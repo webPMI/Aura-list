@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/task_model.dart';
 import '../services/database_service.dart';
 import '../services/auth_service.dart';
 import '../services/error_handler.dart';
 import 'navigation_provider.dart';
+import '../services/logger_service.dart';
 
 final tasksProvider = StateNotifierProvider.family
     .autoDispose<TaskNotifier, List<Task>, String>((ref, type) {
@@ -32,7 +32,7 @@ class TaskNotifier extends StateNotifier<List<Task>> {
         .watchLocalTasks(_type)
         .listen(
           (tasks) => state = _deduplicateTasks(tasks),
-          onError: (e) => debugPrint('Error watching tasks: $e'),
+          onError: (e) => LoggerService().error('Provider', 'Error watching tasks: $e', error: e),
         );
   }
 
@@ -124,9 +124,7 @@ class TaskNotifier extends StateNotifier<List<Task>> {
         await _db.syncTaskToCloud(newTask, user.uid);
       } else {
         // FIX 5 - Si no hay userId, igual agregar a cola para sincronizar después
-        debugPrint(
-          '⚠️ [TaskProvider] Usuario no autenticado, tarea se sincronizará cuando haya auth',
-        );
+        LoggerService().debug('Provider', '⚠️ [TaskProvider] Usuario no autenticado, tarea se sincronizará cuando haya auth');
       }
     } catch (e, stack) {
       _errorHandler.handle(
@@ -210,9 +208,7 @@ class TaskNotifier extends StateNotifier<List<Task>> {
       } else {
         // La tarea no existe en el estado - esto no debería pasar en edición normal
         // Solo agregar si realmente es una tarea nueva
-        debugPrint(
-          '⚠️ [TaskProvider] updateTask llamado con tarea no encontrada en state',
-        );
+        LoggerService().debug('Provider', '⚠️ [TaskProvider] updateTask llamado con tarea no encontrada en state');
         task.lastUpdatedAt = DateTime.now();
         await _db.saveTaskLocally(task);
 
@@ -266,15 +262,13 @@ class TaskNotifier extends StateNotifier<List<Task>> {
         }
 
         // Fallback: buscar por createdAt
-        if (original == null) {
-          original = state.cast<Task?>().firstWhere(
-            (t) =>
-                t != null &&
-                t.createdAt.millisecondsSinceEpoch ==
-                    task.createdAt.millisecondsSinceEpoch,
-            orElse: () => null,
-          );
-        }
+        original ??= state.cast<Task?>().firstWhere(
+          (t) =>
+              t != null &&
+              t.createdAt.millisecondsSinceEpoch ==
+                  task.createdAt.millisecondsSinceEpoch,
+          orElse: () => null,
+        );
 
         if (original != null && original.isInBox) {
           original.updateInPlace(
@@ -289,9 +283,7 @@ class TaskNotifier extends StateNotifier<List<Task>> {
           }
         } else {
           // Caso muy raro: actualizar la tarea pasada
-          debugPrint(
-            '⚠️ [TaskProvider] toggleTask fallback: tarea no encontrada',
-          );
+          LoggerService().debug('Provider', '⚠️ [TaskProvider] toggleTask fallback: tarea no encontrada');
           await updateTask(
             task.copyWith(
               isCompleted: !task.isCompleted,

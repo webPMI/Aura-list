@@ -2,9 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
+import 'package:checklist_app/features/guides/guides.dart';
 import '../models/task_model.dart';
 import '../providers/task_provider.dart';
 import '../providers/stats_provider.dart';
+import '../core/constants/task_constants.dart';
+import '../core/utils/time_utils.dart';
+import 'shared/blessing_feedback.dart';
+import 'shared/celebration_overlay.dart';
 import 'task_stats.dart';
 
 class TaskTile extends ConsumerWidget {
@@ -14,28 +20,6 @@ class TaskTile extends ConsumerWidget {
 
   const TaskTile({super.key, required this.task, this.onEdit, this.onFeedback});
 
-  Color _getPriorityColor(int priority) {
-    switch (priority) {
-      case 2:
-        return Colors.redAccent;
-      case 1:
-        return Colors.orangeAccent;
-      default:
-        return Colors.blueAccent;
-    }
-  }
-
-  String _getPriorityLabel(int priority) {
-    switch (priority) {
-      case 2:
-        return 'Alta';
-      case 1:
-        return 'Media';
-      default:
-        return 'Baja';
-    }
-  }
-
   bool _isDueDatePast(DateTime dueDate) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -43,20 +27,46 @@ class TaskTile extends ConsumerWidget {
     return due.isBefore(today);
   }
 
-  /// Shows a celebration overlay when a task is completed
-  void _showCelebrationOverlay(BuildContext context) {
-    final overlay = Overlay.of(context);
-    late OverlayEntry overlayEntry;
+  /// Shows a celebration overlay when a task is completed (usa color del guia activo si hay).
+  void _showCelebrationOverlay(BuildContext context, WidgetRef ref) {
+    final color = ref.read(guideAccentColorProvider);
+    CelebrationOverlay.show(context, color: color);
+  }
 
-    overlayEntry = OverlayEntry(
-      builder: (context) => _CelebrationOverlay(
-        onComplete: () {
-          overlayEntry.remove();
-        },
-      ),
+  /// Evalua y muestra feedback de bendicion si corresponde.
+  /// Retorna true si se activo una bendicion.
+  bool _checkAndShowBlessingFeedback(BuildContext context, WidgetRef ref) {
+    final guide = ref.read(activeGuideProvider);
+    if (guide == null) return false;
+
+    final service = ref.read(blessingTriggerServiceProvider);
+    final result = service.evaluateTaskCompletion(
+      task: task,
+      activeGuide: guide,
     );
 
-    overlay.insert(overlayEntry);
+    if (result.triggered && result.blessing != null) {
+      // Haptic diferenciado para la bendicion
+      service.executeHapticFeedback(result.blessing!);
+
+      // Mostrar feedback visual despues de un pequeno delay
+      // para no solaparse con la celebracion principal
+      Future.delayed(const Duration(milliseconds: 400), () {
+        if (context.mounted) {
+          final guideColor = ref.read(guideAccentColorProvider);
+          BlessingFeedback.show(
+            context,
+            message: result.message ?? 'Bendicion activada!',
+            blessing: result.blessing!,
+            guideColor: guideColor,
+          );
+        }
+      });
+
+      return true;
+    }
+
+    return false;
   }
 
   @override
@@ -143,12 +153,14 @@ class TaskTile extends ConsumerWidget {
               }
 
               if (!wasCompleted) {
-                // Task completed - show celebration
+                // Task completed - show celebration (con color del guia activo)
                 HapticFeedback.heavyImpact();
                 if (context.mounted) {
-                  _showCelebrationOverlay(context);
+                  _showCelebrationOverlay(context, ref);
+                  // Verificar y mostrar bendicion si hay guia activo
+                  _checkAndShowBlessingFeedback(context, ref);
                 }
-                onFeedback?.call('🎉 ¡Excelente! Tarea completada');
+                onFeedback?.call('Tarea completada');
               } else {
                 onFeedback?.call('Tarea marcada como pendiente');
               }
@@ -198,7 +210,7 @@ class TaskTile extends ConsumerWidget {
           side: BorderSide(
             color: task.isCompleted
                 ? Colors.transparent
-                : _getPriorityColor(task.priority).withValues(alpha:0.3),
+                : TaskConstants.getPriorityColor(task.priority).withValues(alpha:0.3),
             width: 1,
           ),
         ),
@@ -236,9 +248,11 @@ class TaskTile extends ConsumerWidget {
                       // Task completed! Show celebration
                       HapticFeedback.heavyImpact();
                       if (context.mounted) {
-                        _showCelebrationOverlay(context);
+                        _showCelebrationOverlay(context, ref);
+                        // Verificar y mostrar bendicion si hay guia activo
+                        _checkAndShowBlessingFeedback(context, ref);
                       }
-                      onFeedback?.call('🎉 ¡Excelente! Tarea completada');
+                      onFeedback?.call('Tarea completada');
                     } else {
                       onFeedback?.call('Tarea marcada como pendiente');
                     }
@@ -274,22 +288,22 @@ class TaskTile extends ConsumerWidget {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Semantics(
-                      label: 'Prioridad ${_getPriorityLabel(task.priority)}',
+                      label: 'Prioridad ${TaskConstants.getPriorityLabel(task.priority)}',
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 6,
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: _getPriorityColor(task.priority).withValues(alpha:0.1),
+                          color: TaskConstants.getPriorityColor(task.priority).withValues(alpha:0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          _getPriorityLabel(task.priority),
+                          TaskConstants.getPriorityLabel(task.priority),
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: _getPriorityColor(task.priority),
+                            color: TaskConstants.getPriorityColor(task.priority),
                           ),
                         ),
                       ),
@@ -337,7 +351,7 @@ class TaskTile extends ConsumerWidget {
                       ),
                     if (task.dueTimeMinutes != null)
                       Semantics(
-                        label: 'Hora programada ${(task.dueTimeMinutes! ~/ 60).toString().padLeft(2, '0')}:${(task.dueTimeMinutes! % 60).toString().padLeft(2, '0')}',
+                        label: 'Hora programada ${TimeUtils.formatMinutes(task.dueTimeMinutes!)}',
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -349,7 +363,7 @@ class TaskTile extends ConsumerWidget {
                             const SizedBox(width: 3),
                             Flexible(
                               child: Text(
-                                '${(task.dueTimeMinutes! ~/ 60).toString().padLeft(2, '0')}:${(task.dueTimeMinutes! % 60).toString().padLeft(2, '0')}',
+                                TimeUtils.formatMinutes(task.dueTimeMinutes!),
                                 style: TextStyle(
                                   fontSize: 10,
                                   color: colorScheme.onSurface.withValues(alpha:0.6),
@@ -475,178 +489,5 @@ class TaskTile extends ConsumerWidget {
       ),
     ),
     );
-  }
-}
-
-/// Celebration overlay widget that shows a checkmark animation with confetti-like particles
-class _CelebrationOverlay extends StatefulWidget {
-  final VoidCallback onComplete;
-
-  const _CelebrationOverlay({required this.onComplete});
-
-  @override
-  State<_CelebrationOverlay> createState() => _CelebrationOverlayState();
-}
-
-class _CelebrationOverlayState extends State<_CelebrationOverlay>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _opacityAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-
-    _scaleAnimation = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 0.0, end: 1.3).chain(CurveTween(curve: Curves.easeOutBack)),
-        weight: 60,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.3, end: 1.0).chain(CurveTween(curve: Curves.easeInOut)),
-        weight: 40,
-      ),
-    ]).animate(_controller);
-
-    _opacityAnimation = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 0.0, end: 1.0),
-        weight: 30,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 1.0),
-        weight: 40,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 0.0),
-        weight: 30,
-      ),
-    ]).animate(_controller);
-
-    _controller.forward().then((_) {
-      widget.onComplete();
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: IgnorePointer(
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return Stack(
-              alignment: Alignment.center,
-              children: [
-                // Semi-transparent background
-                Opacity(
-                  opacity: _opacityAnimation.value * 0.3,
-                  child: Container(
-                    color: Colors.green,
-                  ),
-                ),
-                // Checkmark icon
-                Transform.scale(
-                  scale: _scaleAnimation.value,
-                  child: Opacity(
-                    opacity: _opacityAnimation.value,
-                    child: Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.green.withValues(alpha: 0.5),
-                            blurRadius: 20,
-                            spreadRadius: 5,
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.check,
-                        color: Colors.white,
-                        size: 60,
-                      ),
-                    ),
-                  ),
-                ),
-                // Confetti particles
-                ..._buildConfettiParticles(),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _buildConfettiParticles() {
-    final List<Widget> particles = [];
-    final colors = [
-      Colors.green,
-      Colors.greenAccent,
-      Colors.lightGreen,
-      Colors.yellow,
-      Colors.amber,
-      Colors.white,
-    ];
-
-    for (int i = 0; i < 12; i++) {
-      final angle = (i / 12) * 2 * 3.14159;
-      final color = colors[i % colors.length];
-
-      particles.add(
-        AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            final progress = _controller.value;
-            final distance = 80 + (progress * 120);
-            final x = distance * (0.5 + 0.5 * (i.isEven ? 1 : -1)) *
-                      (i % 3 == 0 ? 1.2 : 0.8) *
-                      (angle > 3.14 ? -1 : 1);
-            final y = distance * (0.5 + 0.5 * (i.isOdd ? 1 : -1)) *
-                      (i % 2 == 0 ? 1.2 : 0.8) *
-                      (angle > 1.57 && angle < 4.71 ? 1 : -1);
-
-            return Transform.translate(
-              offset: Offset(
-                x * _scaleAnimation.value,
-                y * _scaleAnimation.value,
-              ),
-              child: Opacity(
-                opacity: _opacityAnimation.value,
-                child: Transform.rotate(
-                  angle: progress * 3.14159 * 2,
-                  child: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: i.isEven ? BoxShape.circle : BoxShape.rectangle,
-                      borderRadius: i.isEven ? null : BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      );
-    }
-
-    return particles;
   }
 }

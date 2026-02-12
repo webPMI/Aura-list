@@ -1,11 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'error_handler.dart';
 import 'database_service.dart';
 import 'google_sign_in_service.dart';
 import 'session_cache_manager.dart';
+import 'logger_service.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) {
   final errorHandler = ref.read(errorHandlerProvider);
@@ -18,49 +19,38 @@ final authStateProvider = StreamProvider<User?>((ref) {
   return ref.watch(authServiceProvider).authStateChanges;
 });
 
-/// Provider to check if user is linked (not anonymous)
 final isLinkedAccountProvider = Provider.autoDispose<bool>((ref) {
   final authService = ref.watch(authServiceProvider);
   return authService.isLinkedAccount;
 });
 
-/// Provider that automatically signs in anonymously if no user exists
-/// This should be watched at app startup to ensure authentication
-/// Returns immediately and allows the app to function in offline mode if Firebase is unavailable
 final authInitializationProvider = FutureProvider<void>((ref) async {
   final authService = ref.watch(authServiceProvider);
 
   try {
-    // Wait a bit to ensure Firebase is fully initialized
     await Future.delayed(const Duration(milliseconds: 200));
-
-    // Refresh Firebase availability check
     authService.refreshFirebaseAvailability();
 
-    // Check if Firebase is available
     if (!authService.isFirebaseAvailable) {
-      debugPrint('Firebase Auth no disponible - app funcionara en modo local');
+      LoggerService().info('AuthInit', 'Firebase Auth no disponible - app funcionara en modo local');
       return;
     }
 
-    // Check if there's already a user
     if (authService.currentUser == null) {
-      debugPrint('No hay usuario, intentando login anonimo...');
+      LoggerService().info('AuthInit', 'No hay usuario, intentando login anonimo...');
       final result = await authService.signInAnonymously();
       if (result != null) {
-        debugPrint('Login anonimo exitoso: ${result.user?.uid}');
+        LoggerService().info('AuthInit', 'Login anonimo exitoso: ${result.user?.uid}');
       } else {
-        debugPrint('Login anonimo omitido (Firebase no disponible o error)');
-        debugPrint('App funcionara en modo local');
+        LoggerService().warning('AuthInit', 'Login anonimo omitido (Firebase no disponible o error)');
+        LoggerService().info('AuthInit', 'App funcionara en modo local');
       }
     } else {
-      debugPrint('Usuario ya autenticado: ${authService.currentUser?.uid}');
+      LoggerService().info('AuthInit', 'Usuario ya autenticado: ${authService.currentUser?.uid}');
     }
   } catch (e) {
-    // Catch any unexpected errors during initialization
-    // Don't propagate the error - let the app continue in offline mode
-    debugPrint('Error durante inicializacion de auth: $e');
-    debugPrint('App funcionara en modo local');
+    LoggerService().error('AuthInit', 'Error durante inicializacion de auth', error: e);
+    LoggerService().info('AuthInit', 'App funcionara en modo local');
   }
 });
 
@@ -68,17 +58,14 @@ class AuthService {
   final ErrorHandler _errorHandler;
   final GoogleSignInService _googleSignIn;
   final SessionCacheManager _sessionCache;
+  final _logger = LoggerService();
   FirebaseAuth? _auth;
   bool _firebaseAvailable = false;
   bool _initialized = false;
-
-  /// Track if dispose has been called
   bool _disposed = false;
 
   AuthService(this._errorHandler, this._googleSignIn, this._sessionCache);
 
-  /// Ensures Firebase Auth is available before operations
-  /// This method is safe to call multiple times
   void _ensureFirebaseAvailable() {
     if (_initialized && _firebaseAvailable) return;
 
@@ -87,15 +74,14 @@ class AuthService {
       if (_firebaseAvailable) {
         _auth = FirebaseAuth.instance;
         _initialized = true;
-        debugPrint('Firebase Auth inicializado correctamente');
+        _logger.info('AuthService', 'Firebase Auth inicializado correctamente');
       }
     } catch (e) {
       _firebaseAvailable = false;
-      debugPrint('Firebase Auth no disponible: $e');
+      _logger.warning('AuthService', 'Firebase Auth no disponible', metadata: {'error': e.toString()});
     }
   }
 
-  /// Re-check Firebase availability (useful after delayed initialization)
   void refreshFirebaseAvailability() {
     _initialized = false;
     _ensureFirebaseAvailable();
@@ -117,26 +103,24 @@ class AuthService {
     return _auth!.currentUser;
   }
 
-  /// Check if Firebase Auth is available
   bool get isFirebaseAvailable {
     _ensureFirebaseAvailable();
     return _firebaseAvailable;
   }
 
   Future<UserCredential?> signInAnonymously() async {
-    // Ensure Firebase is available before attempting sign in
     _ensureFirebaseAvailable();
 
     if (!_firebaseAvailable || _auth == null) {
-      debugPrint('Firebase no configurado, omitiendo login anonimo');
-      debugPrint('La app funcionara en modo local (Hive)');
+      _logger.info('AuthService', 'Firebase no configurado, omitiendo login anonimo');
+      _logger.info('AuthService', 'La app funcionara en modo local (Hive)');
       return null;
     }
 
     try {
-      debugPrint('Intentando login anonimo...');
+      _logger.info('AuthService', 'Intentando login anonimo...');
       final result = await _auth!.signInAnonymously();
-      debugPrint('Login anonimo exitoso: ${result.user?.uid}');
+      _logger.info('AuthService', 'Login anonimo exitoso: ${result.user?.uid}');
       return result;
     } on FirebaseAuthException catch (e, stack) {
       // Handle specific Firebase Auth errors
@@ -144,19 +128,17 @@ class AuthService {
 
       switch (e.code) {
         case 'operation-not-allowed':
-          debugPrint(
-            'ERROR: Autenticación anónima no está habilitada en Firebase Console',
-          );
+          _logger.error('AuthService', 'Autenticación anónima no está habilitada en Firebase Console');
           userMessage =
               'Autenticación anónima no habilitada. Contacta al administrador.';
           break;
         case 'network-request-failed':
-          debugPrint('ERROR: No hay conexión a Internet');
+          _logger.error('AuthService', 'No hay conexión a Internet');
           userMessage =
               'Sin conexión a Internet. La app funcionará en modo local.';
           break;
         default:
-          debugPrint('ERROR Firebase Auth: ${e.code} - ${e.message}');
+          _logger.error('AuthService', 'Firebase Auth error: ${e.code}', metadata: {'message': e.message});
           userMessage =
               'Error de autenticación. La app funcionará en modo local.';
       }
@@ -173,7 +155,7 @@ class AuthService {
       );
       return null;
     } catch (e, stack) {
-      debugPrint('ERROR inesperado en login anónimo: $e');
+      _logger.error('AuthService', 'Error inesperado en login anónimo', error: e);
       _errorHandler.handle(
         e,
         type: ErrorType.auth,
@@ -301,7 +283,7 @@ class AuthService {
       );
 
       final result = await user.linkWithCredential(credential);
-      debugPrint('Cuenta vinculada exitosamente con email: $email');
+      _logger.info('AuthService', 'Cuenta vinculada exitosamente con email: $email');
       return result;
     } on FirebaseAuthException catch (e, stack) {
       String userMessage = 'No se pudo vincular la cuenta';
@@ -383,16 +365,31 @@ class AuthService {
     }
 
     try {
+      UserCredential userCredential;
+
+      // On web, use linkWithPopup directly (google_sign_in doesn't provide idToken reliably)
+      if (kIsWeb) {
+        _logger.info('AuthService', 'Usando linkWithPopup para web...');
+        final googleProvider = GoogleAuthProvider();
+        googleProvider.addScope('email');
+        googleProvider.addScope('profile');
+
+        userCredential = await user.linkWithPopup(googleProvider);
+        _logger.info('AuthService', 'Cuenta vinculada exitosamente con Google (web): ${userCredential.user?.email}');
+        return (credential: userCredential, error: null);
+      }
+
+      // On mobile, use google_sign_in package
       final result = await _googleSignIn.getGoogleCredentialWithError();
 
       if (result.isCancelled) {
-        debugPrint('Usuario cancelo el inicio de sesion con Google');
+        _logger.info('AuthService', 'Usuario cancelo el inicio de sesion con Google');
         return (credential: null, error: null); // No error, just cancelled
       }
 
       if (result.isError) {
         final errorMessage = _getGoogleErrorMessage(result.error!);
-        debugPrint('Error obteniendo credencial de Google: ${result.error}');
+        _logger.error('AuthService', 'Error obteniendo credencial de Google', metadata: {'error': result.error.toString()});
         return (credential: null, error: errorMessage);
       }
 
@@ -403,12 +400,16 @@ class AuthService {
         );
       }
 
-      final userCredential = await user.linkWithCredential(result.credential!);
-      debugPrint(
-        'Cuenta vinculada exitosamente con Google: ${userCredential.user?.email}',
-      );
+      userCredential = await user.linkWithCredential(result.credential!);
+      _logger.info('AuthService', 'Cuenta vinculada exitosamente con Google: ${userCredential.user?.email}');
       return (credential: userCredential, error: null);
     } on FirebaseAuthException catch (e, stack) {
+      // Handle popup cancelled by user (not an error)
+      if (e.code == 'popup-closed-by-user' || e.code == 'cancelled-popup-request') {
+        _logger.info('AuthService', 'Usuario cerro el popup de Google');
+        return (credential: null, error: null); // No error, just cancelled
+      }
+
       String userMessage = 'No se pudo vincular con Google';
 
       switch (e.code) {
@@ -500,7 +501,7 @@ class AuthService {
       // 4. Delete Firebase Auth account
       await user.delete();
 
-      debugPrint('Cuenta eliminada completamente');
+      _logger.info('AuthService', 'Cuenta eliminada completamente');
 
       // 5. Sign in anonymously for fresh start
       await signInAnonymously();
@@ -654,15 +655,15 @@ class AuthService {
     if (_disposed) return;
 
     try {
-      debugPrint('[AuthService] Disposing resources...');
+      _logger.debug('AuthService', 'Disposing resources...');
       _disposed = true;
 
       // No need to close streams or sign out - just mark as disposed
       // Firebase Auth manages its own lifecycle
 
-      debugPrint('[AuthService] Disposed successfully');
+      _logger.debug('AuthService', 'Disposed successfully');
     } catch (e) {
-      debugPrint('[AuthService] Error during dispose: $e');
+      _logger.error('AuthService', 'Error during dispose', error: e);
     }
   }
 

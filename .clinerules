@@ -1,0 +1,46 @@
+# AuraList - Reglas para Claude Code
+
+## ARQUITECTURA
+Offline-first: Hive (local) → Riverpod → UI
+Firebase sync opcional y asíncrono (cola de reintentos si falla)
+UI actualiza vía Box.watch() streams, guardado optimista
+
+## COMANDOS ESENCIALES
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs
+flutter run -d chrome|windows
+flutter analyze
+
+## PATRONES OBLIGATORIOS
+Widgets: ConsumerWidget o ConsumerStatefulWidget (Riverpod)
+Models: @HiveType + @HiveField + copyWith() + toFirestore()/fromFirestore()
+Providers: StateNotifierProvider, watch Hive streams
+Servicios: DatabaseService (CRUD + sync), AuthService, ErrorHandler
+
+## CONVENCIONES
+UI texto: español
+Sin emojis en código/UI
+tasksProvider(type) para 'daily'|'weekly'|'monthly'|'yearly'|'once'
+Task.firestoreId null si no sincronizado
+
+## PROHIBICIONES
+NO crear archivos .md innecesarios
+NO sobre-documentar código obvio
+NO asumir Firebase disponible (degradar gracefully)
+NO bloquear UI esperando sync
+
+## FLUJO DE DATOS
+1. Usuario modifica → Hive (inmediato)
+2. UI reacciona via stream
+3. Firebase sync (async, cola si falla)
+4. 3 reintentos exponenciales (2s, 4s, 6s)
+
+## TASK MODEL (Hive typeId: 0)
+type, priority (0-2), category, dueTimeMinutes (0-1439)
+deadline, motivation, reward, firestoreId
+
+## SKILLS ÚTILES
+/generate - Regenerar Hive adapters
+/clean - Limpieza completa
+/analyze - Análisis estático
+/widget|/provider|/model|/screen|/service Name - Scaffolding

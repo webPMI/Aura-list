@@ -93,12 +93,16 @@ class TaskNotesSection extends ConsumerWidget {
         builder: (context) => NoteEditor(
           note: note,
           taskId: taskId,
-          onSave: (title, content, color, tags) async {
+          onSave: (title, content, color, tags, checklist,
+              {String? richContent, String contentType = 'plain'}) async {
             final updatedNote = note.copyWith(
               title: title,
               content: content,
               color: color,
               tags: tags,
+              checklist: checklist,
+              richContent: richContent,
+              contentType: contentType,
             );
             await ref
                 .read(taskNotesProvider(taskId).notifier)
@@ -195,11 +199,13 @@ class TaskNotesSection extends ConsumerWidget {
       MaterialPageRoute(
         builder: (context) => NoteEditor(
           taskId: taskId,
-          onSave: (title, content, color, tags) async {
+          onSave: (title, content, color, tags, checklist,
+              {String? richContent, String contentType = 'plain'}) async {
             await ref.read(taskNotesProvider(taskId).notifier).addNote(
                   title: title,
                   content: content,
                   color: color,
+                  checklist: checklist,
                 );
             onFeedback?.call('Nota agregada');
           },

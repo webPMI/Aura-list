@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:checklist_app/features/guides/guides.dart';
 import '../core/responsive/breakpoints.dart';
+import '../core/utils/color_utils.dart';
 import '../core/constants/motivational_messages.dart';
+import '../core/constants/task_constants.dart';
 import '../models/task_model.dart';
 import '../providers/task_provider.dart';
 import '../providers/navigation_provider.dart';
@@ -50,16 +53,22 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
-class _GreetingHeader extends StatelessWidget {
+class _GreetingHeader extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final greeting = MotivationalMessages.getTimeBasedGreeting();
     final dateFormat = DateFormat('EEEE d MMMM', 'es');
+    final activeGuide = ref.watch(activeGuideProvider);
 
     // Responsive font sizes
     final isMobile = context.isMobile;
     final titleFontSize = isMobile ? 20.0 : 24.0;
     final subtitleFontSize = isMobile ? 12.0 : 14.0;
+
+    // Obtener color del guia activo
+    final guideColor = activeGuide != null
+        ? parseHexColor(activeGuide.themeAccentHex ?? activeGuide.themePrimaryHex)
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,13 +80,59 @@ class _GreetingHeader extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        Text(
-          dateFormat.format(DateTime.now()),
-          style: TextStyle(
-            fontSize: subtitleFontSize,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+        // Mostrar sentencia de poder del guia si esta activo
+        if (activeGuide != null && activeGuide.powerSentence.isNotEmpty)
+          GestureDetector(
+            onTap: () => showGuideSelectorSheet(context),
+            child: Tooltip(
+              message: 'Cambiar guia',
+              child: Container(
+                margin: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.only(left: 12),
+                decoration: BoxDecoration(
+                  border: Border(
+                    left: BorderSide(
+                      color: guideColor ?? Theme.of(context).colorScheme.primary,
+                      width: 3,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '"${activeGuide.powerSentence}"',
+                        style: TextStyle(
+                          fontStyle: FontStyle.italic,
+                          color: guideColor?.withValues(alpha: 0.9) ??
+                              Theme.of(context).colorScheme.primary.withValues(alpha: 0.9),
+                          fontSize: subtitleFontSize,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.swap_horiz,
+                      size: 14,
+                      color: guideColor?.withValues(alpha: 0.6) ??
+                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+        else
+          Text(
+            dateFormat.format(DateTime.now()),
+            style: TextStyle(
+              fontSize: subtitleFontSize,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
           ),
-        ),
       ],
     );
   }
@@ -739,8 +794,6 @@ class _CelebrationOverlayState extends State<_CelebrationOverlay>
 class _TaskSearchDelegate extends SearchDelegate<Task?> {
   final WidgetRef ref;
   static const _taskTypes = ['daily', 'weekly', 'monthly', 'yearly', 'once'];
-  static const _priorityColors = [Colors.blue, Colors.orange, Colors.red];
-  static const _priorityLabels = ['Baja', 'Media', 'Alta'];
 
   _TaskSearchDelegate(this.ref)
       : super(
@@ -906,8 +959,8 @@ class _TaskSearchDelegate extends SearchDelegate<Task?> {
         return _SearchResultTile(
           task: task,
           query: query,
-          priorityColors: _priorityColors,
-          priorityLabels: _priorityLabels,
+          priorityColors: TaskConstants.priorityColors,
+          priorityLabels: TaskConstants.priorityLabels,
           onTap: () {
             // Navigate to the task's type list
             ref.read(selectedTaskTypeProvider.notifier).state = task.type;

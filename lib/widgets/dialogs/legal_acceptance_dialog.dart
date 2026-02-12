@@ -247,34 +247,69 @@ class _LegalAcceptanceDialogState extends ConsumerState<_LegalAcceptanceDialog>
   }) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return InkWell(
-      onTap: () => onChanged(!value),
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          children: [
-            Checkbox(
-              value: value,
-              onChanged: onChanged,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4),
-              ),
+    return Semantics(
+      label: label,
+      checked: value,
+      enabled: true,
+      child: InkWell(
+        onTap: () => onChanged(!value),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: value
+                ? colorScheme.primaryContainer.withValues(alpha: 0.3)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: value
+                  ? colorScheme.primary.withValues(alpha: 0.5)
+                  : colorScheme.outlineVariant,
+              width: value ? 2 : 1,
             ),
-            Expanded(
-              child: Text(
-                label,
-                style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          child: Row(
+            children: [
+              // Checkbox mas grande y accesible
+              SizedBox(
+                width: 40,
+                height: 40,
+                child: Checkbox(
+                  value: value,
+                  onChanged: onChanged,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
               ),
-            ),
-            TextButton(
-              onPressed: onTap,
-              child: Text(
-                'Ver',
-                style: TextStyle(color: colorScheme.primary),
+              const SizedBox(width: 12),
+              // Texto del label
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.4,
+                    fontWeight: value ? FontWeight.w600 : FontWeight.normal,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
               ),
-            ),
-          ],
+              // Boton "Ver" mas visible
+              OutlinedButton.icon(
+                onPressed: onTap,
+                icon: const Icon(Icons.visibility_outlined, size: 18),
+                label: const Text('Ver'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  minimumSize: const Size(0, 36),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -308,15 +343,18 @@ class _LegalAcceptanceDialogState extends ConsumerState<_LegalAcceptanceDialog>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Summary card
+          const SizedBox(height: 8),
+
+          // Summary card con mejor contraste y legibilidad
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(12),
+              color: colorScheme.primaryContainer.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: colorScheme.primaryContainer,
+                color: colorScheme.primary.withValues(alpha: 0.3),
+                width: 2,
               ),
             ),
             child: Column(
@@ -325,52 +363,84 @@ class _LegalAcceptanceDialogState extends ConsumerState<_LegalAcceptanceDialog>
                 Row(
                   children: [
                     Icon(
-                      Icons.summarize_outlined,
-                      size: 20,
+                      Icons.summarize_rounded,
+                      size: 24,
                       color: colorScheme.primary,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 12),
                     Text(
-                      'Resumen',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      'Resumen Ejecutivo',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: colorScheme.primary,
                           ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 Text(
                   summary.trim(),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        height: 1.5,
-                      ),
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.7,
+                    color: colorScheme.onSurface.withValues(alpha: 0.9),
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 24),
 
-          // Full content
-          Text(
-            'Documento completo',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+          // Divider con label
+          Row(
+            children: [
+              Expanded(
+                child: Divider(
+                  color: colorScheme.outlineVariant,
+                  thickness: 1,
                 ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'DOCUMENTO COMPLETO',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.2,
+                    color: colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Divider(
+                  color: colorScheme.outlineVariant,
+                  thickness: 1,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
+
+          // Full content con mejor legibilidad
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              color: colorScheme.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+              ),
             ),
             child: SelectableText(
               content.trim(),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    height: 1.6,
-                  ),
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.8,
+                color: colorScheme.onSurface.withValues(alpha: 0.87),
+              ),
             ),
           ),
           const SizedBox(height: 24),

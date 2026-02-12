@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/responsive/breakpoints.dart';
 import '../core/utils/color_utils.dart';
@@ -256,7 +255,7 @@ class _NoteSearchSheetState extends ConsumerState<_NoteSearchSheet> {
                         width: 12,
                         height: 12,
                         decoration: BoxDecoration(
-                          color: ColorUtils.parseHex(note.color),
+                          color: parseHexColor(note.color) ?? Colors.grey,
                           shape: BoxShape.circle,
                           border: Border.all(color: colorScheme.outline),
                         ),

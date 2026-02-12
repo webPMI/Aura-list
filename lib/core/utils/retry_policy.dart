@@ -33,6 +33,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import '../exceptions/app_exceptions.dart';
+import '../../services/logger_service.dart';
 
 /// Callback invocado antes de cada reintento
 typedef RetryCallback = void Function(
@@ -169,10 +170,7 @@ class RetryPolicy {
         }
 
         if (kDebugMode) {
-          debugPrint(
-            '[RetryPolicy] Intento $attempt/$maxAttempts fallido. '
-            'Reintentando en ${delay.inMilliseconds}ms...',
-          );
+          LoggerService().debug('RetryPolicy', 'Intento $attempt/$maxAttempts fallido. Reintentando en ${delay.inMilliseconds}ms...');
         }
 
         // Wait before retrying

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/task_model.dart';
 import '../models/note_model.dart';
+import 'logger_service.dart';
 
 /// Estrategias para resolver conflictos de sincronizacion.
 enum ConflictStrategy {
@@ -81,6 +82,7 @@ class ConflictLog {
 /// Este servicio implementa varias estrategias para resolver conflictos
 /// cuando hay diferencias entre la version local (Hive) y la remota (Firebase).
 class ConflictResolver {
+  final _logger = LoggerService();
   /// Estrategia por defecto a utilizar
   final ConflictStrategy defaultStrategy;
 
@@ -275,12 +277,10 @@ class ConflictResolver {
     }
 
     if (kDebugMode) {
-      debugPrint('');
-      debugPrint('[CONFLICT] $type: $id');
-      debugPrint('  Estrategia: ${defaultStrategy.name}');
-      debugPrint('  Local: ${local?.toString().substring(0, 50)}...');
-      debugPrint('  Remote: ${remote?.toString().substring(0, 50)}...');
-      debugPrint('');
+      _logger.debug('ConflictResolver', '[CONFLICT] $type: $id');
+      _logger.debug('ConflictResolver', '  Estrategia: ${defaultStrategy.name}');
+      _logger.debug('ConflictResolver', '  Local: ${local?.toString().substring(0, 50)}...');
+      _logger.debug('ConflictResolver', '  Remote: ${remote?.toString().substring(0, 50)}...');
     }
   }
 

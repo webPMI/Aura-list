@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/auth_service.dart';
 import '../core/responsive/breakpoints.dart';
 import '../widgets/auth/password_strength_indicator.dart';
+import '../widgets/dialogs/legal_document_viewer.dart';
+import '../core/constants/legal/terms_of_service.dart';
+import '../core/constants/legal/privacy_policy.dart';
 import 'main_scaffold.dart';
 
 /// Pantalla de registro con email y contrasena
@@ -365,25 +369,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Checkbox de terminos
-                        CheckboxListTile(
+                        // Checkbox de terminos con enlaces clickeables
+                        _TermsAcceptanceWidget(
                           value: _acceptedTerms,
-                          onChanged: _isLoading
-                              ? null
-                              : (value) {
-                                  setState(() {
-                                    _acceptedTerms = value ?? false;
-                                    if (_acceptedTerms) {
-                                      _errorMessage = null;
-                                    }
-                                  });
-                                },
-                          title: const Text(
-                            'Acepto los terminos y condiciones y la politica de privacidad',
-                            style: TextStyle(fontSize: 13),
-                          ),
-                          controlAffinity: ListTileControlAffinity.leading,
-                          contentPadding: EdgeInsets.zero,
+                          enabled: !_isLoading,
+                          onChanged: (value) {
+                            setState(() {
+                              _acceptedTerms = value;
+                              if (_acceptedTerms) {
+                                _errorMessage = null;
+                              }
+                            });
+                          },
                         ),
                         const SizedBox(height: 24),
 
@@ -480,6 +477,122 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Widget mejorado para aceptacion de terminos con enlaces clickeables
+class _TermsAcceptanceWidget extends StatelessWidget {
+  final bool value;
+  final bool enabled;
+  final ValueChanged<bool> onChanged;
+
+  const _TermsAcceptanceWidget({
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  void _showTermsOfService(BuildContext context) {
+    showLegalDocumentDialog(
+      context: context,
+      title: 'Terminos y Condiciones',
+      content: termsOfServiceEs,
+      summary: termsSummaryEs,
+    );
+  }
+
+  void _showPrivacyPolicy(BuildContext context) {
+    showLegalDocumentDialog(
+      context: context,
+      title: 'Politica de Privacidad',
+      content: privacyPolicyEs,
+      summary: privacySummaryEs,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Semantics(
+      label: 'Acepto los terminos y condiciones y la politica de privacidad',
+      checked: value,
+      enabled: enabled,
+      child: InkWell(
+        onTap: enabled ? () => onChanged(!value) : null,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Checkbox mas grande y accesible
+              SizedBox(
+                width: 40,
+                height: 40,
+                child: Checkbox(
+                  value: value,
+                  onChanged: enabled ? (val) => onChanged(val ?? false) : null,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Texto con enlaces clickeables
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: RichText(
+                    text: TextSpan(
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.5,
+                        color: enabled
+                            ? colorScheme.onSurface
+                            : colorScheme.onSurface.withValues(alpha: 0.38),
+                      ),
+                      children: [
+                        const TextSpan(text: 'Acepto los '),
+                        TextSpan(
+                          text: 'Terminos y Condiciones',
+                          style: TextStyle(
+                            color: enabled
+                                ? colorScheme.primary
+                                : colorScheme.primary.withValues(alpha: 0.38),
+                            fontWeight: FontWeight.w600,
+                            decoration: TextDecoration.underline,
+                          ),
+                          recognizer: enabled
+                              ? (TapGestureRecognizer()
+                                ..onTap = () => _showTermsOfService(context))
+                              : null,
+                        ),
+                        const TextSpan(text: ' y la '),
+                        TextSpan(
+                          text: 'Politica de Privacidad',
+                          style: TextStyle(
+                            color: enabled
+                                ? colorScheme.primary
+                                : colorScheme.primary.withValues(alpha: 0.38),
+                            fontWeight: FontWeight.w600,
+                            decoration: TextDecoration.underline,
+                          ),
+                          recognizer: enabled
+                              ? (TapGestureRecognizer()
+                                ..onTap = () => _showPrivacyPolicy(context))
+                              : null,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

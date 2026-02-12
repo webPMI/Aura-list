@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:checklist_app/features/guides/guides.dart';
+import 'package:checklist_app/widgets/shared/avatar_fallback.dart';
 import '../../services/auth_service.dart';
 import '../../providers/navigation_provider.dart';
 
@@ -43,7 +45,7 @@ class UserCard extends ConsumerWidget {
 }
 
 /// Card para usuario logueado con Google
-class _LoggedInCard extends StatelessWidget {
+class _LoggedInCard extends ConsumerWidget {
   final String? displayName;
   final String? email;
   final String? photoUrl;
@@ -57,7 +59,8 @@ class _LoggedInCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeGuide = ref.watch(activeGuideProvider);
     return Card(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
@@ -135,12 +138,18 @@ class _LoggedInCard extends StatelessWidget {
                               ? Image.network(
                                   photoUrl!,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) => _AvatarFallback(
+                                  errorBuilder: (context, error, stackTrace) => AvatarFallback(
                                     name: displayName ?? email,
+                                    backgroundColor: const Color(0xFF7C3AED),
+                                    size: 56,
+                                    useDoubleInitials: true,
                                   ),
                                 )
-                              : _AvatarFallback(
+                              : AvatarFallback(
                                   name: displayName ?? email,
+                                  backgroundColor: const Color(0xFF7C3AED),
+                                  size: 56,
+                                  useDoubleInitials: true,
                                 ),
                         ),
                       ),
@@ -196,6 +205,42 @@ class _LoggedInCard extends StatelessWidget {
                         ],
                       ),
                     ),
+                    // Guia celestial
+                    if (activeGuide != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: GestureDetector(
+                          onTap: () => showGuideSelectorSheet(context),
+                          child: Tooltip(
+                            message: activeGuide.name,
+                            child: const GuideAvatar(size: 36, showBorder: true),
+                          ),
+                        ),
+                      )
+                    else
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: GestureDetector(
+                          onTap: () => showGuideSelectorSheet(context),
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withValues(alpha: 0.2),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.5),
+                                width: 2,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.auto_awesome,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                        ),
+                      ),
                     // Flecha
                     Container(
                       padding: const EdgeInsets.all(8),
@@ -220,47 +265,17 @@ class _LoggedInCard extends StatelessWidget {
   }
 }
 
-/// Fallback avatar con iniciales
-class _AvatarFallback extends StatelessWidget {
-  final String? name;
 
-  const _AvatarFallback({this.name});
-
-  String _getInitials(String? name) {
-    if (name == null || name.isEmpty) return '?';
-    final parts = name.split(' ');
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
-    return name[0].toUpperCase();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFF7C3AED),
-      child: Center(
-        child: Text(
-          _getInitials(name),
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 /// Card para usuario anonimo - invita a iniciar sesion
-class _AnonymousCard extends StatelessWidget {
+class _AnonymousCard extends ConsumerWidget {
   final VoidCallback onTap;
 
   const _AnonymousCard({required this.onTap});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeGuide = ref.watch(activeGuideProvider);
     return Card(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
@@ -302,15 +317,47 @@ class _AnonymousCard extends StatelessWidget {
                   color: Colors.white.withValues(alpha: 0.08),
                 ),
               ),
+              // Guia celestial en la esquina superior derecha
+              Positioned(
+                right: 12,
+                top: 12,
+                child: GestureDetector(
+                  onTap: () => showGuideSelectorSheet(context),
+                  child: activeGuide != null
+                      ? Tooltip(
+                          message: activeGuide.name,
+                          child: const GuideAvatar(size: 32, showBorder: true),
+                        )
+                      : Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.25),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              width: 2,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.auto_awesome,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                ),
+              ),
               // Contenido
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: Row(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Icono de usuario
                     Container(
-                      width: 56,
-                      height: 56,
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: Colors.white.withValues(alpha: 0.2),
@@ -322,48 +369,41 @@ class _AnonymousCard extends StatelessWidget {
                       child: const Icon(
                         Icons.person_add_outlined,
                         color: Colors.white,
-                        size: 28,
+                        size: 24,
                       ),
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(height: 12),
                     // Texto de invitacion
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Vincula tu cuenta',
-                            style: const TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Sincroniza tus tareas en todos tus dispositivos',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.white.withValues(alpha: 0.9),
-                              height: 1.3,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                    Text(
+                      'Vincula tu cuenta',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
+                      textAlign: TextAlign.center,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Sincroniza tus tareas',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 12),
                     // Boton
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
+                        horizontal: 12,
+                        vertical: 6,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.1),
@@ -378,13 +418,13 @@ class _AnonymousCard extends StatelessWidget {
                           Icon(
                             Icons.login,
                             color: const Color(0xFF059669),
-                            size: 16,
+                            size: 14,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             'Entrar',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF059669),
                             ),
@@ -443,28 +483,30 @@ class _LoadingCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 14),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 120,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(4),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 120,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  width: 80,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(4),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: 80,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),

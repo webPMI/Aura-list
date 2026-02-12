@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../models/note_model.dart';
+import '../core/utils/color_utils.dart';
 
 class NoteCard extends StatelessWidget {
   final Note note;
@@ -19,21 +20,122 @@ class NoteCard extends StatelessWidget {
     this.onLongPress,
   });
 
-  Color _parseColor(String hexColor) {
-    try {
-      return Color(int.parse(hexColor.replaceFirst('#', '0xFF')));
-    } catch (e) {
-      return Colors.white;
+  Widget _buildContentPreview(BuildContext context, Color textColor, int maxLines) {
+    // Para notas con checklist, mostrar progreso
+    if (note.hasChecklist) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Progress indicator
+          Row(
+            children: [
+              Icon(
+                Icons.checklist,
+                size: 14,
+                color: textColor.withValues(alpha: 0.6),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                note.checklistProgressText,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: textColor.withValues(alpha: 0.6),
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          // Show first few checklist items
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: note.checklist.take(maxLines - 1).map((item) {
+                return Row(
+                  children: [
+                    Icon(
+                      item.isCompleted
+                          ? Icons.check_box
+                          : Icons.check_box_outline_blank,
+                      size: 14,
+                      color: textColor.withValues(alpha: item.isCompleted ? 0.5 : 0.8),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        item.text,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: textColor.withValues(
+                                  alpha: item.isCompleted ? 0.5 : 0.8),
+                              decoration: item.isCompleted
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      );
     }
+
+    // Para notas con texto enriquecido o plano, mostrar displayContent
+    final content = note.displayContent;
+    if (content.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Indicador de tipo de nota
+        if (note.isRichText)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.format_bold,
+                  size: 12,
+                  color: textColor.withValues(alpha: 0.5),
+                ),
+                const SizedBox(width: 2),
+                Text(
+                  'Texto enriquecido',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: textColor.withValues(alpha: 0.5),
+                        fontSize: 10,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        Expanded(
+          child: Text(
+            content,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: textColor.withValues(alpha: 0.8),
+                ),
+            maxLines: note.isRichText ? maxLines - 1 : maxLines,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final noteColor = _parseColor(note.color);
-    final isDark =
-        ThemeData.estimateBrightnessForColor(noteColor) == Brightness.dark;
-    final textColor = isDark ? Colors.white : Colors.black87;
+    final noteColor = parseHexColor(note.color) ?? Colors.grey;
+    final textColor = ColorUtils.getTextColorFor(noteColor);
+
+    // Adjust maxLines based on text scale for accessibility
+    final textScaleFactor = MediaQuery.of(context).textScaler.scale(1.0);
+    final maxContentLines = textScaleFactor > 1.3 ? 4 : 6;
 
     return Dismissible(
       key: Key('note_${note.id}'),
@@ -99,18 +201,20 @@ class NoteCard extends StatelessWidget {
                     if (note.isPinned)
                       Padding(
                         padding: const EdgeInsets.only(right: 4),
-                        child: Icon(
-                          Icons.push_pin,
-                          size: 14,
-                          color: colorScheme.primary,
+                        child: Semantics(
+                          label: 'Nota anclada',
+                          child: Icon(
+                            Icons.push_pin,
+                            size: 14,
+                            color: colorScheme.primary,
+                          ),
                         ),
                       ),
                     Expanded(
                       child: Text(
                         note.title,
-                        style: TextStyle(
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
-                          fontSize: 14,
                           color: textColor,
                         ),
                         maxLines: 2,
@@ -118,30 +222,27 @@ class NoteCard extends StatelessWidget {
                       ),
                     ),
                     if (onTogglePin != null)
-                      GestureDetector(
-                        onTap: onTogglePin,
-                        child: Icon(
-                          note.isPinned
-                              ? Icons.push_pin
-                              : Icons.push_pin_outlined,
-                          size: 16,
-                          color: textColor.withValues(alpha: 0.5),
+                      SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: IconButton(
+                          icon: Icon(
+                            note.isPinned
+                                ? Icons.push_pin
+                                : Icons.push_pin_outlined,
+                            size: 20,
+                            color: textColor.withValues(alpha: 0.8),
+                          ),
+                          onPressed: onTogglePin,
+                          tooltip: note.isPinned ? 'Desanclar' : 'Anclar',
                         ),
                       ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                // Content preview
+                // Content preview (supports rich text)
                 Expanded(
-                  child: Text(
-                    note.content,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: textColor.withValues(alpha: 0.8),
-                    ),
-                    maxLines: 6,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  child: _buildContentPreview(context, textColor, maxContentLines),
                 ),
                 // Footer with date and link indicator
                 const SizedBox(height: 8),
@@ -150,9 +251,8 @@ class NoteCard extends StatelessWidget {
                     Flexible(
                       child: Text(
                         DateFormat('dd MMM', 'es').format(note.updatedAt),
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: textColor.withValues(alpha: 0.5),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: textColor.withValues(alpha: 0.8),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -161,26 +261,30 @@ class NoteCard extends StatelessWidget {
                     if (note.isLinkedToTask || note.tags.isNotEmpty)
                       const Spacer(),
                     if (note.isLinkedToTask) ...[
-                      Icon(
-                        Icons.link,
-                        size: 12,
-                        color: textColor.withValues(alpha: 0.5),
+                      Semantics(
+                        label: 'Nota vinculada a tarea',
+                        excludeSemantics: true,
+                        child: Icon(
+                          Icons.link,
+                          size: 12,
+                          color: textColor.withValues(alpha: 0.8),
+                        ),
                       ),
                       if (note.tags.isNotEmpty)
                         const SizedBox(width: 6),
                     ],
                     if (note.tags.isNotEmpty) ...[
-                      Icon(
-                        Icons.label_outline,
-                        size: 12,
-                        color: textColor.withValues(alpha: 0.5),
-                      ),
-                      const SizedBox(width: 2),
-                      Text(
-                        '${note.tags.length}',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: textColor.withValues(alpha: 0.5),
+                      Flexible(
+                        child: Semantics(
+                          label: '${note.tags.length} etiquetas: ${note.tags.join(", ")}',
+                          child: Text(
+                            note.tags.take(2).join(', ') + (note.tags.length > 2 ? ' +${note.tags.length - 2}' : ''),
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: textColor.withValues(alpha: 0.6),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
                     ],
@@ -208,18 +312,10 @@ class CompactNoteCard extends StatelessWidget {
     this.onDelete,
   });
 
-  Color _parseColor(String hexColor) {
-    try {
-      return Color(int.parse(hexColor.replaceFirst('#', '0xFF')));
-    } catch (e) {
-      return Colors.white;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final noteColor = _parseColor(note.color);
+    final noteColor = parseHexColor(note.color) ?? Colors.grey;
 
     return Dismissible(
       key: Key('compact_note_${note.id}'),
@@ -245,15 +341,16 @@ class CompactNoteCard extends StatelessWidget {
         ),
         title: Text(
           note.title,
-          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w500,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: note.content.isNotEmpty
+        subtitle: note.displayContent.isNotEmpty
             ? Text(
-                note.content,
-                style: TextStyle(
-                  fontSize: 12,
+                note.displayContent,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
                 maxLines: 2,

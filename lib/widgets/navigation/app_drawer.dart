@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+
+import 'package:checklist_app/features/guides/guides.dart';
+
 import '../../providers/navigation_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/task_provider.dart';
@@ -89,6 +92,9 @@ class AppDrawer extends ConsumerWidget {
           ),
         ),
 
+        // Guía celestial
+        _GuideCelestialTile(),
+
         // Sync Status
         _SyncStatusTile(),
 
@@ -133,6 +139,33 @@ class AppDrawer extends ConsumerWidget {
 
         const SizedBox(height: 16),
       ],
+    );
+  }
+}
+
+class _GuideCelestialTile extends ConsumerWidget {
+  const _GuideCelestialTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final guide = ref.watch(activeGuideProvider);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: _AnimatedListTile(
+        leading: GuideAvatar(size: 40, showBorder: guide != null),
+        title: const Text('Guía celestial'),
+        subtitle: Text(
+          guide?.name ?? 'Toca para elegir',
+          style: TextStyle(
+            fontSize: 12,
+            color: colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
+        ),
+        trailing: const Icon(Icons.chevron_right, size: 20),
+        onTap: () => showGuideSelectorSheet(context),
+      ),
     );
   }
 }
@@ -548,6 +581,8 @@ class _AccountSection extends ConsumerWidget {
                 fontWeight: FontWeight.w600,
                 fontSize: 16,
               ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -564,15 +599,18 @@ class _AccountSection extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      user?.isAnonymous == true
-                          ? 'Solo en este dispositivo'
-                          : user != null
-                              ? 'Sincronizado en la nube'
-                              : 'Sin conexion',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colorScheme.onSurface.withValues(alpha: 0.7),
+                    Flexible(
+                      child: Text(
+                        user?.isAnonymous == true
+                            ? 'Solo en este dispositivo'
+                            : user != null
+                                ? 'Sincronizado en la nube'
+                                : 'Sin conexion',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],

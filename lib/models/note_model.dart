@@ -1,6 +1,52 @@
+import 'dart:convert';
 import 'package:hive/hive.dart';
 
 part 'note_model.g.dart';
+
+@HiveType(typeId: 7)
+class ChecklistItem {
+  @HiveField(0)
+  late String id;
+
+  @HiveField(1)
+  late String text;
+
+  @HiveField(2)
+  late bool isCompleted;
+
+  @HiveField(3)
+  late int order;
+
+  ChecklistItem({
+    String? id,
+    required this.text,
+    this.isCompleted = false,
+    this.order = 0,
+  }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString();
+
+  ChecklistItem copyWith({String? text, bool? isCompleted, int? order}) {
+    return ChecklistItem(
+      id: id,
+      text: text ?? this.text,
+      isCompleted: isCompleted ?? this.isCompleted,
+      order: order ?? this.order,
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'text': text,
+    'isCompleted': isCompleted,
+    'order': order,
+  };
+
+  factory ChecklistItem.fromMap(Map<String, dynamic> map) => ChecklistItem(
+    id: map['id'],
+    text: map['text'] ?? '',
+    isCompleted: map['isCompleted'] ?? false,
+    order: map['order'] ?? 0,
+  );
+}
 
 @HiveType(typeId: 2)
 class Note extends HiveObject {
@@ -37,6 +83,21 @@ class Note extends HiveObject {
   @HiveField(10)
   DateTime? deletedAt; // Timestamp de borrado
 
+  @HiveField(11, defaultValue: [])
+  List<ChecklistItem> checklist;
+
+  @HiveField(12)
+  String? notebookId; // null = sin carpeta, ID del notebook al que pertenece
+
+  @HiveField(13, defaultValue: 'active')
+  late String status; // 'active', 'archived', 'deleted'
+
+  @HiveField(14)
+  String? richContent; // Quill Delta JSON for rich text
+
+  @HiveField(15, defaultValue: 'plain')
+  late String contentType; // 'plain', 'checklist', or 'rich'
+
   Note({
     this.firestoreId = '',
     required this.title,
@@ -49,8 +110,14 @@ class Note extends HiveObject {
     List<String>? tags,
     this.deleted = false,
     this.deletedAt,
-  })  : updatedAt = updatedAt ?? createdAt,
-        tags = tags ?? [];
+    List<ChecklistItem>? checklist,
+    this.notebookId,
+    this.status = 'active',
+    this.richContent,
+    this.contentType = 'plain',
+  }) : updatedAt = updatedAt ?? createdAt,
+       tags = tags ?? [],
+       checklist = checklist ?? [];
 
   // For compatibility with existing code
   int get id => key ?? 0;
@@ -65,6 +132,55 @@ class Note extends HiveObject {
     return '${content.substring(0, 97)}...';
   }
 
+  // Checklist helpers
+  bool get hasChecklist => checklist.isNotEmpty;
+  int get checklistCompleted =>
+      checklist.where((item) => item.isCompleted).length;
+  int get checklistTotal => checklist.length;
+  double get checklistProgress =>
+      checklistTotal > 0 ? checklistCompleted / checklistTotal : 0;
+  String get checklistProgressText => '$checklistCompleted/$checklistTotal';
+
+  // Status convenience getters
+  bool get isActive => status == 'active';
+  bool get isArchived => status == 'archived';
+  bool get isDeleted => status == 'deleted' || deleted;
+
+  // Rich text helpers
+  bool get isRichText => contentType == 'rich' && richContent != null;
+  bool get isPlainText => contentType == 'plain';
+  bool get isChecklistType => contentType == 'checklist';
+
+  // Get display content for previews (extracts plain text from rich content)
+  String get displayContent {
+    if (isRichText && richContent != null) {
+      return _extractPlainTextFromDelta(richContent!);
+    }
+    return content;
+  }
+
+  // Extract plain text from Quill Delta JSON for preview
+  static String _extractPlainTextFromDelta(String deltaJson) {
+    try {
+      final decoded = jsonDecode(deltaJson);
+      final List<dynamic> ops = (decoded is List)
+          ? decoded
+          : ((decoded as Map<String, dynamic>)['ops'] as List?) ?? [];
+      final buffer = StringBuffer();
+      for (final op in ops) {
+        if (op is Map && op.containsKey('insert')) {
+          final insert = op['insert'];
+          if (insert is String) {
+            buffer.write(insert);
+          }
+        }
+      }
+      return buffer.toString().trim();
+    } catch (e) {
+      return '';
+    }
+  }
+
   Map<String, dynamic> toFirestore() {
     return {
       'title': title,
@@ -77,6 +193,11 @@ class Note extends HiveObject {
       'tags': tags,
       'deleted': deleted,
       'deletedAt': deletedAt?.toIso8601String(),
+      'checklist': checklist.map((item) => item.toMap()).toList(),
+      'notebookId': notebookId,
+      'status': status,
+      'richContent': richContent,
+      'contentType': contentType,
     };
   }
 
@@ -96,7 +217,20 @@ class Note extends HiveObject {
       isPinned: data['isPinned'] ?? false,
       tags: (data['tags'] as List?)?.cast<String>() ?? [],
       deleted: data['deleted'] ?? false,
-      deletedAt: data['deletedAt'] != null ? DateTime.parse(data['deletedAt']) : null,
+      deletedAt: data['deletedAt'] != null
+          ? DateTime.parse(data['deletedAt'])
+          : null,
+      checklist:
+          (data['checklist'] as List?)
+              ?.map(
+                (item) => ChecklistItem.fromMap(item as Map<String, dynamic>),
+              )
+              .toList() ??
+          [],
+      notebookId: data['notebookId'],
+      status: data['status'] ?? 'active',
+      richContent: data['richContent'],
+      contentType: data['contentType'] ?? 'plain',
     );
   }
 
@@ -114,6 +248,13 @@ class Note extends HiveObject {
     List<String>? tags,
     bool? deleted,
     DateTime? deletedAt,
+    List<ChecklistItem>? checklist,
+    String? notebookId,
+    bool clearNotebookId = false,
+    String? status,
+    String? richContent,
+    bool clearRichContent = false,
+    String? contentType,
   }) {
     return Note(
       firestoreId: firestoreId ?? this.firestoreId,
@@ -127,6 +268,11 @@ class Note extends HiveObject {
       tags: tags ?? List.from(this.tags),
       deleted: deleted ?? this.deleted,
       deletedAt: deletedAt ?? this.deletedAt,
+      checklist: checklist ?? List.from(this.checklist),
+      notebookId: clearNotebookId ? null : (notebookId ?? this.notebookId),
+      status: status ?? this.status,
+      richContent: clearRichContent ? null : (richContent ?? this.richContent),
+      contentType: contentType ?? this.contentType,
     );
   }
 
@@ -144,6 +290,13 @@ class Note extends HiveObject {
     List<String>? tags,
     bool? deleted,
     DateTime? deletedAt,
+    List<ChecklistItem>? checklist,
+    String? notebookId,
+    bool clearNotebookId = false,
+    String? status,
+    String? richContent,
+    bool clearRichContent = false,
+    String? contentType,
   }) {
     if (firestoreId != null) this.firestoreId = firestoreId;
     if (title != null) this.title = title;
@@ -159,6 +312,19 @@ class Note extends HiveObject {
     if (tags != null) this.tags = tags;
     if (deleted != null) this.deleted = deleted;
     if (deletedAt != null) this.deletedAt = deletedAt;
+    if (checklist != null) this.checklist = checklist;
+    if (clearNotebookId) {
+      this.notebookId = null;
+    } else if (notebookId != null) {
+      this.notebookId = notebookId;
+    }
+    if (status != null) this.status = status;
+    if (clearRichContent) {
+      this.richContent = null;
+    } else if (richContent != null) {
+      this.richContent = richContent;
+    }
+    if (contentType != null) this.contentType = contentType;
   }
 
   // Predefined color options (Material Design pastels)

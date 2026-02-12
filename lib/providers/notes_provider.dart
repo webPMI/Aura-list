@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/note_model.dart';
 import '../services/database_service.dart';
 import '../services/auth_service.dart';
 import '../services/error_handler.dart';
+import '../services/logger_service.dart';
 
 /// Provider for independent notes (not linked to tasks)
 final independentNotesProvider =
@@ -15,6 +15,17 @@ final independentNotesProvider =
       final authService = ref.read(authServiceProvider);
       final errorHandler = ref.read(errorHandlerProvider);
       return IndependentNotesNotifier(dbService, authService, errorHandler);
+    });
+
+/// Provider for archived notes
+final archivedNotesProvider =
+    StateNotifierProvider.autoDispose<ArchivedNotesNotifier, List<Note>>((
+      ref,
+    ) {
+      final dbService = ref.read(databaseServiceProvider);
+      final authService = ref.read(authServiceProvider);
+      final errorHandler = ref.read(errorHandlerProvider);
+      return ArchivedNotesNotifier(dbService, authService, errorHandler);
     });
 
 /// Provider for notes linked to a specific task (family provider)
@@ -64,7 +75,7 @@ class IndependentNotesNotifier extends StateNotifier<List<Note>> {
   void _init() {
     _subscription = _db.watchIndependentNotes().listen(
       (notes) => state = notes,
-      onError: (e) => debugPrint('Error watching notes: $e'),
+      onError: (e) => LoggerService().error('Provider', 'Error watching notes: $e', error: e),
     );
   }
 
@@ -79,6 +90,9 @@ class IndependentNotesNotifier extends StateNotifier<List<Note>> {
     String content = '',
     String color = '#FFFFFF',
     List<String> tags = const [],
+    List<ChecklistItem> checklist = const [],
+    String? richContent,
+    String contentType = 'plain',
   }) async {
     try {
       final newNote = Note(
@@ -87,6 +101,9 @@ class IndependentNotesNotifier extends StateNotifier<List<Note>> {
         createdAt: DateTime.now(),
         color: color,
         tags: tags,
+        checklist: checklist,
+        richContent: richContent,
+        contentType: contentType,
       );
 
       await _db.saveNoteLocally(newNote);
@@ -161,6 +178,16 @@ class IndependentNotesNotifier extends StateNotifier<List<Note>> {
     await updateNote(updatedNote);
   }
 
+  Future<void> archiveNote(Note note) async {
+    final updatedNote = note.copyWith(status: 'archived');
+    await updateNote(updatedNote);
+  }
+
+  Future<void> restoreNote(Note note) async {
+    final updatedNote = note.copyWith(status: 'active');
+    await updateNote(updatedNote);
+  }
+
   Future<void> deleteNote(Note note) async {
     try {
       final firestoreId = note.firestoreId;
@@ -185,6 +212,80 @@ class IndependentNotesNotifier extends StateNotifier<List<Note>> {
   }
 }
 
+class ArchivedNotesNotifier extends StateNotifier<List<Note>> {
+  final DatabaseService _db;
+  final AuthService _auth;
+  final ErrorHandler _errorHandler;
+  StreamSubscription? _subscription;
+
+  ArchivedNotesNotifier(this._db, this._auth, this._errorHandler)
+    : super([]) {
+    _init();
+  }
+
+  void _init() {
+    _subscription = _db.watchArchivedNotes().listen(
+      (notes) => state = notes,
+      onError: (e) => LoggerService().error('Provider', 'Error watching archived notes: $e', error: e),
+    );
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> restoreNote(Note note) async {
+    final updatedNote = note.copyWith(status: 'active');
+    await _updateNote(updatedNote);
+  }
+
+  Future<void> permanentlyDeleteNote(Note note) async {
+    try {
+      final firestoreId = note.firestoreId;
+      await _db.deleteNoteLocally(note.key);
+
+      // Also delete from Firestore if synced
+      final user = _auth.currentUser;
+      if (user != null && firestoreId.isNotEmpty) {
+        await _db.deleteNoteFromCloud(firestoreId, user.uid);
+      }
+    } catch (e, stack) {
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        severity: ErrorSeverity.error,
+        message: 'Error al eliminar nota permanentemente',
+        userMessage: 'No se pudo eliminar la nota',
+        stackTrace: stack,
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> _updateNote(Note note) async {
+    try {
+      await _db.saveNoteLocally(note);
+
+      final user = _auth.currentUser;
+      if (user != null) {
+        await _db.syncNoteToCloud(note, user.uid);
+      }
+    } catch (e, stack) {
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        severity: ErrorSeverity.error,
+        message: 'Error al actualizar nota',
+        userMessage: 'No se pudo actualizar la nota',
+        stackTrace: stack,
+      );
+      rethrow;
+    }
+  }
+}
+
 class TaskNotesNotifier extends StateNotifier<List<Note>> {
   final DatabaseService _db;
   final AuthService _auth;
@@ -202,7 +303,7 @@ class TaskNotesNotifier extends StateNotifier<List<Note>> {
         .watchNotesForTask(_taskId)
         .listen(
           (notes) => state = notes,
-          onError: (e) => debugPrint('Error watching task notes: $e'),
+          onError: (e) => LoggerService().error('Provider', 'Error watching task notes: $e', error: e),
         );
   }
 
@@ -216,6 +317,7 @@ class TaskNotesNotifier extends StateNotifier<List<Note>> {
     required String title,
     String content = '',
     String color = '#FFFDE7', // Default yellow for task notes
+    List<ChecklistItem> checklist = const [],
   }) async {
     try {
       final newNote = Note(
@@ -224,6 +326,7 @@ class TaskNotesNotifier extends StateNotifier<List<Note>> {
         createdAt: DateTime.now(),
         taskId: _taskId,
         color: color,
+        checklist: checklist,
       );
 
       await _db.saveNoteLocally(newNote);

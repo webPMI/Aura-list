@@ -1,35 +1,3 @@
-/// Sistema centralizado de manejo de errores para la aplicacion.
-///
-/// Este modulo proporciona un sistema robusto para capturar, clasificar y
-/// registrar errores de manera estructurada. Implementa el patron Singleton
-/// para garantizar una unica instancia global del manejador de errores.
-///
-/// Caracteristicas principales:
-/// - Clasificacion automatica de errores por tipo y severidad
-/// - Conversion automatica a AppException para manejo tipado
-/// - Logging estructurado via LoggerService
-/// - Mensajes personalizables para el usuario
-/// - Soporte para stack traces opcionales
-/// - Historial de errores para debugging
-/// - Stream de errores para notificaciones en tiempo real a la UI
-/// - Verificacion de reintentabilidad de errores
-///
-/// Ejemplo de uso:
-/// ```dart
-/// try {
-///   await database.saveTask(task);
-/// } catch (e, stack) {
-///   ErrorHandler().handle(
-///     e,
-///     type: ErrorType.database,
-///     severity: ErrorSeverity.error,
-///     message: 'Error al guardar tarea',
-///     userMessage: 'No se pudo guardar la tarea',
-///     stackTrace: stack,
-///   );
-/// }
-/// ```
-library;
 
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -38,31 +6,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/exceptions/app_exceptions.dart';
 import 'logger_service.dart';
 
-// Re-export AppException types for convenience
 export '../core/exceptions/app_exceptions.dart';
 
-/// Tipos de errores en la aplicacion
 enum ErrorType {
-  database,      // Errores de base de datos local
-  network,       // Errores de red/conectividad
-  auth,          // Errores de autenticacion
-  validation,    // Errores de validacion
-  sync,          // Errores de sincronizacion
-  unknown,       // Errores desconocidos
+  database,
+  network,
+  auth,
+  validation,
+  sync,
+  unknown,
 }
 
-/// Severidad del error
 enum ErrorSeverity {
-  info,          // Informativo, no critico
-  warning,       // Advertencia, puede continuar
-  error,         // Error, operacion fallo pero app funciona
-  critical,      // Critico, puede afectar funcionalidad
+  info,
+  warning,
+  error,
+  critical,
 }
 
-/// Clase para representar errores de la aplicacion.
-///
-/// Esta clase es compatible con el sistema legacy y puede convertirse
-/// a [AppException] para uso con el nuevo sistema de excepciones.
 class AppError {
   final ErrorType type;
   final ErrorSeverity severity;
@@ -84,7 +45,6 @@ class AppError {
   }) : timestamp = DateTime.now(),
        isRetryable = isRetryable ?? _defaultIsRetryable(type, originalError);
 
-  /// Determina si el error es reintentable por defecto
   static bool _defaultIsRetryable(ErrorType type, dynamic originalError) {
     if (originalError is AppException) {
       return originalError.isRetryable;
@@ -102,7 +62,6 @@ class AppError {
     }
   }
 
-  /// Mensaje para mostrar al usuario
   String get displayMessage => userMessage ?? _getDefaultUserMessage();
 
   String _getDefaultUserMessage() {
@@ -122,7 +81,6 @@ class AppError {
     }
   }
 
-  /// Prefijo para el log segun severidad
   String get logPrefix {
     switch (severity) {
       case ErrorSeverity.info:
@@ -136,14 +94,11 @@ class AppError {
     }
   }
 
-  /// Convierte este AppError a un AppException tipado
   AppException toAppException() {
-    // Si el error original ya es un AppException, retornarlo
     if (originalError is AppException) {
       return originalError as AppException;
     }
 
-    // Convertir segun el tipo
     switch (type) {
       case ErrorType.network:
         return NetworkException(
@@ -196,74 +151,23 @@ class AppError {
   }
 }
 
-/// Servicio centralizado de manejo de errores (Singleton)
-///
-/// Proporciona metodos para capturar, clasificar y registrar errores
-/// de manera consistente en toda la aplicacion.
-///
-/// Uso del singleton:
-/// ```dart
-/// final handler = ErrorHandler();
-/// handler.handle(error, type: ErrorType.database);
-/// ```
 class ErrorHandler {
-  // Singleton pattern
   static final ErrorHandler _instance = ErrorHandler._internal();
   factory ErrorHandler() => _instance;
   ErrorHandler._internal();
 
   final List<AppError> _errorHistory = [];
   final StreamController<AppError> _errorStream = StreamController.broadcast();
-
-  /// Stream de AppException para la UI
   final StreamController<AppException> _appExceptionStream = StreamController.broadcast();
-
-  /// Logger centralizado para registro de errores
   final LoggerService _logger = LoggerService();
   static const String _tag = 'ErrorHandler';
 
-  /// Stream de errores (legacy) para que la UI pueda escuchar
   Stream<AppError> get errorStream => _errorStream.stream;
-
-  /// Stream de AppException para el nuevo sistema de errores
   Stream<AppException> get appExceptionStream => _appExceptionStream.stream;
-
-  /// Historial de errores (util para debugging)
   List<AppError> get errorHistory => List.unmodifiable(_errorHistory);
-
-  /// Ultimo error ocurrido
   AppError? get lastError => _errorHistory.isNotEmpty ? _errorHistory.last : null;
-
-  /// Ultimo AppException ocurrido
   AppException? get lastAppException => lastError?.toAppException();
 
-  /// Maneja un error de manera centralizada.
-  ///
-  /// Este metodo captura, clasifica y registra errores. Si no se especifica
-  /// un [type], se intentara detectar automaticamente segun el tipo de error.
-  ///
-  /// Parametros:
-  /// - [error]: El error original capturado
-  /// - [type]: Tipo de error (database, network, auth, validation, unknown)
-  /// - [severity]: Severidad del error (info, warning, error, critical)
-  /// - [message]: Mensaje tecnico del error para logs
-  /// - [userMessage]: Mensaje amigable para mostrar al usuario
-  /// - [stackTrace]: Stack trace opcional para debugging
-  /// - [shouldLog]: Si debe registrarse en consola (default: true)
-  ///
-  /// Retorna el [AppError] creado para uso posterior.
-  ///
-  /// Ejemplo:
-  /// ```dart
-  /// final appError = ErrorHandler().handle(
-  ///   e,
-  ///   type: ErrorType.database,
-  ///   severity: ErrorSeverity.error,
-  ///   message: 'Error al guardar tarea',
-  ///   userMessage: 'No se pudo guardar la tarea',
-  ///   stackTrace: stack,
-  /// );
-  /// ```
   AppError handle(
     dynamic error, {
     ErrorType? type,
@@ -293,9 +197,6 @@ class ErrorHandler {
     return appError;
   }
 
-  /// Maneja un AppException directamente.
-  ///
-  /// Util cuando ya se tiene una excepcion tipada del nuevo sistema.
   AppError handleException(
     AppException exception, {
     ErrorSeverity severity = ErrorSeverity.error,
@@ -441,7 +342,6 @@ class ErrorHandler {
     }
   }
 
-  /// Convierte ErrorSeverity a LogLevel del LoggerService
   LogLevel _severityToLogLevel(ErrorSeverity severity) {
     switch (severity) {
       case ErrorSeverity.info:
@@ -455,9 +355,6 @@ class ErrorHandler {
     }
   }
 
-  /// Determina si un error debe reintentarse.
-  ///
-  /// Verifica tanto errores de Firebase como AppExceptions.
   bool shouldRetry(dynamic error) {
     if (error is AppException) {
       return error.isRetryable;
@@ -474,7 +371,6 @@ class ErrorHandler {
     return false;
   }
 
-  /// Determinar si un error de Firebase debe reintentar
   bool shouldRetryFirebaseError(FirebaseException error) {
     return error.code == 'unavailable' ||
         error.code == 'deadline-exceeded' ||
@@ -483,16 +379,12 @@ class ErrorHandler {
         error.code == 'resource-exhausted';
   }
 
-  /// Convierte cualquier error a un AppException apropiado.
-  ///
-  /// Util para convertir errores desconocidos al nuevo sistema.
   AppException toAppException(dynamic error, {StackTrace? stackTrace}) {
     if (error is AppException) return error;
     if (error is AppError) return error.toAppException();
     return error.toAppException(stackTrace: stackTrace);
   }
 
-  /// Obtiene errores recientes filtrados por tipo
   List<AppError> getErrorsByType(ErrorType type, {int limit = 50}) {
     return _errorHistory
         .where((e) => e.type == type)
@@ -502,7 +394,6 @@ class ErrorHandler {
         .toList();
   }
 
-  /// Obtiene errores recientes filtrados por severidad
   List<AppError> getErrorsBySeverity(ErrorSeverity severity, {int limit = 50}) {
     return _errorHistory
         .where((e) => e.severity == severity)
@@ -512,7 +403,6 @@ class ErrorHandler {
         .toList();
   }
 
-  /// Cuenta errores por tipo en las ultimas N horas
   Map<ErrorType, int> getErrorCountsByType({int hours = 24}) {
     final cutoff = DateTime.now().subtract(Duration(hours: hours));
     final recentErrors = _errorHistory.where((e) => e.timestamp.isAfter(cutoff));
@@ -524,32 +414,26 @@ class ErrorHandler {
     return counts;
   }
 
-  /// Limpiar historial de errores
   void clearHistory() {
     _errorHistory.clear();
   }
 
-  /// Cerrar el stream (llamar al cerrar la app)
   void dispose() {
     _errorStream.close();
     _appExceptionStream.close();
   }
 }
 
-/// Riverpod provider for ErrorHandler dependency injection
 final errorHandlerProvider = Provider<ErrorHandler>((ref) => ErrorHandler());
 
-/// Provider para el stream de errores
 final errorStreamProvider = StreamProvider<AppError>((ref) {
   return ref.watch(errorHandlerProvider).errorStream;
 });
 
-/// Provider para el stream de AppException
 final appExceptionStreamProvider = StreamProvider<AppException>((ref) {
   return ref.watch(errorHandlerProvider).appExceptionStream;
 });
 
-/// Extension para facilitar el manejo de errores
 extension ErrorHandlerExtension on dynamic {
   void handleError({
     ErrorType? type,
@@ -569,17 +453,7 @@ extension ErrorHandlerExtension on dynamic {
   }
 }
 
-/// Extension para manejar errores en Futures
 extension FutureErrorHandlerExtension<T> on Future<T> {
-  /// Ejecuta el Future y maneja cualquier error con ErrorHandler.
-  ///
-  /// Ejemplo:
-  /// ```dart
-  /// await loadData().handleErrors(
-  ///   type: ErrorType.network,
-  ///   userMessage: 'No se pudieron cargar los datos',
-  /// );
-  /// ```
   Future<T> handleErrors({
     ErrorType? type,
     ErrorSeverity severity = ErrorSeverity.error,
@@ -601,7 +475,6 @@ extension FutureErrorHandlerExtension<T> on Future<T> {
     }
   }
 
-  /// Ejecuta el Future y retorna null si falla, manejando el error.
   Future<T?> handleErrorsOrNull({
     ErrorType? type,
     ErrorSeverity severity = ErrorSeverity.error,

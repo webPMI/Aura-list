@@ -16,6 +16,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/cache/cache_policy.dart';
 import 'error_handler.dart';
+import 'logger_service.dart';
 
 /// Statistics for Firebase operations
 class QuotaStats {
@@ -134,6 +135,7 @@ class QuotaConfig {
 
 /// Manages Firebase quota to optimize costs
 class FirebaseQuotaManager {
+  final _logger = LoggerService();
   final ErrorHandler _errorHandler;
   final QuotaConfig config;
 
@@ -396,7 +398,7 @@ class FirebaseQuotaManager {
   /// Log message if logging enabled
   void _log(String message) {
     if (config.enableLogging && kDebugMode) {
-      debugPrint(message);
+      _logger.debug('QuotaManager', message);
     }
   }
 
@@ -409,20 +411,16 @@ class FirebaseQuotaManager {
 
   /// Print current quota usage summary
   void printSummary() {
-    if (kDebugMode) {
-      debugPrint('');
-      debugPrint('=== Firebase Quota Summary ===');
-      debugPrint('Session duration: ${_stats.sessionDuration}');
-      debugPrint('Reads: ${_stats.readsThisSession}');
-      debugPrint('Writes: ${_stats.writesThisSession}');
-      debugPrint('Deletes: ${_stats.deletesThisSession}');
-      debugPrint('Cache hits: ${_stats.cacheHitsThisSession}');
-      debugPrint('Cache hit rate: ${_stats.cacheHitRate.toStringAsFixed(1)}%');
-      debugPrint('Batch operations: ${_stats.batchOperationsThisSession}');
-      debugPrint('Total billable: ${_stats.totalOperations}');
-      debugPrint('==============================');
-      debugPrint('');
-    }
+    if (kDebugMode) {      _logger.debug('Service', '=== Firebase Quota Summary ===');
+      _logger.debug('Service', 'Session duration: ${_stats.sessionDuration}');
+      _logger.debug('Service', 'Reads: ${_stats.readsThisSession}');
+      _logger.debug('Service', 'Writes: ${_stats.writesThisSession}');
+      _logger.debug('Service', 'Deletes: ${_stats.deletesThisSession}');
+      _logger.debug('Service', 'Cache hits: ${_stats.cacheHitsThisSession}');
+      _logger.debug('Service', 'Cache hit rate: ${_stats.cacheHitRate.toStringAsFixed(1)}%');
+      _logger.debug('Service', 'Batch operations: ${_stats.batchOperationsThisSession}');
+      _logger.debug('Service', 'Total billable: ${_stats.totalOperations}');
+      _logger.debug('Service', '==============================');    }
   }
 }
 

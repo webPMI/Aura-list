@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/task_model.dart';
 import '../models/note_model.dart';
 import 'conflict_resolver.dart';
 import 'database_service.dart';
 import 'error_handler.dart';
+import 'logger_service.dart';
 
 /// Resultado de una verificacion de integridad.
 class IntegrityCheck {
@@ -190,6 +190,7 @@ class ReconciliationResult {
 /// Servicio para verificar y mantener la integridad de datos
 /// entre almacenamiento local (Hive) y la nube (Firebase).
 class DataIntegrityService {
+  final _logger = LoggerService();
   final DatabaseService _databaseService;
   final ConflictResolver _conflictResolver;
   final ErrorHandler _errorHandler;
@@ -551,14 +552,14 @@ class DataIntegrityService {
               }
               removed++;
             } catch (e) {
-              debugPrint('Error eliminando duplicado $id: $e');
+              _logger.debug('Service', 'Error eliminando duplicado $id: $e');
             }
           }
         }
       }
 
       if (removed > 0) {
-        debugPrint('Eliminados $removed registros duplicados');
+        _logger.debug('Service', 'Eliminados $removed registros duplicados');
       }
     } catch (e, stack) {
       _errorHandler.handle(
@@ -618,7 +619,7 @@ class DataIntegrityService {
         for (final doc in snapshot.docs) doc.id: doc.data(),
       };
     } catch (e) {
-      debugPrint('Error obteniendo tareas remotas: $e');
+      _logger.debug('Service', 'Error obteniendo tareas remotas: $e');
       return {};
     }
   }
@@ -639,7 +640,7 @@ class DataIntegrityService {
         for (final doc in snapshot.docs) doc.id: doc.data(),
       };
     } catch (e) {
-      debugPrint('Error obteniendo notas remotas: $e');
+      _logger.debug('Service', 'Error obteniendo notas remotas: $e');
       return {};
     }
   }

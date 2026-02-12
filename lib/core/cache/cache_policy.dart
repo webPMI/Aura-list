@@ -12,6 +12,7 @@
 library;
 
 import 'package:flutter/foundation.dart';
+import '../../services/logger_service.dart';
 
 /// Available caching strategies
 enum CacheStrategy {
@@ -339,8 +340,7 @@ mixin CachePolicyMixin {
     if (kDebugMode) {
       final status = isCacheValid ? 'VALID' : 'EXPIRED';
       final revalidate = needsRevalidation ? 'YES' : 'NO';
-      debugPrint('[Cache] Status: $status, Revalidate: $revalidate, '
-          'LastFetch: $lastFetchTime');
+      LoggerService().debug('CachePolicy', 'Status: $status, Revalidate: $revalidate, LastFetch: $lastFetchTime');
     }
   }
 }

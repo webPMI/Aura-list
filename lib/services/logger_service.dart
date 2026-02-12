@@ -146,7 +146,7 @@ class LoggerService {
   static const int _maxBufferSize = 500;
 
   /// Nivel minimo de log a registrar
-  LogLevel _minLevel = kDebugMode ? LogLevel.debug : LogLevel.info;
+  LogLevel _minLevel = kDebugMode ? LogLevel.debug : LogLevel.warning;
 
   /// Configura el nivel minimo de log
   void setMinLevel(LogLevel level) {

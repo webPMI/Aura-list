@@ -12,11 +12,11 @@
 library;
 
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'connectivity_service.dart';
 import 'database_service.dart';
 import 'error_handler.dart';
+import 'logger_service.dart';
 
 /// Status of the synchronization process
 enum SyncStatus {
@@ -96,6 +96,7 @@ class SyncWatcher {
   final ConnectivityService _connectivity;
   final DatabaseService _database;
   final ErrorHandler _errorHandler;
+  final _logger = LoggerService();
 
   /// Stream controller for sync status updates
   final StreamController<SyncState> _stateController =
@@ -152,7 +153,7 @@ class SyncWatcher {
     if (_isWatching) return;
 
     _isWatching = true;
-    debugPrint('[SyncWatcher] Starting sync watcher');
+    _logger.debug('Service', '[SyncWatcher] Starting sync watcher');
 
     // Check initial connectivity
     final isConnected = await _connectivity.isConnected;
@@ -185,7 +186,7 @@ class SyncWatcher {
     if (!_isWatching) return;
 
     _isWatching = false;
-    debugPrint('[SyncWatcher] Stopping sync watcher');
+    _logger.debug('Service', '[SyncWatcher] Stopping sync watcher');
 
     _syncDebounceTimer?.cancel();
     _periodicSyncTimer?.cancel();
@@ -198,12 +199,12 @@ class SyncWatcher {
 
   /// Force an immediate sync
   Future<void> forceSync() async {
-    debugPrint('[SyncWatcher] Force sync requested');
+    _logger.debug('Service', '[SyncWatcher] Force sync requested');
 
     _syncDebounceTimer?.cancel();
 
     if (!_currentState.isOnline) {
-      debugPrint('[SyncWatcher] Cannot sync: device is offline');
+      _logger.debug('Service', '[SyncWatcher] Cannot sync: device is offline');
       return;
     }
 
@@ -212,7 +213,7 @@ class SyncWatcher {
 
   /// Mark that local changes have been made (triggers debounced sync)
   void notifyLocalChanges() {
-    debugPrint('[SyncWatcher] Local changes detected');
+    _logger.debug('Service', '[SyncWatcher] Local changes detected');
     _updatePendingCount();
     _scheduleDebouncedSync();
   }
@@ -232,12 +233,12 @@ class SyncWatcher {
 
       // If we just came online, trigger sync
       if (wasOffline) {
-        debugPrint('[SyncWatcher] Connection restored, scheduling sync');
+        _logger.debug('Service', '[SyncWatcher] Connection restored, scheduling sync');
         _scheduleDebouncedSync();
       }
     } else {
       _updateState(_currentState.copyWith(status: SyncStatus.offline));
-      debugPrint('[SyncWatcher] Device went offline');
+      _logger.debug('Service', '[SyncWatcher] Device went offline');
     }
   }
 
@@ -252,7 +253,7 @@ class SyncWatcher {
         pendingNotesCount: notesCount,
       ));
     } catch (e) {
-      debugPrint('[SyncWatcher] Error getting pending count: $e');
+      _logger.debug('Service', '[SyncWatcher] Error getting pending count: $e');
     }
   }
 
@@ -271,7 +272,7 @@ class SyncWatcher {
     _periodicSyncTimer?.cancel();
     _periodicSyncTimer = Timer.periodic(periodicSyncInterval, (_) {
       if (_currentState.isOnline && !_currentState.isSyncing) {
-        debugPrint('[SyncWatcher] Periodic sync triggered');
+        _logger.debug('Service', '[SyncWatcher] Periodic sync triggered');
         _performSync();
       }
     });
@@ -280,16 +281,16 @@ class SyncWatcher {
   /// Perform the actual sync operation
   Future<void> _performSync() async {
     if (_currentState.isSyncing) {
-      debugPrint('[SyncWatcher] Sync already in progress, skipping');
+      _logger.debug('Service', '[SyncWatcher] Sync already in progress, skipping');
       return;
     }
 
     if (!_currentState.isOnline) {
-      debugPrint('[SyncWatcher] Cannot sync: offline');
+      _logger.debug('Service', '[SyncWatcher] Cannot sync: offline');
       return;
     }
 
-    debugPrint('[SyncWatcher] Starting sync...');
+    _logger.debug('Service', '[SyncWatcher] Starting sync...');
     _updateState(_currentState.copyWith(status: SyncStatus.syncing));
 
     try {
@@ -317,7 +318,7 @@ class SyncWatcher {
         ));
       }
 
-      debugPrint('[SyncWatcher] Sync completed successfully');
+      _logger.debug('Service', '[SyncWatcher] Sync completed successfully');
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -332,7 +333,7 @@ class SyncWatcher {
         errorMessage: e.toString(),
       ));
 
-      debugPrint('[SyncWatcher] Sync failed: $e');
+      _logger.debug('Service', '[SyncWatcher] Sync failed: $e');
 
       // Schedule retry after error
       _scheduleRetryAfterError();
@@ -345,7 +346,7 @@ class SyncWatcher {
     _syncDebounceTimer?.cancel();
     _syncDebounceTimer = Timer(const Duration(seconds: 30), () {
       if (_currentState.status == SyncStatus.error) {
-        debugPrint('[SyncWatcher] Retrying sync after error');
+        _logger.debug('Service', '[SyncWatcher] Retrying sync after error');
         _performSync();
       }
     });
@@ -357,7 +358,7 @@ class SyncWatcher {
         _currentState.totalPendingCount != newState.totalPendingCount) {
       _currentState = newState;
       _stateController.add(newState);
-      debugPrint('[SyncWatcher] State updated: $newState');
+      _logger.debug('Service', '[SyncWatcher] State updated: $newState');
     } else {
       _currentState = newState;
     }

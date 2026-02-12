@@ -4,6 +4,7 @@ import '../models/note_model.dart';
 import '../providers/notes_provider.dart';
 import '../core/responsive/breakpoints.dart';
 import 'note_card.dart';
+import 'color_picker_sheet.dart';
 
 class NotesList extends ConsumerWidget {
   final void Function(Note note)? onNoteEdit;
@@ -96,21 +97,32 @@ class NotesList extends ConsumerWidget {
       itemCount: notes.length,
       itemBuilder: (context, index) {
         final note = notes[index];
-        return NoteCard(
-          note: note,
-          onTap: () => onNoteEdit?.call(note),
-          onDelete: () async {
-            await ref.read(independentNotesProvider.notifier).deleteNote(note);
-            onFeedback?.call('Nota eliminada');
-          },
-          onTogglePin: () async {
-            await ref.read(independentNotesProvider.notifier).togglePin(note);
-            onFeedback?.call(note.isPinned ? 'Nota desanclada' : 'Nota anclada');
-          },
-          onLongPress: () => _showNoteOptions(context, ref, note),
+        return RepaintBoundary(
+          child: NoteCard(
+            key: ValueKey('note_${note.key}'),
+            note: note,
+            onTap: () => _handleNoteTap(note),
+            onDelete: () => _handleNoteDelete(ref, note),
+            onTogglePin: () => _handleTogglePin(ref, note),
+            onLongPress: () => _showNoteOptions(context, ref, note),
+          ),
         );
       },
     );
+  }
+
+  void _handleNoteTap(Note note) {
+    onNoteEdit?.call(note);
+  }
+
+  void _handleNoteDelete(WidgetRef ref, Note note) async {
+    await ref.read(independentNotesProvider.notifier).deleteNote(note);
+    onFeedback?.call('Nota eliminada');
+  }
+
+  void _handleTogglePin(WidgetRef ref, Note note) async {
+    await ref.read(independentNotesProvider.notifier).togglePin(note);
+    onFeedback?.call(note.isPinned ? 'Nota desanclada' : 'Nota anclada');
   }
 
   void _showNoteOptions(BuildContext context, WidgetRef ref, Note note) {
@@ -165,6 +177,15 @@ class NotesList extends ConsumerWidget {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.archive_outlined),
+              title: const Text('Archivar'),
+              onTap: () async {
+                Navigator.pop(context);
+                await ref.read(independentNotesProvider.notifier).archiveNote(note);
+                onFeedback?.call('Nota archivada');
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.delete_outline, color: Colors.red),
               title: const Text('Eliminar', style: TextStyle(color: Colors.red)),
               onTap: () async {
@@ -203,62 +224,11 @@ class NotesList extends ConsumerWidget {
     );
   }
 
-  void _showColorPicker(BuildContext context, WidgetRef ref, Note note) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Seleccionar color'),
-        content: Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: Note.colorOptions.entries.map((entry) {
-            final color =
-                Color(int.parse(entry.value.replaceFirst('#', '0xFF')));
-            final isSelected = note.color == entry.value;
-
-            return GestureDetector(
-              onTap: () async {
-                Navigator.pop(context);
-                await ref
-                    .read(independentNotesProvider.notifier)
-                    .changeColor(note, entry.value);
-                onFeedback?.call('Color actualizado');
-              },
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isSelected
-                        ? Theme.of(context).colorScheme.primary
-                        : Colors.grey.shade300,
-                    width: isSelected ? 3 : 1,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primary
-                                .withValues(alpha: 0.3),
-                            blurRadius: 4,
-                          ),
-                        ]
-                      : null,
-                ),
-                child: isSelected
-                    ? Icon(
-                        Icons.check,
-                        color: Theme.of(context).colorScheme.primary,
-                      )
-                    : null,
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-    );
+  void _showColorPicker(BuildContext context, WidgetRef ref, Note note) async {
+    final newColor = await ColorPickerSheet.show(context, note.color);
+    if (newColor != null && context.mounted) {
+      await ref.read(independentNotesProvider.notifier).changeColor(note, newColor);
+      onFeedback?.call('Color actualizado');
+    }
   }
 }

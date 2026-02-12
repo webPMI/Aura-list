@@ -1,11 +1,12 @@
-import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/task_model.dart';
 import '../models/note_model.dart';
+import 'logger_service.dart';
 
 /// Utility class to verify and diagnose task/note duplication issues
 /// This is a diagnostic tool to be used during development and debugging
 class DeduplicationVerifier {
+  static final _logger = LoggerService();
   /// Check for duplicate tasks in the Hive box
   /// Returns a report with duplicate information
   static Future<DuplicationReport> checkTaskDuplicates(
@@ -38,7 +39,7 @@ class DeduplicationVerifier {
       // Check Hive key duplicates (should never happen, but check anyway)
       if (seenHiveKeys.containsKey(key)) {
         report.duplicatesByHiveKey++;
-        debugPrint('⚠️ CRÍTICO: Hive key duplicado detectado: $key');
+        _logger.debug('Service', '⚠️ CRÍTICO: Hive key duplicado detectado: $key');
       }
       seenHiveKeys[key] = 1;
 
@@ -97,7 +98,7 @@ class DeduplicationVerifier {
       // Check Hive key duplicates
       if (seenHiveKeys.containsKey(key)) {
         report.duplicatesByHiveKey++;
-        debugPrint('⚠️ CRÍTICO: Hive key duplicado detectado: $key');
+        _logger.debug('Service', '⚠️ CRÍTICO: Hive key duplicado detectado: $key');
       }
       seenHiveKeys[key] = 1;
 
@@ -128,66 +129,42 @@ class DeduplicationVerifier {
   }
 
   /// Print a detailed report of duplicates
-  static void printReport(DuplicationReport report) {
-    debugPrint('');
-    debugPrint('========================================');
-    debugPrint('  REPORTE DE DUPLICACIÓN: ${report.type}');
-    debugPrint('========================================');
-    debugPrint('Total de items: ${report.totalItems}');
-    debugPrint('');
-
-    if (report.hasDuplicates) {
-      debugPrint('⚠️ SE ENCONTRARON DUPLICADOS:');
-      debugPrint('');
-
-      if (report.duplicatesByFirestoreId > 0) {
-        debugPrint(
-          '  - Por firestoreId: ${report.duplicatesByFirestoreId} duplicados',
-        );
+  static void printReport(DuplicationReport report) {    _logger.debug('Service', '========================================');
+    _logger.debug('Service', '  REPORTE DE DUPLICACIÓN: ${report.type}');
+    _logger.debug('Service', '========================================');
+    _logger.debug('Service', 'Total de items: ${report.totalItems}');    if (report.hasDuplicates) {
+      _logger.debug('Service', '⚠️ SE ENCONTRARON DUPLICADOS:');      if (report.duplicatesByFirestoreId > 0) {
+        _logger.debug('Service', '  - Por firestoreId: ${report.duplicatesByFirestoreId} duplicados');
         report.firestoreIdDuplicates.forEach((firestoreId, keys) {
-          debugPrint('    → $firestoreId: ${keys.length} copias (keys: $keys)');
+          _logger.debug('Service', '    → $firestoreId: ${keys.length} copias (keys: $keys)');
         });
       }
 
       if (report.duplicatesByHiveKey > 0) {
-        debugPrint(
-          '  - Por Hive key: ${report.duplicatesByHiveKey} duplicados (CRÍTICO)',
-        );
+        _logger.debug('Service', '  - Por Hive key: ${report.duplicatesByHiveKey} duplicados (CRÍTICO)');
       }
 
       if (report.duplicatesByTimestamp > 0) {
-        debugPrint(
-          '  - Por timestamp: ${report.duplicatesByTimestamp} duplicados',
-        );
+        _logger.debug('Service', '  - Por timestamp: ${report.duplicatesByTimestamp} duplicados');
         report.timestampDuplicates.forEach((timestamp, keys) {
           final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
-          debugPrint('    → $date: ${keys.length} copias (keys: $keys)');
+          _logger.debug('Service', '    → $date: ${keys.length} copias (keys: $keys)');
         });
-      }
-
-      debugPrint('');
-      debugPrint('🔧 RECOMENDACIÓN:');
-      debugPrint(
-        '   Ejecutar DatabaseService._cleanupDuplicates() para limpiar.',
-      );
+      }      _logger.debug('Service', '🔧 RECOMENDACIÓN:');
+      _logger.debug('Service', '   Ejecutar DatabaseService._cleanupDuplicates() para limpiar.');
     } else {
-      debugPrint('✅ NO SE ENCONTRARON DUPLICADOS');
-      debugPrint('   La base de datos está limpia.');
+      _logger.debug('Service', '✅ NO SE ENCONTRARON DUPLICADOS');
+      _logger.debug('Service', '   La base de datos está limpia.');
     }
 
-    debugPrint('========================================');
-    debugPrint('');
-  }
+    _logger.debug('Service', '========================================');  }
 
   /// Run a full verification of all boxes
   static Future<void> verifyAllBoxes(
     Box<Task> taskBox,
     Box<Note> noteBox,
   ) async {
-    debugPrint('🔍 Iniciando verificación de duplicados...');
-    debugPrint('');
-
-    // Check tasks
+    _logger.debug('Service', '🔍 Iniciando verificación de duplicados...');    // Check tasks
     final taskReport = await checkTaskDuplicates(taskBox);
     printReport(taskReport);
 
@@ -197,13 +174,11 @@ class DeduplicationVerifier {
 
     // Summary
     if (taskReport.hasDuplicates || noteReport.hasDuplicates) {
-      debugPrint('⚠️ RESUMEN: Se encontraron duplicados en la base de datos.');
-      debugPrint(
-        '   Total de duplicados: ${taskReport.totalDuplicates + noteReport.totalDuplicates}',
-      );
+      _logger.debug('Service', '⚠️ RESUMEN: Se encontraron duplicados en la base de datos.');
+      _logger.debug('Service', '   Total de duplicados: ${taskReport.totalDuplicates + noteReport.totalDuplicates}');
     } else {
-      debugPrint('✅ RESUMEN: Base de datos completamente limpia.');
-      debugPrint('   No se encontraron duplicados en ninguna colección.');
+      _logger.debug('Service', '✅ RESUMEN: Base de datos completamente limpia.');
+      _logger.debug('Service', '   No se encontraron duplicados en ninguna colección.');
     }
   }
 

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../providers/task_provider.dart';
+import '../../core/constants/task_constants.dart';
+import '../../core/utils/time_utils.dart';
+import '../../core/utils/dialog_utils.dart';
 
 /// Shows a dialog to create a new task.
 ///
@@ -85,13 +88,6 @@ class _AddTaskDialogContentState extends State<_AddTaskDialogContent> {
   String? _errorMessage;
   bool _isSubmitting = false;
 
-  final List<String> _categories = [
-    'Personal',
-    'Trabajo',
-    'Hogar',
-    'Salud',
-    'Otros',
-  ];
 
   @override
   void initState() {
@@ -166,8 +162,9 @@ class _AddTaskDialogContentState extends State<_AddTaskDialogContent> {
     final title = _titleController.text.trim();
 
     // Validation
-    if (title.length < 3) {
-      setState(() => _errorMessage = 'El título debe tener al menos 3 caracteres');
+    final validationError = DialogUtils.validateTaskTitle(title);
+    if (validationError != null) {
+      setState(() => _errorMessage = validationError);
       return;
     }
 
@@ -180,7 +177,7 @@ class _AddTaskDialogContentState extends State<_AddTaskDialogContent> {
       // Convert TimeOfDay to minutes
       int? dueTimeMinutes;
       if (_selectedDueTime != null) {
-        dueTimeMinutes = _selectedDueTime!.hour * 60 + _selectedDueTime!.minute;
+        dueTimeMinutes = TimeUtils.timeOfDayToMinutes(_selectedDueTime!);
       }
 
       // Add task through provider
@@ -224,35 +221,7 @@ class _AddTaskDialogContentState extends State<_AddTaskDialogContent> {
         children: [
           // Error message
           if (_errorMessage != null) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.redAccent.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.redAccent.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.error_outline,
-                    color: Colors.redAccent,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _errorMessage!,
-                      style: const TextStyle(
-                        color: Colors.redAccent,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            DialogUtils.buildErrorContainer(_errorMessage!),
             const SizedBox(height: 16),
           ],
 
@@ -265,13 +234,7 @@ class _AddTaskDialogContentState extends State<_AddTaskDialogContent> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: [
-              ('daily', 'Diaria', Icons.wb_sunny_outlined),
-              ('weekly', 'Semanal', Icons.calendar_view_week_outlined),
-              ('monthly', 'Mensual', Icons.calendar_month_outlined),
-              ('yearly', 'Anual', Icons.event_outlined),
-              ('once', 'Única', Icons.push_pin_outlined),
-            ].map((item) {
+            children: TaskConstants.taskTypes.map((item) {
               final isSelected = _selectedType == item.$1;
               return ChoiceChip(
                 avatar: Icon(item.$3, size: 16),
@@ -373,7 +336,7 @@ class _AddTaskDialogContentState extends State<_AddTaskDialogContent> {
                     const SizedBox(width: 12),
                     Text(
                       _selectedDueTime != null
-                          ? '${_selectedDueTime!.hour.toString().padLeft(2, '0')}:${_selectedDueTime!.minute.toString().padLeft(2, '0')}'
+                          ? TimeUtils.formatTimeOfDay(_selectedDueTime!)
                           : 'Sin hora (opcional)',
                       style: TextStyle(
                         color: _selectedDueTime != null ? null : Colors.grey,
@@ -401,12 +364,6 @@ class _AddTaskDialogContentState extends State<_AddTaskDialogContent> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(3, (index) {
-              final colors = [
-                Colors.blueAccent,
-                Colors.orangeAccent,
-                Colors.redAccent,
-              ];
-              final labels = ['Baja', 'Media', 'Alta'];
               final isSelected = _selectedPriority == index;
 
               return Expanded(
@@ -425,20 +382,20 @@ class _AddTaskDialogContentState extends State<_AddTaskDialogContent> {
                       ),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? colors[index].withValues(alpha: 0.2)
+                            ? TaskConstants.priorityColors[index].withValues(alpha: 0.2)
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: isSelected
-                              ? colors[index]
+                              ? TaskConstants.priorityColors[index]
                               : Colors.grey.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Text(
-                        labels[index],
+                        TaskConstants.priorityLabels[index],
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: isSelected ? colors[index] : Colors.grey,
+                          color: isSelected ? TaskConstants.priorityColors[index] : Colors.grey,
                           fontWeight: isSelected
                               ? FontWeight.bold
                               : FontWeight.normal,
@@ -461,7 +418,7 @@ class _AddTaskDialogContentState extends State<_AddTaskDialogContent> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: _categories.map((cat) {
+            children: TaskConstants.categories.map((cat) {
               final isSelected = _selectedCategory == cat;
               return ChoiceChip(
                 label: Text(cat),

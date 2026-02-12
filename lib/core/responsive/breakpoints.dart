@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
 
 /// Breakpoint values for responsive layouts
+///
+/// These breakpoints follow Material Design guidelines:
+/// - Mobile: < 600dp (phones)
+/// - Tablet: 600-900dp (tablets, large phones)
+/// - Desktop: 900-1200dp (small laptops, tablets in landscape)
+/// - Widescreen: > 1200dp (desktop monitors)
 class Breakpoints {
+  // Private constructor to prevent instantiation
+  Breakpoints._();
+
+  // Screen width breakpoints
   static const double mobile = 600;
   static const double tablet = 900;
   static const double desktop = 1200;
@@ -11,12 +21,23 @@ class Breakpoints {
   static const double maxContentWidth = 1400;
   static const double maxFormWidth = 600;
   static const double maxCardWidth = 400;
+  static const double maxDialogWidth = 560;
+  static const double maxDrawerWidth = 360;
 
   // Grid columns per breakpoint
   static const int mobileColumns = 1;
   static const int tabletColumns = 2;
   static const int desktopColumns = 3;
   static const int widescreenColumns = 4;
+
+  // Navigation rail widths
+  static const double navigationRailWidth = 72;
+  static const double navigationRailExtendedWidth = 256;
+  static const double permanentDrawerWidth = 280;
+
+  // Minimum touch target sizes
+  static const double minTouchTarget = 48;
+  static const double minIOSTouchTarget = 44;
 }
 
 /// Enum for screen size categories

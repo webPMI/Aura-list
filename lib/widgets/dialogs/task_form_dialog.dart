@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../models/task_model.dart';
 import '../../providers/task_provider.dart';
+import '../../core/constants/task_constants.dart';
+import '../../core/utils/time_utils.dart';
+import '../../core/utils/dialog_utils.dart';
 
 /// Shows a bottom sheet dialog for creating or editing a task
 Future<void> showTaskFormDialog({
@@ -51,13 +54,6 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
   TimeOfDay? _selectedTime;
   DateTime? _selectedDeadline;
 
-  final List<String> _categories = [
-    'Personal',
-    'Trabajo',
-    'Hogar',
-    'Salud',
-    'Otros',
-  ];
 
   bool _isLoading = false;
 
@@ -86,39 +82,9 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
 
   String get _formTitle => _isEditing ? 'Editar Tarea' : 'Nueva Tarea';
 
-  String get _taskTypeLabel {
-    switch (widget.taskType) {
-      case 'daily':
-        return 'Diaria';
-      case 'weekly':
-        return 'Semanal';
-      case 'monthly':
-        return 'Mensual';
-      case 'yearly':
-        return 'Anual';
-      case 'once':
-        return 'Única';
-      default:
-        return 'Tarea';
-    }
-  }
+  String get _taskTypeLabel => TaskConstants.getTaskTypeLabel(widget.taskType);
 
-  IconData get _taskTypeIcon {
-    switch (widget.taskType) {
-      case 'daily':
-        return Icons.wb_sunny_outlined;
-      case 'weekly':
-        return Icons.calendar_view_week_outlined;
-      case 'monthly':
-        return Icons.calendar_month_outlined;
-      case 'yearly':
-        return Icons.event_outlined;
-      case 'once':
-        return Icons.push_pin_outlined;
-      default:
-        return Icons.task_outlined;
-    }
-  }
+  IconData get _taskTypeIcon => TaskConstants.getTaskTypeIcon(widget.taskType);
 
   Future<void> _selectDueDate() async {
     final date = await showDatePicker(
@@ -155,13 +121,9 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
   }
 
   Future<void> _saveTask() async {
-    if (_titleController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('El título es obligatorio'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    final validationError = DialogUtils.validateTaskTitle(_titleController.text.trim());
+    if (validationError != null) {
+      DialogUtils.showSnackBar(context, validationError, isError: true);
       return;
     }
 
@@ -173,7 +135,7 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
       // Convert time to minutes since midnight
       int? dueTimeMinutes;
       if (_selectedTime != null) {
-        dueTimeMinutes = _selectedTime!.hour * 60 + _selectedTime!.minute;
+        dueTimeMinutes = TimeUtils.timeOfDayToMinutes(_selectedTime!);
       }
 
       if (_isEditing) {
@@ -209,12 +171,7 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
 
         if (mounted) {
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Tarea actualizada'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          DialogUtils.showSnackBar(context, 'Tarea actualizada');
         }
       } else {
         // Create new task
@@ -237,22 +194,12 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
 
         if (mounted) {
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Tarea creada'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          DialogUtils.showSnackBar(context, 'Tarea creada');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al guardar: $e'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        DialogUtils.showSnackBar(context, 'Error al guardar: $e', isError: true);
       }
     } finally {
       if (mounted) {
@@ -346,7 +293,7 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.category),
                       ),
-                      items: _categories.map((category) {
+                      items: TaskConstants.categories.map((category) {
                         return DropdownMenuItem(
                           value: category,
                           child: Text(category),
@@ -413,7 +360,7 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
                       label: Text(
                         _selectedTime == null
                             ? 'Hora'
-                            : '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}',
+                            : TimeUtils.formatTimeOfDay(_selectedTime!),
                       ),
                     ),
                   ),

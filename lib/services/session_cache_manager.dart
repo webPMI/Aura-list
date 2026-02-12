@@ -1,10 +1,10 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_preferences.dart';
 import 'database_service.dart';
 import 'error_handler.dart';
+import 'logger_service.dart';
 
 /// Resultado de la exportacion de datos.
 class DataExport {
@@ -54,6 +54,7 @@ class DataExport {
 class SessionCacheManager {
   final DatabaseService _databaseService;
   final ErrorHandler _errorHandler;
+  final _logger = LoggerService();
 
   /// Clave para almacenar el ID del usuario actual en SharedPreferences
   static const String _currentUserKey = 'current_user_id';
@@ -71,7 +72,7 @@ class SessionCacheManager {
   /// [preservePreferences] - Si es true, mantiene configuraciones como tema
   Future<void> clearUserData({bool preservePreferences = false}) async {
     try {
-      debugPrint('[SessionCache] Limpiando datos de usuario...');
+      _logger.debug('Service', '[SessionCache] Limpiando datos de usuario...');
 
       // Guardar preferencias si se debe preservar
       UserPreferences? savedPrefs;
@@ -79,7 +80,7 @@ class SessionCacheManager {
         try {
           savedPrefs = await _databaseService.getUserPreferences();
         } catch (e) {
-          debugPrint('[SessionCache] No se pudieron obtener preferencias: $e');
+          _logger.debug('Service', '[SessionCache] No se pudieron obtener preferencias: $e');
           // Continuar sin guardar preferencias
         }
       }
@@ -92,7 +93,7 @@ class SessionCacheManager {
         try {
           await _databaseService.saveUserPreferences(savedPrefs);
         } catch (e) {
-          debugPrint('[SessionCache] No se pudieron restaurar preferencias: $e');
+          _logger.debug('Service', '[SessionCache] No se pudieron restaurar preferencias: $e');
         }
       }
 
@@ -102,10 +103,10 @@ class SessionCacheManager {
         await prefs.remove(_currentUserKey);
         await prefs.remove(_lastSessionKey);
       } catch (e) {
-        debugPrint('[SessionCache] Error limpiando SharedPreferences: $e');
+        _logger.debug('Service', '[SessionCache] Error limpiando SharedPreferences: $e');
       }
 
-      debugPrint('[SessionCache] Datos de usuario limpiados exitosamente');
+      _logger.debug('Service', '[SessionCache] Datos de usuario limpiados exitosamente');
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -126,7 +127,7 @@ class SessionCacheManager {
     if (userId.isEmpty) return;
 
     try {
-      debugPrint('Preparando cache para usuario: $userId');
+      _logger.debug('Service', 'Preparando cache para usuario: $userId');
 
       // Guardar ID del usuario actual
       final prefs = await SharedPreferences.getInstance();
@@ -139,7 +140,7 @@ class SessionCacheManager {
       // Inicializar boxes de Hive si es necesario
       await _databaseService.init();
 
-      debugPrint('Cache preparado para usuario: $userId');
+      _logger.debug('Service', 'Cache preparado para usuario: $userId');
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -158,7 +159,7 @@ class SessionCacheManager {
     if (oldUserId.isEmpty || newUserId.isEmpty) return;
 
     try {
-      debugPrint('Migrando datos de $oldUserId a $newUserId...');
+      _logger.debug('Service', 'Migrando datos de $oldUserId a $newUserId...');
 
       // Los datos ya estan en Hive local, solo necesitamos:
       // 1. Actualizar el ID de usuario en SharedPreferences
@@ -179,7 +180,7 @@ class SessionCacheManager {
         DateTime.now().millisecondsSinceEpoch,
       );
 
-      debugPrint('Migracion completada: $oldUserId -> $newUserId');
+      _logger.debug('Service', 'Migracion completada: $oldUserId -> $newUserId');
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -198,7 +199,7 @@ class SessionCacheManager {
   /// Retorna un objeto con todos los datos exportables.
   Future<DataExport> exportBeforeClear() async {
     try {
-      debugPrint('[SessionCache] Exportando datos de usuario...');
+      _logger.debug('Service', '[SessionCache] Exportando datos de usuario...');
 
       final data = await _databaseService.exportAllData();
       final prefs = await SharedPreferences.getInstance();
@@ -216,10 +217,7 @@ class SessionCacheManager {
         noteCount: notes.length,
       );
 
-      debugPrint(
-        '[SessionCache] Exportacion completada: ${export.taskCount} tareas, '
-        '${export.noteCount} notas, ${export.readableSize}',
-      );
+      _logger.info('SessionCache', 'Exportacion completada: ${export.taskCount} tareas, ${export.noteCount} notas, ${export.readableSize}');
 
       return export;
     } catch (e, stack) {
@@ -253,7 +251,7 @@ class SessionCacheManager {
       // Verificar si coincide con el usuario actual
       return cachedUserId == userId;
     } catch (e) {
-      debugPrint('Error validando propiedad de cache: $e');
+      _logger.debug('Service', 'Error validando propiedad de cache: $e');
       return false;
     }
   }
@@ -296,7 +294,7 @@ class SessionCacheManager {
   Future<void> clearIfDifferentUser(String newUserId) async {
     final isOwner = await validateCacheOwnership(newUserId);
     if (!isOwner) {
-      debugPrint('Cache pertenece a otro usuario, limpiando...');
+      _logger.debug('Service', 'Cache pertenece a otro usuario, limpiando...');
       await clearUserData(preservePreferences: true);
     }
   }
@@ -342,7 +340,7 @@ class SessionCacheManager {
   Future<void> invalidateCache() async {
     try {
       await _markAllForResync();
-      debugPrint('Cache invalidado, se requerira re-sincronizacion');
+      _logger.debug('Service', 'Cache invalidado, se requerira re-sincronizacion');
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -374,11 +372,11 @@ class SessionCacheManager {
               task.lastUpdatedAt = DateTime.now();
               if (task.isInBox) await task.save();
             } catch (e) {
-              debugPrint('[SessionCache] Error actualizando tarea: $e');
+              _logger.debug('Service', '[SessionCache] Error actualizando tarea: $e');
             }
           }
         } catch (e) {
-          debugPrint('[SessionCache] Error obteniendo tareas de tipo $type: $e');
+          _logger.debug('Service', '[SessionCache] Error obteniendo tareas de tipo $type: $e');
         }
       }
 
@@ -389,16 +387,16 @@ class SessionCacheManager {
             note.updatedAt = DateTime.now();
             if (note.isInBox) await note.save();
           } catch (e) {
-            debugPrint('[SessionCache] Error actualizando nota: $e');
+            _logger.debug('Service', '[SessionCache] Error actualizando nota: $e');
           }
         }
       } catch (e) {
-        debugPrint('[SessionCache] Error obteniendo notas: $e');
+        _logger.debug('Service', '[SessionCache] Error obteniendo notas: $e');
       }
 
-      debugPrint('[SessionCache] Todos los registros marcados para re-sincronizacion');
+      _logger.debug('Service', '[SessionCache] Todos los registros marcados para re-sincronizacion');
     } catch (e, stack) {
-      debugPrint('[SessionCache] Error marcando registros para re-sync: $e');
+      _logger.debug('Service', '[SessionCache] Error marcando registros para re-sync: $e');
       _errorHandler.handle(
         e,
         type: ErrorType.database,
@@ -412,7 +410,7 @@ class SessionCacheManager {
   /// Dispose resources and cleanup
   /// Should be called when the service is no longer needed
   void dispose() {
-    debugPrint('[SessionCache] Service disposed');
+    _logger.debug('Service', '[SessionCache] Service disposed');
     // No resources to dispose in this service
     // Database service and error handler are managed elsewhere
   }

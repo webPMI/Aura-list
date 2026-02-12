@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/responsive/breakpoints.dart';
+import '../widgets/dialogs/legal_document_viewer.dart';
+import '../core/constants/legal/terms_of_service.dart';
+import '../core/constants/legal/privacy_policy.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
 import 'main_scaffold.dart';
@@ -185,15 +189,56 @@ class WelcomeScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
 
-                  // Nota de privacidad
-                  Text(
-                    'Al continuar, aceptas nuestros Terminos y Condiciones '
-                    'y Politica de Privacidad',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurface.withValues(alpha: 0.4),
-                          fontSize: 11,
+                  // Nota de privacidad con enlaces clickeables
+                  Center(
+                    child: RichText(
+                      textAlign: TextAlign.center,
+                      text: TextSpan(
+                        style: TextStyle(
+                          fontSize: 12,
+                          height: 1.5,
+                          color: colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
+                        children: [
+                          const TextSpan(text: 'Al continuar, aceptas nuestros '),
+                          TextSpan(
+                            text: 'Terminos y Condiciones',
+                            style: TextStyle(
+                              color: colorScheme.primary.withValues(alpha: 0.8),
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline,
+                            ),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () {
+                                showLegalDocumentDialog(
+                                  context: context,
+                                  title: 'Terminos y Condiciones',
+                                  content: termsOfServiceEs,
+                                  summary: termsSummaryEs,
+                                );
+                              },
+                          ),
+                          const TextSpan(text: ' y '),
+                          TextSpan(
+                            text: 'Politica de Privacidad',
+                            style: TextStyle(
+                              color: colorScheme.primary.withValues(alpha: 0.8),
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline,
+                            ),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () {
+                                showLegalDocumentDialog(
+                                  context: context,
+                                  title: 'Politica de Privacidad',
+                                  content: privacyPolicyEs,
+                                  summary: privacySummaryEs,
+                                );
+                              },
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 48),
                 ],

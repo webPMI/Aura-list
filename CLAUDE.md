@@ -56,9 +56,9 @@ UI (ConsumerWidget) ← watches ← Riverpod Providers ← streams ← Hive (loc
 - `databaseServiceProvider` - Singleton for Hive/Firebase operations
 - `authServiceProvider` - Firebase anonymous auth with graceful degradation
 
-### Task Model (Hive typeId: 0)
+### Data Models (Hive TypeIds)
 
-Key fields:
+**Task Model (typeId: 0)**
 - `type`: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'once'
 - `priority`: 0 (Low), 1 (Medium), 2 (High)
 - `category`: 'Personal' | 'Trabajo' | 'Hogar' | 'Salud' | 'Otros'
@@ -67,6 +67,16 @@ Key fields:
 - `motivation`: Why accomplish this task
 - `reward`: Prize text shown on completion
 - `firestoreId`: Cloud document ID (null if not synced)
+
+**Note Model (typeId: 2)**
+- `checklist`: List of ChecklistItem for task-based notes
+
+**Notebook Model (typeId: 3)**
+- Organizes notes hierarchically
+
+**ChecklistItem (typeId: 4)**
+- `id`, `text`, `isCompleted`, `order`
+- Used within Note.checklist field
 
 ### Services
 
@@ -115,6 +125,54 @@ Key fields:
 - Dart config: `lib/firebase_options.dart`
 
 Firebase is optional - the app gracefully degrades to local-only mode if unavailable.
+
+## Release Build Setup (Critical)
+
+### Android Release Configuration
+
+1. **Generate keystore** (one-time):
+```bash
+keytool -genkey -v -keystore android/upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+```
+
+2. **Create `android/key.properties`**:
+```properties
+storePassword=YOUR_PASSWORD
+keyPassword=YOUR_PASSWORD
+keyAlias=upload
+storeFile=../upload-keystore.jks
+```
+
+3. **Update applicationId** in `android/app/build.gradle.kts`:
+```kotlin
+applicationId = "com.inkenzo.auralist"  // Change from com.example
+```
+
+4. **Build**:
+```bash
+flutter build apk --release --split-per-abi
+flutter build appbundle --release
+```
+
+### Windows Release
+
+Requires Visual Studio 2022 with "Desktop development with C++" workload.
+
+```bash
+flutter build windows --release
+```
+
+### iOS Release
+
+Requires:
+- Mac with Xcode
+- Apple Developer Account ($99/year)
+- Bundle ID configured in Xcode
+- Code signing configured
+
+```bash
+flutter build ipa --release
+```
 
 ## Design Philosophy
 

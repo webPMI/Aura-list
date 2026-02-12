@@ -1,8 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'error_handler.dart';
+import 'logger_service.dart';
 
 final googleSignInServiceProvider = Provider<GoogleSignInService>((ref) {
   return GoogleSignInService();
@@ -37,6 +38,7 @@ enum GoogleSignInError {
 }
 
 class GoogleSignInService {
+  final _logger = LoggerService();
   // Web OAuth Client ID from Firebase Console
   // IMPORTANT: This MUST be the Web client type (type 3), NOT the Android client
   // Found in: Firebase Console > Authentication > Sign-in method > Google > Web SDK configuration
@@ -57,9 +59,9 @@ class GoogleSignInService {
         clientId: kIsWeb ? _webClientId : null,
         serverClientId: kIsWeb ? null : _webClientId,
       );
-      debugPrint('[GoogleSignIn] Servicio inicializado correctamente');
+      _logger.debug('Service', '[GoogleSignIn] Servicio inicializado correctamente');
     } catch (e) {
-      debugPrint('[GoogleSignIn] Error inicializando servicio: $e');
+      _logger.debug('Service', '[GoogleSignIn] Error inicializando servicio: $e');
       rethrow;
     }
   }
@@ -74,32 +76,39 @@ class GoogleSignInService {
   /// Get Google OAuth credential with detailed error information
   Future<GoogleSignInResult> getGoogleCredentialWithError() async {
     try {
-      debugPrint('GoogleSignIn: Iniciando flujo de autenticacion...');
-      debugPrint('GoogleSignIn: Platform - isWeb: $kIsWeb');
+      _logger.debug('Service', 'GoogleSignIn: Iniciando flujo de autenticacion...');
+      _logger.debug('Service', 'GoogleSignIn: Platform - isWeb: $kIsWeb');
 
-      // Trigger the sign-in flow
+      // On web, google_sign_in doesn't reliably provide idToken
+      // We'll return a special result that tells the caller to use signInWithPopup
+      if (kIsWeb) {
+        _logger.debug('Service', 'GoogleSignIn: Web platform - usando signInWithPopup directamente');
+        // Return null credential - the caller should use signInWithPopup for web
+        return GoogleSignInResult.error(GoogleSignInError.unknown);
+      }
+
+      // Trigger the sign-in flow (mobile only)
       final GoogleSignInAccount? account = await _googleSignIn.signIn();
 
       if (account == null) {
         // User cancelled the sign-in
-        debugPrint('GoogleSignIn: Usuario cancelo el flujo');
+        _logger.debug('Service', 'GoogleSignIn: Usuario cancelo el flujo');
         return GoogleSignInResult.cancelled();
       }
 
-      debugPrint('GoogleSignIn: Cuenta obtenida: ${account.email}');
+      _logger.debug('Service', 'GoogleSignIn: Cuenta obtenida: ${account.email}');
 
       // Obtain the auth details
       final GoogleSignInAuthentication auth = await account.authentication;
 
-      debugPrint('GoogleSignIn: accessToken presente: ${auth.accessToken != null}');
-      debugPrint('GoogleSignIn: idToken presente: ${auth.idToken != null}');
+      _logger.debug('Service', 'GoogleSignIn: accessToken presente: ${auth.accessToken != null}');
+      _logger.debug('Service', 'GoogleSignIn: idToken presente: ${auth.idToken != null}');
 
       // Verify we have the required tokens
       if (auth.idToken == null) {
-        debugPrint('GoogleSignIn: ERROR - idToken es null. Esto usualmente indica:');
-        debugPrint('  - Android: Falta SHA-1/SHA-256 en Firebase Console');
-        debugPrint('  - Android: serverClientId no configurado correctamente');
-        debugPrint('  - Web: clientId incorrecto o dominio no autorizado');
+        _logger.debug('Service', 'GoogleSignIn: ERROR - idToken es null. Esto usualmente indica:');
+        _logger.debug('Service', '  - Android: Falta SHA-1/SHA-256 en Firebase Console');
+        _logger.debug('Service', '  - Android: serverClientId no configurado correctamente');
 
         ErrorHandler().handle(
           'idToken is null - possible configuration issue',
@@ -118,10 +127,10 @@ class GoogleSignInService {
         idToken: auth.idToken,
       );
 
-      debugPrint('GoogleSignIn: Credencial creada exitosamente');
+      _logger.debug('Service', 'GoogleSignIn: Credencial creada exitosamente');
       return GoogleSignInResult.success(credential);
     } catch (e, stack) {
-      debugPrint('GoogleSignIn: Error durante autenticacion: $e');
+      _logger.debug('Service', 'GoogleSignIn: Error durante autenticacion: $e');
 
       final error = _classifyError(e);
       final userMessage = _getUserMessage(error);
@@ -196,26 +205,42 @@ class GoogleSignInService {
   /// This is for direct sign-in (not linking)
   Future<UserCredential?> signInWithGoogle() async {
     try {
+      _logger.debug('Service', 'GoogleSignIn: signInWithGoogle iniciando...');
+      _logger.debug('Service', 'GoogleSignIn: Platform - isWeb: $kIsWeb');
+
+      // On web, use signInWithPopup directly (google_sign_in doesn't provide idToken reliably)
+      if (kIsWeb) {
+        _logger.debug('Service', 'GoogleSignIn: Usando signInWithPopup para web...');
+        final googleProvider = GoogleAuthProvider();
+        googleProvider.addScope('email');
+        googleProvider.addScope('profile');
+
+        final userCredential = await FirebaseAuth.instance.signInWithPopup(googleProvider);
+        _logger.debug('Service', 'GoogleSignIn: signInWithPopup exitoso: ${userCredential.user?.email}');
+        return userCredential;
+      }
+
+      // On mobile, use google_sign_in package
       final result = await getGoogleCredentialWithError();
 
       if (result.isCancelled) {
-        debugPrint('GoogleSignIn: Usuario cancelo el inicio de sesion');
+        _logger.debug('Service', 'GoogleSignIn: Usuario cancelo el inicio de sesion');
         return null;
       }
 
       if (result.isError) {
-        debugPrint('GoogleSignIn: Error obteniendo credencial: ${result.error}');
+        _logger.debug('Service', 'GoogleSignIn: Error obteniendo credencial: ${result.error}');
         return null;
       }
 
       if (result.credential == null) {
-        debugPrint('GoogleSignIn: Credencial es null sin error');
+        _logger.debug('Service', 'GoogleSignIn: Credencial es null sin error');
         return null;
       }
 
-      debugPrint('GoogleSignIn: Iniciando sesion con Firebase...');
+      _logger.debug('Service', 'GoogleSignIn: Iniciando sesion con Firebase...');
       final userCredential = await FirebaseAuth.instance.signInWithCredential(result.credential!);
-      debugPrint('GoogleSignIn: Inicio de sesion exitoso: ${userCredential.user?.email}');
+      _logger.debug('Service', 'GoogleSignIn: Inicio de sesion exitoso: ${userCredential.user?.email}');
 
       return userCredential;
     } on FirebaseAuthException catch (e, stack) {
@@ -243,6 +268,12 @@ class GoogleSignInService {
         case 'network-request-failed':
           userMessage = 'Sin conexion a internet.';
           break;
+        case 'popup-closed-by-user':
+          _logger.debug('Service', 'GoogleSignIn: Usuario cerro el popup');
+          return null; // Not an error, just cancelled
+        case 'cancelled-popup-request':
+          _logger.debug('Service', 'GoogleSignIn: Popup cancelado');
+          return null; // Not an error, just cancelled
       }
 
       ErrorHandler().handle(
@@ -294,9 +325,9 @@ class GoogleSignInService {
   Future<void> disconnect() async {
     try {
       await _googleSignIn.disconnect();
-      debugPrint('[GoogleSignIn] Desconectado exitosamente');
+      _logger.debug('Service', '[GoogleSignIn] Desconectado exitosamente');
     } catch (e, stack) {
-      debugPrint('[GoogleSignIn] Error al desconectar: $e');
+      _logger.debug('Service', '[GoogleSignIn] Error al desconectar: $e');
       ErrorHandler().handle(
         e,
         type: ErrorType.auth,
@@ -313,15 +344,15 @@ class GoogleSignInService {
     if (_disposed) return;
 
     try {
-      debugPrint('[GoogleSignIn] Disposing resources...');
+      _logger.debug('Service', '[GoogleSignIn] Disposing resources...');
       _disposed = true;
 
       // Sign out to clean up any active sessions
       await signOut();
 
-      debugPrint('[GoogleSignIn] Disposed successfully');
+      _logger.debug('Service', '[GoogleSignIn] Disposed successfully');
     } catch (e) {
-      debugPrint('[GoogleSignIn] Error during dispose: $e');
+      _logger.debug('Service', '[GoogleSignIn] Error during dispose: $e');
     }
   }
 

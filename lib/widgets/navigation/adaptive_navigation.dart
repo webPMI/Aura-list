@@ -99,7 +99,7 @@ class _TabletNavigation extends ConsumerWidget {
       body: Row(
         children: [
           NavigationRail(
-            selectedIndex: selectedRoute.index,
+            selectedIndex: selectedRoute.index.clamp(0, 4),
             onDestinationSelected: (index) {
               final route = AppRouteExtension.fromIndex(index);
               ref.read(selectedRouteProvider.notifier).state = route;

@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+
+import 'package:checklist_app/features/guides/guides.dart';
+
 import '../core/responsive/breakpoints.dart';
 import '../providers/theme_provider.dart';
+import '../providers/update_provider.dart';
 import '../services/database_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/navigation/drawer_menu_button.dart';
@@ -39,6 +44,7 @@ class SettingsScreen extends ConsumerWidget {
 
               // Appearance Section
               _SectionHeader('Apariencia'),
+              const _GuideCelestialTile(),
               ListTile(
                 leading: const Icon(Icons.palette_outlined),
                 title: const Text('Tema'),
@@ -103,10 +109,12 @@ class SettingsScreen extends ConsumerWidget {
 
               // About Section
               _SectionHeader('Acerca de'),
+              const _VersionTile(),
               ListTile(
-                leading: const Icon(Icons.info_outline),
-                title: const Text('Version'),
-                subtitle: const Text('1.0.0'),
+                leading: const Icon(Icons.system_update_outlined),
+                title: const Text('Buscar actualizaciones'),
+                subtitle: const Text('Verificar si hay nuevas versiones'),
+                onTap: () => checkForUpdatesManually(ref, context),
               ),
               ListTile(
                 leading: const Icon(Icons.description_outlined),
@@ -235,6 +243,31 @@ class _SectionHeader extends StatelessWidget {
           color: colorScheme.primary,
         ),
       ),
+    );
+  }
+}
+
+class _GuideCelestialTile extends ConsumerWidget {
+  const _GuideCelestialTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final guide = ref.watch(activeGuideProvider);
+
+    return ListTile(
+      leading: GuideAvatar(size: 40, showBorder: guide != null),
+      title: const Text('Guía celestial'),
+      subtitle: Text(
+        guide?.title ?? 'Toca para elegir tu guía',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 12,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+        ),
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => showGuideSelectorSheet(context),
     );
   }
 }
@@ -528,6 +561,27 @@ class _ProfileTile extends ConsumerWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _VersionTile extends ConsumerWidget {
+  const _VersionTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return FutureBuilder<PackageInfo>(
+      future: PackageInfo.fromPlatform(),
+      builder: (context, snapshot) {
+        final version = snapshot.data?.version ?? '1.0.0';
+        final buildNumber = snapshot.data?.buildNumber ?? '1';
+
+        return ListTile(
+          leading: const Icon(Icons.info_outline),
+          title: const Text('Version'),
+          subtitle: Text('$version+$buildNumber'),
+        );
+      },
     );
   }
 }

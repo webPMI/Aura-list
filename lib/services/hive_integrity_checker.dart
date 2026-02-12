@@ -16,6 +16,7 @@ import '../models/note_model.dart';
 import '../models/task_history.dart';
 import '../models/user_preferences.dart';
 import 'error_handler.dart';
+import 'logger_service.dart';
 
 /// Status of a single Hive box
 enum BoxHealth {
@@ -138,6 +139,7 @@ class IntegrityReport {
 
 /// Service to check and repair Hive box integrity
 class HiveIntegrityChecker {
+  final _logger = LoggerService();
   final ErrorHandler _errorHandler;
 
   /// Box names to check
@@ -190,7 +192,7 @@ class HiveIntegrityChecker {
       }
     } catch (e) {
       // If we still can't get the box, log the error
-      debugPrint('[Integrity] Could not access box $boxName: $e');
+      _logger.debug('Service', '[Integrity] Could not access box $boxName: $e');
       return null;
     }
   }
@@ -203,14 +205,14 @@ class HiveIntegrityChecker {
     final startTime = DateTime.now();
     final statuses = <BoxStatus>[];
 
-    debugPrint('[Integrity] Starting integrity check...');
+    _logger.debug('Service', '[Integrity] Starting integrity check...');
 
     for (final boxName in boxesToCheck) {
       final status = await _checkBox(boxName);
       statuses.add(status);
 
       if (status.health != BoxHealth.healthy) {
-        debugPrint('[Integrity] Issue found in $boxName: ${status.health}');
+        _logger.debug('Service', '[Integrity] Issue found in $boxName: ${status.health}');
       }
     }
 
@@ -345,7 +347,7 @@ class HiveIntegrityChecker {
           box.get(key);
           readableCount++;
         } catch (e) {
-          debugPrint('[Integrity] Unreadable item at index $i in ${box.name}');
+          _logger.debug('Service', '[Integrity] Unreadable item at index $i in ${box.name}');
         }
       }
 
@@ -376,7 +378,7 @@ class HiveIntegrityChecker {
 
   /// Attempt to repair a corrupted box
   Future<bool> repairBox(String boxName) async {
-    debugPrint('[Integrity] Attempting to repair box: $boxName');
+    _logger.debug('Service', '[Integrity] Attempting to repair box: $boxName');
 
     try {
       // First, try to compact the box if it's open
@@ -384,16 +386,16 @@ class HiveIntegrityChecker {
       if (openBox != null) {
         try {
           await openBox.compact();
-          debugPrint('[Integrity] Compacted box: $boxName');
+          _logger.debug('Service', '[Integrity] Compacted box: $boxName');
 
           // Re-check after compaction
           final status = await _checkBox(boxName);
           if (status.health == BoxHealth.healthy) {
-            debugPrint('[Integrity] Box repaired after compaction: $boxName');
+            _logger.debug('Service', '[Integrity] Box repaired after compaction: $boxName');
             return true;
           }
         } catch (e) {
-          debugPrint('[Integrity] Compaction failed: $e');
+          _logger.debug('Service', '[Integrity] Compaction failed: $e');
         }
       }
 
@@ -417,16 +419,15 @@ class HiveIntegrityChecker {
             for (final key in keysToDelete) {
               await box.delete(key);
             }
-            debugPrint(
-                '[Integrity] Deleted ${keysToDelete.length} corrupted entries');
+            _logger.debug('Service', '[Integrity] Deleted ${keysToDelete.length} corrupted entries');
             return true;
           }
         }
       } catch (e) {
-        debugPrint('[Integrity] Selective deletion failed: $e');
+        _logger.debug('Service', '[Integrity] Selective deletion failed: $e');
       }
 
-      debugPrint('[Integrity] Could not repair box: $boxName');
+      _logger.debug('Service', '[Integrity] Could not repair box: $boxName');
       return false;
     } catch (e, stack) {
       _errorHandler.handle(
@@ -442,17 +443,17 @@ class HiveIntegrityChecker {
 
   /// Clear a corrupted box (last resort)
   Future<void> clearCorruptedBox(String boxName) async {
-    debugPrint('[Integrity] Clearing corrupted box: $boxName');
+    _logger.debug('Service', '[Integrity] Clearing corrupted box: $boxName');
 
     try {
       final openBox = _getOpenBox(boxName);
       if (openBox != null) {
         await openBox.clear();
-        debugPrint('[Integrity] Box cleared: $boxName');
+        _logger.debug('Service', '[Integrity] Box cleared: $boxName');
       } else {
         // Delete the box file
         await Hive.deleteBoxFromDisk(boxName);
-        debugPrint('[Integrity] Box file deleted: $boxName');
+        _logger.debug('Service', '[Integrity] Box file deleted: $boxName');
       }
     } catch (e, stack) {
       _errorHandler.handle(
@@ -471,7 +472,7 @@ class HiveIntegrityChecker {
     final startTime = DateTime.now();
     final statuses = <BoxStatus>[];
 
-    debugPrint('[Integrity] Starting automatic repair...');
+    _logger.debug('Service', '[Integrity] Starting automatic repair...');
 
     for (final boxName in boxesToCheck) {
       var status = await _checkBox(boxName);
@@ -524,28 +525,23 @@ class HiveIntegrityChecker {
 
   /// Log the integrity report
   void _logReport(IntegrityReport report) {
-    if (!kDebugMode) return;
-
-    debugPrint('');
-    debugPrint('=== Hive Integrity Report ===');
-    debugPrint('Checked at: ${report.checkedAt}');
-    debugPrint('Duration: ${report.checkDuration.inMilliseconds}ms');
-    debugPrint('Total boxes: ${report.boxStatuses.length}');
-    debugPrint('Healthy: ${report.healthyBoxes.length}');
-    debugPrint('Problems: ${report.problemBoxes.length}');
-    debugPrint('Repaired: ${report.repairedBoxes.length}');
-    debugPrint('Total items: ${report.totalItems}');
+    if (!kDebugMode) return;    _logger.debug('Service', '=== Hive Integrity Report ===');
+    _logger.debug('Service', 'Checked at: ${report.checkedAt}');
+    _logger.debug('Service', 'Duration: ${report.checkDuration.inMilliseconds}ms');
+    _logger.debug('Service', 'Total boxes: ${report.boxStatuses.length}');
+    _logger.debug('Service', 'Healthy: ${report.healthyBoxes.length}');
+    _logger.debug('Service', 'Problems: ${report.problemBoxes.length}');
+    _logger.debug('Service', 'Repaired: ${report.repairedBoxes.length}');
+    _logger.debug('Service', 'Total items: ${report.totalItems}');
 
     if (report.problemBoxes.isNotEmpty) {
-      debugPrint('--- Problem Boxes ---');
+      _logger.debug('Service', '--- Problem Boxes ---');
       for (final box in report.problemBoxes) {
-        debugPrint('  ${box.boxName}: ${box.health} - ${box.errorMessage}');
+        _logger.debug('Service', '  ${box.boxName}: ${box.health} - ${box.errorMessage}');
       }
     }
 
-    debugPrint('=============================');
-    debugPrint('');
-  }
+    _logger.debug('Service', '=============================');  }
 
   /// Get a summary string
   String getSummary() {
