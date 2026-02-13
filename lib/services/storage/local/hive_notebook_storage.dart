@@ -22,6 +22,9 @@ class HiveNotebookStorage implements ILocalStorage<Notebook> {
 
   HiveNotebookStorage(this._errorHandler);
 
+  /// Expose box for direct access when needed
+  Box<Notebook>? get box => _box;
+
   @override
   bool get isInitialized => _initialized && _box != null && _box!.isOpen;
 

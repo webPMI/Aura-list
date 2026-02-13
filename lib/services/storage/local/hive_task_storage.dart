@@ -22,6 +22,9 @@ class HiveTaskStorage implements ILocalStorage<Task> {
 
   HiveTaskStorage(this._errorHandler);
 
+  /// Expose box for direct access when needed
+  Box<Task>? get box => _box;
+
   @override
   bool get isInitialized => _initialized && _box != null && _box!.isOpen;
 

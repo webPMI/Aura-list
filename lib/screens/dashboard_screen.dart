@@ -28,10 +28,7 @@ class DashboardScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: () {
-              showSearch(
-                context: context,
-                delegate: _TaskSearchDelegate(ref),
-              );
+              showSearch(context: context, delegate: _TaskSearchDelegate(ref));
             },
             tooltip: 'Buscar',
           ),
@@ -64,10 +61,14 @@ class _GreetingHeader extends ConsumerWidget {
     final isMobile = context.isMobile;
     final titleFontSize = isMobile ? 20.0 : 24.0;
     final subtitleFontSize = isMobile ? 12.0 : 14.0;
+    final powerSentenceFontSize = isMobile ? 11.0 : 13.0;
+    final maxPowerSentenceLines = isMobile ? 2 : 3;
 
     // Obtener color del guia activo
     final guideColor = activeGuide != null
-        ? parseHexColor(activeGuide.themeAccentHex ?? activeGuide.themePrimaryHex)
+        ? parseHexColor(
+            activeGuide.themeAccentHex ?? activeGuide.themePrimaryHex,
+          )
         : null;
 
     return Column(
@@ -92,7 +93,8 @@ class _GreetingHeader extends ConsumerWidget {
                 decoration: BoxDecoration(
                   border: Border(
                     left: BorderSide(
-                      color: guideColor ?? Theme.of(context).colorScheme.primary,
+                      color:
+                          guideColor ?? Theme.of(context).colorScheme.primary,
                       width: 3,
                     ),
                   ),
@@ -105,11 +107,15 @@ class _GreetingHeader extends ConsumerWidget {
                         '"${activeGuide.powerSentence}"',
                         style: TextStyle(
                           fontStyle: FontStyle.italic,
-                          color: guideColor?.withValues(alpha: 0.9) ??
-                              Theme.of(context).colorScheme.primary.withValues(alpha: 0.9),
-                          fontSize: subtitleFontSize,
+                          color:
+                              guideColor?.withValues(alpha: 0.9) ??
+                              Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.9),
+                          fontSize: powerSentenceFontSize,
+                          height: 1.3,
                         ),
-                        maxLines: 3,
+                        maxLines: maxPowerSentenceLines,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -117,8 +123,11 @@ class _GreetingHeader extends ConsumerWidget {
                     Icon(
                       Icons.swap_horiz,
                       size: 14,
-                      color: guideColor?.withValues(alpha: 0.6) ??
-                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
+                      color:
+                          guideColor?.withValues(alpha: 0.6) ??
+                          Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.6),
                     ),
                   ],
                 ),
@@ -130,7 +139,9 @@ class _GreetingHeader extends ConsumerWidget {
             dateFormat.format(DateTime.now()),
             style: TextStyle(
               fontSize: subtitleFontSize,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
       ],
@@ -173,7 +184,10 @@ class _TodayTasksCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dailyTasks = ref.watch(tasksProvider('daily'));
-    final pendingTasks = dailyTasks.where((t) => !t.isCompleted).take(3).toList();
+    final pendingTasks = dailyTasks
+        .where((t) => !t.isCompleted)
+        .take(3)
+        .toList();
     final colorScheme = Theme.of(context).colorScheme;
 
     return DashboardCard(
@@ -281,11 +295,15 @@ class _CompactTaskTileState extends ConsumerState<_CompactTaskTile> {
         onChanged: (_) async {
           final wasCompleted = widget.task.isCompleted;
           try {
-            await ref.read(tasksProvider(widget.task.type).notifier).toggleTask(widget.task);
+            await ref
+                .read(tasksProvider(widget.task.type).notifier)
+                .toggleTask(widget.task);
             if (mounted) {
               if (!wasCompleted) {
                 _showCelebrationOverlay();
-                _showSnackBar(MotivationalMessages.randomTaskCompletedWithEmoji);
+                _showSnackBar(
+                  MotivationalMessages.randomTaskCompletedWithEmoji,
+                );
               } else {
                 _showSnackBar('Tarea marcada como pendiente');
               }
@@ -315,14 +333,17 @@ class _UpcomingDeadlinesCard extends ConsumerWidget {
     ];
 
     final now = DateTime.now();
-    final upcomingTasks = allTasks
-        .where((t) =>
-            !t.isCompleted &&
-            t.deadline != null &&
-            t.deadline!.isAfter(now) &&
-            t.deadline!.difference(now).inDays <= 7)
-        .toList()
-      ..sort((a, b) => a.deadline!.compareTo(b.deadline!));
+    final upcomingTasks =
+        allTasks
+            .where(
+              (t) =>
+                  !t.isCompleted &&
+                  t.deadline != null &&
+                  t.deadline!.isAfter(now) &&
+                  t.deadline!.difference(now).inDays <= 7,
+            )
+            .toList()
+          ..sort((a, b) => a.deadline!.compareTo(b.deadline!));
 
     final urgentCount = upcomingTasks.where((t) => t.isUrgent).length;
     final colorScheme = Theme.of(context).colorScheme;
@@ -357,8 +378,10 @@ class _UpcomingDeadlinesCard extends ConsumerWidget {
               children: [
                 if (urgentCount > 0)
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -378,8 +401,7 @@ class _UpcomingDeadlinesCard extends ConsumerWidget {
                     itemCount: upcomingTasks.take(3).length,
                     itemBuilder: (context, index) {
                       final task = upcomingTasks[index];
-                      final daysLeft =
-                          task.deadline!.difference(now).inDays;
+                      final daysLeft = task.deadline!.difference(now).inDays;
                       return ListTile(
                         dense: true,
                         visualDensity: VisualDensity.compact,
@@ -394,13 +416,12 @@ class _UpcomingDeadlinesCard extends ConsumerWidget {
                           daysLeft == 0
                               ? 'Hoy'
                               : daysLeft == 1
-                                  ? 'Manana'
-                                  : '$daysLeft dias',
+                              ? 'Manana'
+                              : '$daysLeft dias',
                           style: TextStyle(
                             fontSize: 12,
                             color: task.isUrgent ? Colors.red : null,
-                            fontWeight:
-                                task.isUrgent ? FontWeight.bold : null,
+                            fontWeight: task.isUrgent ? FontWeight.bold : null,
                           ),
                         ),
                       );
@@ -589,10 +610,7 @@ class _StatItem extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               value,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -638,30 +656,25 @@ class _CelebrationOverlayState extends State<_CelebrationOverlay>
 
     _scaleAnimation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 0.0, end: 1.3)
-            .chain(CurveTween(curve: Curves.easeOutBack)),
+        tween: Tween<double>(
+          begin: 0.0,
+          end: 1.3,
+        ).chain(CurveTween(curve: Curves.easeOutBack)),
         weight: 60,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.3, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeInOut)),
+        tween: Tween<double>(
+          begin: 1.3,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
         weight: 40,
       ),
     ]).animate(_controller);
 
     _opacityAnimation = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 0.0, end: 1.0),
-        weight: 30,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 1.0),
-        weight: 40,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 0.0),
-        weight: 30,
-      ),
+      TweenSequenceItem(tween: Tween<double>(begin: 0.0, end: 1.0), weight: 30),
+      TweenSequenceItem(tween: Tween<double>(begin: 1.0, end: 1.0), weight: 40),
+      TweenSequenceItem(tween: Tween<double>(begin: 1.0, end: 0.0), weight: 30),
     ]).animate(_controller);
 
     _controller.forward().then((_) {
@@ -688,9 +701,7 @@ class _CelebrationOverlayState extends State<_CelebrationOverlay>
                 // Semi-transparent background
                 Opacity(
                   opacity: _opacityAnimation.value * 0.3,
-                  child: Container(
-                    color: Colors.green,
-                  ),
+                  child: Container(color: Colors.green),
                 ),
                 // Checkmark icon
                 Transform.scale(
@@ -750,11 +761,13 @@ class _CelebrationOverlayState extends State<_CelebrationOverlay>
           builder: (context, child) {
             final progress = _controller.value;
             final distance = 80 + (progress * 120);
-            final x = distance *
+            final x =
+                distance *
                 (0.5 + 0.5 * (i.isEven ? 1 : -1)) *
                 (i % 3 == 0 ? 1.2 : 0.8) *
                 (angle > 3.14 ? -1 : 1);
-            final y = distance *
+            final y =
+                distance *
                 (0.5 + 0.5 * (i.isOdd ? 1 : -1)) *
                 (i % 2 == 0 ? 1.2 : 0.8) *
                 (angle > 1.57 && angle < 4.71 ? 1 : -1);
@@ -774,8 +787,7 @@ class _CelebrationOverlayState extends State<_CelebrationOverlay>
                     decoration: BoxDecoration(
                       color: color,
                       shape: i.isEven ? BoxShape.circle : BoxShape.rectangle,
-                      borderRadius:
-                          i.isEven ? null : BorderRadius.circular(2),
+                      borderRadius: i.isEven ? null : BorderRadius.circular(2),
                     ),
                   ),
                 ),
@@ -796,10 +808,10 @@ class _TaskSearchDelegate extends SearchDelegate<Task?> {
   static const _taskTypes = ['daily', 'weekly', 'monthly', 'yearly', 'once'];
 
   _TaskSearchDelegate(this.ref)
-      : super(
-          searchFieldLabel: 'Buscar tareas...',
-          textInputAction: TextInputAction.search,
-        );
+    : super(
+        searchFieldLabel: 'Buscar tareas...',
+        textInputAction: TextInputAction.search,
+      );
 
   /// Get all tasks from all task types
   List<Task> _getAllTasks() {
@@ -1037,7 +1049,9 @@ class _SearchResultTile extends StatelessWidget {
                             ? TextDecoration.lineThrough
                             : null,
                       ),
-                      highlightColor: colorScheme.primary.withValues(alpha: 0.3),
+                      highlightColor: colorScheme.primary.withValues(
+                        alpha: 0.3,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Row(
@@ -1062,7 +1076,9 @@ class _SearchResultTile extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: colorScheme.primaryContainer.withValues(alpha: 0.5),
+                            color: colorScheme.primaryContainer.withValues(
+                              alpha: 0.5,
+                            ),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -1080,7 +1096,9 @@ class _SearchResultTile extends StatelessWidget {
               ),
               // Completion status
               Icon(
-                task.isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
+                task.isCompleted
+                    ? Icons.check_circle
+                    : Icons.radio_button_unchecked,
                 color: task.isCompleted
                     ? Colors.green
                     : colorScheme.onSurface.withValues(alpha: 0.3),
@@ -1111,7 +1129,12 @@ class _HighlightedText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (query.isEmpty) {
-      return Text(text, style: style, maxLines: 2, overflow: TextOverflow.ellipsis);
+      return Text(
+        text,
+        style: style,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      );
     }
 
     final queryLower = query.toLowerCase();
@@ -1119,7 +1142,12 @@ class _HighlightedText extends StatelessWidget {
     final startIndex = textLower.indexOf(queryLower);
 
     if (startIndex == -1) {
-      return Text(text, style: style, maxLines: 2, overflow: TextOverflow.ellipsis);
+      return Text(
+        text,
+        style: style,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      );
     }
 
     final endIndex = startIndex + query.length;

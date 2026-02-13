@@ -21,6 +21,12 @@ class TaskRepository implements ITaskRepository {
 
   bool _initialized = false;
 
+  /// Expose localStorage for direct access when needed
+  HiveTaskStorage get localStorage => _localStorage;
+
+  /// Expose syncService for direct access when needed
+  TaskSyncService get syncService => _syncService;
+
   TaskRepository({
     required HiveTaskStorage localStorage,
     required TaskSyncService syncService,

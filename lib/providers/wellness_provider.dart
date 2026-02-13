@@ -37,6 +37,9 @@ class WellnessState {
   /// IDs de sugerencias favoritas del usuario
   final Set<String> favoriteSuggestionIds;
 
+  /// IDs de sugerencias que el usuario ha agregado como tareas
+  final Set<String> addedSuggestionIds;
+
   /// ID de la sugerencia del dia actual
   final String? suggestionOfTheDayId;
 
@@ -55,6 +58,7 @@ class WellnessState {
   const WellnessState({
     this.triedSuggestionIds = const {},
     this.favoriteSuggestionIds = const {},
+    this.addedSuggestionIds = const {},
     this.suggestionOfTheDayId,
     this.suggestionOfTheDayDate,
     this.dailyRecommendationIds = const [],
@@ -87,8 +91,28 @@ class WellnessState {
     return favoriteSuggestionIds.contains(suggestionId);
   }
 
+  /// Verifica si una sugerencia ha sido agregada a tareas
+  bool hasBeenAdded(String suggestionId) {
+    return addedSuggestionIds.contains(suggestionId);
+  }
+
+  /// Verifica si una sugerencia ya fue usada (probada o agregada)
+  bool hasBeenUsed(String suggestionId) {
+    return triedSuggestionIds.contains(suggestionId) ||
+        addedSuggestionIds.contains(suggestionId);
+  }
+
   /// Numero total de sugerencias probadas
   int get totalTried => triedSuggestionIds.length;
+
+  /// Numero total de sugerencias agregadas a tareas
+  int get totalAdded => addedSuggestionIds.length;
+
+  /// Numero total de sugerencias usadas (probadas + agregadas)
+  int get totalUsed {
+    final combined = <String>{...triedSuggestionIds, ...addedSuggestionIds};
+    return combined.length;
+  }
 
   /// Numero total de sugerencias favoritas
   int get totalFavorites => favoriteSuggestionIds.length;
@@ -125,9 +149,35 @@ class WellnessState {
         .toList();
   }
 
+  /// Sugerencias que el usuario ha agregado a tareas
+  List<WellnessSuggestion> get addedSuggestions {
+    return addedSuggestionIds
+        .map((id) => WellnessCatalog.getById(id))
+        .where((s) => s != null)
+        .cast<WellnessSuggestion>()
+        .toList();
+  }
+
+  /// Sugerencias disponibles (no probadas ni agregadas)
+  List<WellnessSuggestion> get availableSuggestions {
+    return WellnessCatalog.allSuggestions
+        .where((s) =>
+            !triedSuggestionIds.contains(s.id) &&
+            !addedSuggestionIds.contains(s.id))
+        .toList();
+  }
+
+  /// Porcentaje de sugerencias usadas (probadas + agregadas)
+  double get usedPercentage {
+    final total = WellnessCatalog.totalSuggestions;
+    if (total == 0) return 0;
+    return (totalUsed / total) * 100;
+  }
+
   WellnessState copyWith({
     Set<String>? triedSuggestionIds,
     Set<String>? favoriteSuggestionIds,
+    Set<String>? addedSuggestionIds,
     String? suggestionOfTheDayId,
     DateTime? suggestionOfTheDayDate,
     List<String>? dailyRecommendationIds,
@@ -138,6 +188,7 @@ class WellnessState {
       triedSuggestionIds: triedSuggestionIds ?? this.triedSuggestionIds,
       favoriteSuggestionIds:
           favoriteSuggestionIds ?? this.favoriteSuggestionIds,
+      addedSuggestionIds: addedSuggestionIds ?? this.addedSuggestionIds,
       suggestionOfTheDayId: suggestionOfTheDayId ?? this.suggestionOfTheDayId,
       suggestionOfTheDayDate:
           suggestionOfTheDayDate ?? this.suggestionOfTheDayDate,
@@ -154,6 +205,7 @@ class WellnessState {
 class WellnessNotifier extends StateNotifier<WellnessState> {
   static const String _triedKey = 'wellness_tried_suggestions';
   static const String _favoritesKey = 'wellness_favorite_suggestions';
+  static const String _addedKey = 'wellness_added_suggestions';
   static const String _sotdIdKey = 'wellness_sotd_id';
   static const String _sotdDateKey = 'wellness_sotd_date';
   static const String _dailyIdsKey = 'wellness_daily_ids';
@@ -178,6 +230,10 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
       final favoritesList = prefs.getStringList(_favoritesKey) ?? [];
       final favoritesSet = Set<String>.from(favoritesList);
 
+      // Cargar sugerencias agregadas a tareas
+      final addedList = prefs.getStringList(_addedKey) ?? [];
+      final addedSet = Set<String>.from(addedList);
+
       // Cargar sugerencia del dia
       final sotdId = prefs.getString(_sotdIdKey);
       final sotdDateStr = prefs.getString(_sotdDateKey);
@@ -197,6 +253,7 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
       state = state.copyWith(
         triedSuggestionIds: triedSet,
         favoriteSuggestionIds: favoritesSet,
+        addedSuggestionIds: addedSet,
         suggestionOfTheDayId: sotdId,
         suggestionOfTheDayDate: sotdDate,
         dailyRecommendationIds: dailyIds,
@@ -222,6 +279,7 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
         _favoritesKey,
         state.favoriteSuggestionIds.toList(),
       );
+      await prefs.setStringList(_addedKey, state.addedSuggestionIds.toList());
 
       if (state.suggestionOfTheDayId != null) {
         await prefs.setString(_sotdIdKey, state.suggestionOfTheDayId!);
@@ -416,6 +474,28 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
     }
   }
 
+  /// Marca una sugerencia como agregada a tareas
+  Future<void> markAsAdded(String suggestionId) async {
+    if (state.addedSuggestionIds.contains(suggestionId)) return;
+
+    final newAdded = Set<String>.from(state.addedSuggestionIds)
+      ..add(suggestionId);
+
+    state = state.copyWith(addedSuggestionIds: newAdded);
+    await _saveState();
+  }
+
+  /// Desmarca una sugerencia como agregada
+  Future<void> markAsNotAdded(String suggestionId) async {
+    if (!state.addedSuggestionIds.contains(suggestionId)) return;
+
+    final newAdded = Set<String>.from(state.addedSuggestionIds)
+      ..remove(suggestionId);
+
+    state = state.copyWith(addedSuggestionIds: newAdded);
+    await _saveState();
+  }
+
   /// Obtiene una sugerencia aleatoria, opcionalmente filtrada
   WellnessSuggestion? getRandomSuggestion({
     String? category,
@@ -583,8 +663,32 @@ final wellnessStatsProvider = Provider.autoDispose<Map<String, dynamic>>((ref) {
   return {
     'totalSuggestions': WellnessCatalog.totalSuggestions,
     'totalTried': state.totalTried,
+    'totalAdded': state.totalAdded,
+    'totalUsed': state.totalUsed,
     'totalFavorites': state.totalFavorites,
     'triedPercentage': state.triedPercentage,
+    'usedPercentage': state.usedPercentage,
     'byCategory': notifier.getStatsByCategory(),
   };
 });
+
+/// Provider para obtener sugerencias disponibles (no usadas)
+final availableSuggestionsProvider =
+    Provider.autoDispose<List<WellnessSuggestion>>((ref) {
+      final state = ref.watch(wellnessProvider);
+      return state.availableSuggestions;
+    });
+
+/// Provider para verificar si una sugerencia ha sido agregada a tareas
+final hasSuggestionBeenAddedProvider = Provider.autoDispose
+    .family<bool, String>((ref, suggestionId) {
+      final state = ref.watch(wellnessProvider);
+      return state.hasBeenAdded(suggestionId);
+    });
+
+/// Provider para verificar si una sugerencia ya fue usada
+final hasSuggestionBeenUsedProvider = Provider.autoDispose
+    .family<bool, String>((ref, suggestionId) {
+      final state = ref.watch(wellnessProvider);
+      return state.hasBeenUsed(suggestionId);
+    });

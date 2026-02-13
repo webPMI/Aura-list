@@ -3,14 +3,33 @@
 /// Provides dependency injection for task storage, sync, and repository layers.
 library;
 
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/task_model.dart';
+import '../models/user_preferences.dart';
 import '../services/storage/local/hive_task_storage.dart';
 import '../services/storage/cloud/firestore_task_storage.dart';
 import '../services/sync/task_sync_service.dart';
 import '../services/repositories/task_repository.dart';
 import '../services/error_handler.dart';
-import '../services/database_service.dart';
+
+// ==================== USER PREFERENCES PROVIDER ====================
+
+/// Provider for checking if cloud sync is enabled
+/// This is separate from DatabaseService to avoid circular dependencies
+final cloudSyncEnabledFunctionProvider = Provider<Future<bool> Function()>((ref) {
+  return () async {
+    try {
+      final box = Hive.isBoxOpen('user_prefs')
+          ? Hive.box<UserPreferences>('user_prefs')
+          : await Hive.openBox<UserPreferences>('user_prefs');
+      if (box.isEmpty) return true; // Default to enabled
+      return box.values.first.cloudSyncEnabled;
+    } catch (e) {
+      return true; // Default to enabled on error
+    }
+  };
+});
 
 // ==================== STORAGE PROVIDERS ====================
 
@@ -39,13 +58,13 @@ final taskSyncServiceProvider = Provider<TaskSyncService>((ref) {
   final localStorage = ref.watch(hiveTaskStorageProvider);
   final cloudStorage = ref.watch(firestoreTaskStorageProvider);
   final errorHandler = ref.watch(errorHandlerProvider);
-  final dbService = ref.watch(databaseServiceProvider);
+  final isCloudSyncEnabled = ref.watch(cloudSyncEnabledFunctionProvider);
 
   return TaskSyncService(
     localStorage: localStorage,
     cloudStorage: cloudStorage,
     errorHandler: errorHandler,
-    isCloudSyncEnabled: () => dbService.isCloudSyncEnabled(),
+    isCloudSyncEnabled: isCloudSyncEnabled,
   );
 });
 

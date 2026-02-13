@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../services/database_service.dart';
 import '../core/responsive/breakpoints.dart';
 import '../widgets/auth/password_strength_indicator.dart';
+import '../widgets/auth/unified_google_auth_button.dart';
 import '../widgets/dialogs/legal_document_viewer.dart';
 import '../core/constants/legal/terms_of_service.dart';
 import '../core/constants/legal/privacy_policy.dart';
@@ -119,6 +120,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           final dbService = ref.read(databaseServiceProvider);
           await dbService.setCloudSyncEnabled(true);
 
+          if (!mounted) return;
+
           // Registro exitoso
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -130,9 +133,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
           // Navegar a la pantalla principal
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => const MainScaffold(),
-            ),
+            MaterialPageRoute(builder: (context) => const MainScaffold()),
           );
         } else {
           setState(() {
@@ -151,84 +152,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
   }
 
-  Future<void> _handleGoogleRegister() async {
-    if (!_acceptedTerms) {
-      setState(() {
-        _errorMessage = 'Debes aceptar los terminos y condiciones';
-      });
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final authService = ref.read(authServiceProvider);
-
-      // Asegurarse de que hay un usuario anonimo
-      var currentUser = authService.currentUser;
-      if (currentUser == null) {
-        final anonResult = await authService.signInAnonymously();
-        if (anonResult == null) {
-          throw Exception('No se pudo crear sesion inicial');
-        }
-      }
-
-      // Vincular con Google
-      final (:credential, :error) = await authService.linkWithGoogle();
-
-      if (mounted) {
-        if (credential != null) {
-          // Enable cloud sync automatically when account is linked
-          final dbService = ref.read(databaseServiceProvider);
-          await dbService.setCloudSyncEnabled(true);
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Cuenta creada con Google exitosamente'),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => const MainScaffold(),
-            ),
-          );
-        } else if (error != null) {
-          setState(() {
-            _errorMessage = error;
-            _isLoading = false;
-          });
-        } else {
-          setState(() {
-            _isLoading = false;
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'Error al registrar con Google: $e';
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final horizontalPadding = context.horizontalPadding;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Crear cuenta'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Crear cuenta'), centerTitle: true),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -247,17 +177,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     'Registrate en AuraList',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
-                        ),
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.primary,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Crea una cuenta para sincronizar tus tareas en todos tus dispositivos',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurface.withValues(alpha: 0.6),
-                        ),
+                      color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
                   ),
                   const SizedBox(height: 32),
 
@@ -322,7 +252,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           textInputAction: TextInputAction.next,
                           validator: _validatePassword,
                           enabled: !_isLoading,
-                          onChanged: (_) => setState(() {}), // Actualizar indicador
+                          onChanged: (_) =>
+                              setState(() {}), // Actualizar indicador
                           decoration: InputDecoration(
                             labelText: 'Contrasena',
                             hintText: 'Minimo 6 caracteres',
@@ -334,7 +265,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                     : Icons.visibility,
                               ),
                               onPressed: () {
-                                setState(() => _obscurePassword = !_obscurePassword);
+                                setState(
+                                  () => _obscurePassword = !_obscurePassword,
+                                );
                               },
                             ),
                             border: OutlineInputBorder(
@@ -344,7 +277,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           ),
                         ),
                         // Indicador de fortaleza de contrasena
-                        PasswordStrengthIndicator(password: _passwordController.text),
+                        PasswordStrengthIndicator(
+                          password: _passwordController.text,
+                        ),
                         const SizedBox(height: 16),
 
                         // Campo de confirmar contrasena
@@ -366,8 +301,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                     : Icons.visibility,
                               ),
                               onPressed: () {
-                                setState(() =>
-                                    _obscureConfirmPassword = !_obscureConfirmPassword);
+                                setState(
+                                  () => _obscureConfirmPassword =
+                                      !_obscureConfirmPassword,
+                                );
                               },
                             ),
                             border: OutlineInputBorder(
@@ -406,7 +343,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   ),
                                 )
                               : const Icon(Icons.person_add),
-                          label: Text(_isLoading ? 'Creando cuenta...' : 'Crear cuenta'),
+                          label: Text(
+                            _isLoading ? 'Creando cuenta...' : 'Crear cuenta',
+                          ),
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.all(16),
                             minimumSize: const Size(double.infinity, 56),
@@ -423,7 +362,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   // Divider
                   Row(
                     children: [
-                      Expanded(child: Divider(color: Colors.grey.withValues(alpha: 0.3))),
+                      Expanded(
+                        child: Divider(
+                          color: Colors.grey.withValues(alpha: 0.3),
+                        ),
+                      ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
@@ -434,28 +377,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           ),
                         ),
                       ),
-                      Expanded(child: Divider(color: Colors.grey.withValues(alpha: 0.3))),
+                      Expanded(
+                        child: Divider(
+                          color: Colors.grey.withValues(alpha: 0.3),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
 
                   // Boton de Google
-                  OutlinedButton.icon(
-                    onPressed: _isLoading ? null : _handleGoogleRegister,
-                    icon: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Image.network(
-                            'https://www.google.com/favicon.ico',
-                            width: 20,
-                            height: 20,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const Icon(Icons.g_mobiledata, size: 24),
-                          ),
-                    label: const Text('Registrarse con Google'),
+                  UnifiedGoogleAuthButton(
+                    requireTermsAcceptance: _acceptedTerms,
+                    customLabel: 'Registrarse con Google',
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.all(16),
                       minimumSize: const Size(double.infinity, 56),
@@ -463,6 +397,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
+                    onSuccess: () {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (context) => const MainScaffold(),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
 
@@ -477,7 +418,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         ),
                       ),
                       TextButton(
-                        onPressed: _isLoading ? null : () => Navigator.pop(context),
+                        onPressed: _isLoading
+                            ? null
+                            : () => Navigator.pop(context),
                         child: const Text('Inicia sesion'),
                       ),
                     ],
@@ -578,7 +521,7 @@ class _TermsAcceptanceWidget extends StatelessWidget {
                           ),
                           recognizer: enabled
                               ? (TapGestureRecognizer()
-                                ..onTap = () => _showTermsOfService(context))
+                                  ..onTap = () => _showTermsOfService(context))
                               : null,
                         ),
                         const TextSpan(text: ' y la '),
@@ -593,7 +536,7 @@ class _TermsAcceptanceWidget extends StatelessWidget {
                           ),
                           recognizer: enabled
                               ? (TapGestureRecognizer()
-                                ..onTap = () => _showPrivacyPolicy(context))
+                                  ..onTap = () => _showPrivacyPolicy(context))
                               : null,
                         ),
                       ],

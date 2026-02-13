@@ -18,17 +18,9 @@ class AuthResult {
   final String? error;
   final bool cancelled;
 
-  AuthResult.success()
-      : success = true,
-        error = null,
-        cancelled = false;
-  AuthResult.error(this.error)
-      : success = false,
-        cancelled = false;
-  AuthResult.cancelled()
-      : success = false,
-        error = null,
-        cancelled = true;
+  AuthResult.success() : success = true, error = null, cancelled = false;
+  AuthResult.error(this.error) : success = false, cancelled = false;
+  AuthResult.cancelled() : success = false, error = null, cancelled = true;
 }
 
 /// Manager centralizado para todas las operaciones de autenticacion
@@ -41,8 +33,8 @@ class AuthManager {
   AuthManager({
     required AuthService authService,
     required DatabaseService dbService,
-  })  : _authService = authService,
-        _dbService = dbService;
+  }) : _authService = authService,
+       _dbService = dbService;
 
   // ==================== Estado ====================
 
@@ -82,9 +74,14 @@ class AuthManager {
 
   /// Login con email/password (cuenta existente)
   Future<AuthResult> signInWithEmailPassword(
-      String email, String password) async {
+    String email,
+    String password,
+  ) async {
     try {
-      final result = await _authService.signInWithEmailPassword(email, password);
+      final result = await _authService.signInWithEmailPassword(
+        email,
+        password,
+      );
       if (result == null) {
         return AuthResult.error('Credenciales incorrectas');
       }
@@ -94,7 +91,11 @@ class AuthManager {
 
       return AuthResult.success();
     } catch (e) {
-      _logger.error('AuthManager', 'Error en signInWithEmailPassword', error: e);
+      _logger.error(
+        'AuthManager',
+        'Error en signInWithEmailPassword',
+        error: e,
+      );
       if (e is FirebaseAuthException) {
         return AuthResult.error(_getAuthErrorMessage(e.code));
       }
@@ -117,6 +118,47 @@ class AuthManager {
     } catch (e) {
       _logger.error('AuthManager', 'Error en signInWithGoogle', error: e);
       return AuthResult.error('Error al iniciar sesion con Google');
+    }
+  }
+
+  /// Unified Google authentication
+  /// Handles both login and registration scenarios
+  /// Detects automatically if user exists or is new
+  Future<({bool isNewUser, AuthResult result})> authenticateWithGoogle({
+    bool requireTermsAcceptance = false,
+  }) async {
+    final user = currentUser;
+
+    // If user is anonymous, link the account
+    if (user != null && user.isAnonymous) {
+      try {
+        final result = await linkWithGoogle();
+        // Assume it's a "new" registration when linking from anonymous
+        return (isNewUser: true, result: result);
+      } catch (e) {
+        _logger.error(
+          'AuthManager',
+          'Error linking anonymous to Google',
+          error: e,
+        );
+        return (
+          isNewUser: false,
+          result: AuthResult.error('Error al vincular cuenta'),
+        );
+      }
+    }
+
+    // Otherwise, try to sign in directly
+    try {
+      final result = await signInWithGoogle();
+      // Assume returning user if signing in directly
+      return (isNewUser: false, result: result);
+    } catch (e) {
+      _logger.error('AuthManager', 'Error in Google authentication', error: e);
+      return (
+        isNewUser: false,
+        result: AuthResult.error('Error de autenticación'),
+      );
     }
   }
 
@@ -197,7 +239,9 @@ class AuthManager {
       }
 
       _logger.info(
-          'AuthManager', 'Sync activado automaticamente despues de auth');
+        'AuthManager',
+        'Sync activado automaticamente despues de auth',
+      );
     } catch (e) {
       _logger.error('AuthManager', 'Error al activar sync', error: e);
     }
@@ -261,7 +305,10 @@ class AuthManager {
   /// Enviar email de recuperacion de contrasena
   Future<AuthResult> sendPasswordResetEmail(String email) async {
     try {
-      await _authService.sendPasswordResetEmail(email);
+      final success = await _authService.sendPasswordResetEmail(email);
+      if (!success) {
+        return AuthResult.error('No se pudo enviar el correo de recuperacion');
+      }
       return AuthResult.success();
     } catch (e) {
       _logger.error('AuthManager', 'Error en sendPasswordResetEmail', error: e);

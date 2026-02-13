@@ -4,6 +4,7 @@ import '../services/auth_service.dart';
 import '../core/responsive/breakpoints.dart';
 import 'register_screen.dart';
 import '../widgets/dialogs/forgot_password_dialog.dart';
+import '../widgets/auth/unified_google_auth_button.dart';
 import 'main_scaffold.dart';
 
 /// Pantalla de inicio de sesion con email y contrasena
@@ -73,13 +74,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         if (result != null) {
           // Login exitoso, navegar a la pantalla principal
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => const MainScaffold(),
-            ),
+            MaterialPageRoute(builder: (context) => const MainScaffold()),
           );
         } else {
           setState(() {
-            _errorMessage = 'Credenciales invalidas. Verifica tu correo y contrasena.';
+            _errorMessage =
+                'Credenciales invalidas. Verifica tu correo y contrasena.';
             _isLoading = false;
           });
         }
@@ -94,59 +94,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  Future<void> _handleGoogleLogin() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final authService = ref.read(authServiceProvider);
-      final result = await authService.signInWithGoogle();
-
-      if (mounted) {
-        if (result != null) {
-          // Login exitoso con Google
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => const MainScaffold(),
-            ),
-          );
-        } else {
-          setState(() {
-            _errorMessage = 'No se pudo iniciar sesion con Google';
-            _isLoading = false;
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'Error al iniciar sesion con Google: $e';
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
   Future<void> _showForgotPasswordDialog() async {
     await showForgotPasswordDialog(context: context, ref: ref);
   }
 
   void _navigateToRegister() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const RegisterScreen(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const RegisterScreen()));
   }
 
   void _navigateToMainScreen() {
     // Navegar a la pantalla principal sin iniciar sesion (modo anonimo)
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => const MainScaffold(),
-      ),
+      MaterialPageRoute(builder: (context) => const MainScaffold()),
     );
   }
 
@@ -198,17 +159,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     'AuraList',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
-                        ),
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.primary,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Inicia sesion para sincronizar tus tareas',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurface.withValues(alpha: 0.6),
-                        ),
+                      color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
                   ),
                   const SizedBox(height: 40),
 
@@ -285,7 +246,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     : Icons.visibility,
                               ),
                               onPressed: () {
-                                setState(() => _obscurePassword = !_obscurePassword);
+                                setState(
+                                  () => _obscurePassword = !_obscurePassword,
+                                );
                               },
                             ),
                             border: OutlineInputBorder(
@@ -300,7 +263,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
-                            onPressed: _isLoading ? null : _showForgotPasswordDialog,
+                            onPressed: _isLoading
+                                ? null
+                                : _showForgotPasswordDialog,
                             child: Text(
                               'Olvidaste tu contrasena?',
                               style: TextStyle(
@@ -325,7 +290,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ),
                                 )
                               : const Icon(Icons.login),
-                          label: Text(_isLoading ? 'Iniciando sesion...' : 'Iniciar sesion'),
+                          label: Text(
+                            _isLoading
+                                ? 'Iniciando sesion...'
+                                : 'Iniciar sesion',
+                          ),
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.all(16),
                             minimumSize: const Size(double.infinity, 56),
@@ -342,7 +311,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   // Divider
                   Row(
                     children: [
-                      Expanded(child: Divider(color: Colors.grey.withValues(alpha: 0.3))),
+                      Expanded(
+                        child: Divider(
+                          color: Colors.grey.withValues(alpha: 0.3),
+                        ),
+                      ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
@@ -353,28 +326,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                       ),
-                      Expanded(child: Divider(color: Colors.grey.withValues(alpha: 0.3))),
+                      Expanded(
+                        child: Divider(
+                          color: Colors.grey.withValues(alpha: 0.3),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
 
                   // Boton de Google
-                  OutlinedButton.icon(
-                    onPressed: _isLoading ? null : _handleGoogleLogin,
-                    icon: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Image.network(
-                            'https://www.google.com/favicon.ico',
-                            width: 20,
-                            height: 20,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const Icon(Icons.g_mobiledata, size: 24),
-                          ),
-                    label: const Text('Continuar con Google'),
+                  UnifiedGoogleAuthButton(
+                    customLabel: 'Continuar con Google',
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.all(16),
                       minimumSize: const Size(double.infinity, 56),
@@ -382,6 +345,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
+                    onSuccess: () {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (context) => const MainScaffold(),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
 

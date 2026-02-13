@@ -8,6 +8,7 @@ import '../../core/constants/wellness_catalog.dart';
 import '../../models/wellness_suggestion.dart';
 import '../../providers/task_provider.dart';
 import '../../providers/wellness_provider.dart';
+import '../../screens/wellness_catalog_screen.dart';
 import '../shared/celebration_overlay.dart';
 
 /// Extension para obtener propiedades de display de categorias
@@ -51,26 +52,69 @@ extension WellnessCategoryDisplay on String {
   }
 }
 
-/// Provider para sugerencias diarias (6 sugerencias variadas)
-final dailyWellnessSuggestionsProvider = Provider<List<WellnessSuggestion>>((ref) {
+/// Calcula el periodo de 4 horas al que pertenece la hora actual.
+/// Retorna un valor de 0 a 5, donde:
+///   0 = 00:00-03:59, 1 = 04:00-07:59, 2 = 08:00-11:59,
+///   3 = 12:00-15:59, 4 = 16:00-19:59, 5 = 20:00-23:59
+int _currentFourHourPeriod() {
+  return DateTime.now().hour ~/ 4;
+}
+
+/// Provider para sugerencias diarias (6 sugerencias variadas).
+/// Las sugerencias rotan cada 4 horas y priorizan las no probadas/agregadas.
+final dailyWellnessSuggestionsProvider =
+    Provider.autoDispose<List<WellnessSuggestion>>((ref) {
+  final wellnessState = ref.watch(wellnessProvider);
+  final usedIds = wellnessState.triedSuggestionIds
+      .union(wellnessState.addedSuggestionIds);
+
   final now = DateTime.now();
-  final seed = now.year * 10000 + now.month * 100 + now.day;
+  final period = _currentFourHourPeriod();
+  // La semilla combina fecha y periodo de 4 horas para rotar las sugerencias
+  final seed =
+      now.year * 1000000 + now.month * 10000 + now.day * 100 + period;
   final random = Random(seed);
 
-  // Obtener sugerencias variadas de diferentes categorias
+  // Construir un pool candidato de una sugerencia por categoria
   final categories = WellnessCategory.all;
-  final suggestions = <WellnessSuggestion>[];
+  final allCandidates = <WellnessSuggestion>[];
 
   for (final category in categories) {
     final categorySuggestions = WellnessCatalog.getByCategory(category);
     if (categorySuggestions.isNotEmpty) {
-      suggestions.add(categorySuggestions[random.nextInt(categorySuggestions.length)]);
+      allCandidates.add(
+        categorySuggestions[random.nextInt(categorySuggestions.length)],
+      );
     }
   }
 
-  // Mezclar y tomar 6
-  suggestions.shuffle(random);
-  return suggestions.take(6).toList();
+  // Mezclar con la misma semilla para obtener orden determinista
+  allCandidates.shuffle(random);
+
+  // Separar en no usadas y ya usadas para priorizar las no usadas
+  final untried =
+      allCandidates.where((s) => !usedIds.contains(s.id)).toList();
+  final tried =
+      allCandidates.where((s) => usedIds.contains(s.id)).toList();
+
+  // Combinar: primero las no usadas, luego las ya usadas como relleno
+  final ordered = [...untried, ...tried];
+
+  // Si no alcanzamos 6 con el pool por categorias, rellenar con el catalogo
+  if (ordered.length < 6) {
+    final alreadyIncluded = ordered.map((s) => s.id).toSet();
+    final extra = WellnessCatalog.allSuggestions
+        .where((s) => !alreadyIncluded.contains(s.id))
+        .toList()
+      ..shuffle(random);
+
+    // Primero los no usados del catalogo completo, luego los usados
+    final extraUntried = extra.where((s) => !usedIds.contains(s.id)).toList();
+    final extraTried = extra.where((s) => usedIds.contains(s.id)).toList();
+    ordered.addAll([...extraUntried, ...extraTried]);
+  }
+
+  return ordered.take(6).toList();
 });
 
 /// Comportamiento de scroll personalizado que habilita arrastre con mouse en web.
@@ -250,71 +294,16 @@ class _WellnessSuggestionsCardState extends ConsumerState<WellnessSuggestionsCar
                           const SizedBox(width: 8),
                           TextButton.icon(
                             onPressed: () {
-                              // Show all suggestions in a dialog
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (context) => DraggableScrollableSheet(
-                                  initialChildSize: 0.7,
-                                  minChildSize: 0.5,
-                                  maxChildSize: 0.95,
-                                  builder: (context, scrollController) => Container(
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.surface,
-                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        // Handle bar
-                                        Container(
-                                          margin: const EdgeInsets.symmetric(vertical: 12),
-                                          width: 40,
-                                          height: 4,
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
-                                            borderRadius: BorderRadius.circular(2),
-                                          ),
-                                        ),
-                                        // Title
-                                        Padding(
-                                          padding: const EdgeInsets.all(16),
-                                          child: Text(
-                                            'Todas las sugerencias',
-                                            style: Theme.of(context).textTheme.titleLarge,
-                                          ),
-                                        ),
-                                        // List of all suggestions
-                                        Expanded(
-                                          child: ListView.builder(
-                                            controller: scrollController,
-                                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                                            itemCount: suggestions.length,
-                                            itemBuilder: (context, index) {
-                                              final suggestion = suggestions[index];
-                                              return Card(
-                                                margin: const EdgeInsets.only(bottom: 12),
-                                                child: ListTile(
-                                                  leading: Icon(
-                                                    suggestion.category.categoryIcon,
-                                                    color: suggestion.category.categoryGradient.first,
-                                                  ),
-                                                  title: Text(suggestion.title),
-                                                  subtitle: Text(suggestion.description),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                              // Navigate to the full catalog screen
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => const WellnessCatalogScreen(),
                                 ),
                               );
                             },
                             icon: const Icon(Icons.chevron_right, size: 18),
                             label: const Text(
-                              'Ver todos',
+                              'Ver catalogo',
                               style: TextStyle(fontSize: 12),
                             ),
                             style: TextButton.styleFrom(
@@ -411,6 +400,8 @@ class _WellnessSuggestionsCardState extends ConsumerState<WellnessSuggestionsCar
         priority: 1,
         motivation: suggestion.motivation,
       );
+      // Marcar la sugerencia como agregada para que no aparezca de nuevo
+      ref.read(wellnessProvider.notifier).markAsAdded(suggestion.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -987,6 +978,8 @@ class _SuggestionDetailSheet extends ConsumerWidget {
                           priority: 1,
                           motivation: suggestion.motivation,
                         );
+                        // Marcar la sugerencia como agregada
+                        ref.read(wellnessProvider.notifier).markAsAdded(suggestion.id);
                         if (context.mounted) {
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(

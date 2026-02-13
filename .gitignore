@@ -73,3 +73,6 @@ app.*.map.json
 *.ipa
 *.app
 *.msix
+nul
+test_output.txt
+test_stderr.txt

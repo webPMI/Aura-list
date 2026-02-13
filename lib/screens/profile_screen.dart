@@ -91,7 +91,9 @@ class ProfileScreen extends ConsumerWidget {
                   'Revocar consentimientos',
                   style: TextStyle(color: colorScheme.error),
                 ),
-                subtitle: const Text('Desactiva sincronizacion y elimina datos en la nube'),
+                subtitle: const Text(
+                  'Desactiva sincronizacion y elimina datos en la nube',
+                ),
                 onTap: () => _showRevokeConsentsDialog(context, ref),
               ),
 
@@ -126,17 +128,11 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  void _showLegalDocument(
-    BuildContext context,
-    String title,
-    String content,
-  ) {
+  void _showLegalDocument(BuildContext context, String title, String content) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => _LegalDocumentScreen(
-          title: title,
-          content: content,
-        ),
+        builder: (context) =>
+            _LegalDocumentScreen(title: title, content: content),
       ),
     );
   }
@@ -147,7 +143,11 @@ class ProfileScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        icon: Icon(Icons.warning_amber_rounded, color: colorScheme.error, size: 48),
+        icon: Icon(
+          Icons.warning_amber_rounded,
+          color: colorScheme.error,
+          size: 48,
+        ),
         title: const Text('Revocar consentimientos?'),
         content: const Text(
           'Esta accion desactivara la sincronizacion en la nube y eliminara '
@@ -191,7 +191,9 @@ class ProfileScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Consentimientos revocados. Tus datos locales se mantienen.'),
+            content: Text(
+              'Consentimientos revocados. Tus datos locales se mantienen.',
+            ),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -248,7 +250,11 @@ class ProfileScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        icon: Icon(Icons.warning_amber_rounded, color: colorScheme.error, size: 48),
+        icon: Icon(
+          Icons.warning_amber_rounded,
+          color: colorScheme.error,
+          size: 48,
+        ),
         title: const Text('Confirmacion final'),
         content: const Text(
           'Escribe "ELIMINAR" para confirmar que deseas eliminar tu cuenta y todos tus datos permanentemente.',
@@ -371,7 +377,10 @@ class _AccountSection extends ConsumerWidget {
             ),
             if (isAnonymous)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
@@ -412,19 +421,14 @@ class _LegalDocumentScreen extends StatelessWidget {
   final String title;
   final String content;
 
-  const _LegalDocumentScreen({
-    required this.title,
-    required this.content,
-  });
+  const _LegalDocumentScreen({required this.title, required this.content});
 
   @override
   Widget build(BuildContext context) {
     final horizontalPadding = context.horizontalPadding;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-      ),
+      appBar: AppBar(title: Text(title)),
       body: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(
@@ -461,15 +465,16 @@ class _UserStatistics extends ConsumerWidget {
       ...weeklyTasks,
       ...monthlyTasks,
       ...yearlyTasks,
-      ...onceTasks
+      ...onceTasks,
     ];
     final totalTasks = allTasks.length;
     final completedTasks = allTasks.where((t) => t.isCompleted).length;
     final pendingTasks = totalTasks - completedTasks;
 
     // Calculate completion rate
-    final completionRate =
-        totalTasks > 0 ? (completedTasks / totalTasks * 100).toInt() : 0;
+    final completionRate = totalTasks > 0
+        ? (completedTasks / totalTasks * 100).toInt()
+        : 0;
 
     // Priority breakdown
     final highPriority = allTasks.where((t) => t.priority == 2).length;
@@ -503,7 +508,10 @@ class _UserStatistics extends ConsumerWidget {
                             strokeWidth: 12,
                             backgroundColor:
                                 colorScheme.surfaceContainerHighest,
-                            color: _getCompletionColor(completionRate, colorScheme),
+                            color: _getCompletionColor(
+                              completionRate,
+                              colorScheme,
+                            ),
                           ),
                         ),
                         Column(
@@ -521,7 +529,9 @@ class _UserStatistics extends ConsumerWidget {
                               'Completado',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: colorScheme.onSurface.withValues(alpha: 0.7),
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.7,
+                                ),
                               ),
                             ),
                           ],
@@ -623,11 +633,31 @@ class _UserStatistics extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _TypeRow(icon: Icons.wb_sunny, label: 'Diarias', count: dailyTasks.length),
-                  _TypeRow(icon: Icons.calendar_view_week, label: 'Semanales', count: weeklyTasks.length),
-                  _TypeRow(icon: Icons.calendar_month, label: 'Mensuales', count: monthlyTasks.length),
-                  _TypeRow(icon: Icons.event, label: 'Anuales', count: yearlyTasks.length),
-                  _TypeRow(icon: Icons.push_pin, label: 'Unicas', count: onceTasks.length),
+                  _TypeRow(
+                    icon: Icons.wb_sunny,
+                    label: 'Diarias',
+                    count: dailyTasks.length,
+                  ),
+                  _TypeRow(
+                    icon: Icons.calendar_view_week,
+                    label: 'Semanales',
+                    count: weeklyTasks.length,
+                  ),
+                  _TypeRow(
+                    icon: Icons.calendar_month,
+                    label: 'Mensuales',
+                    count: monthlyTasks.length,
+                  ),
+                  _TypeRow(
+                    icon: Icons.event,
+                    label: 'Anuales',
+                    count: yearlyTasks.length,
+                  ),
+                  _TypeRow(
+                    icon: Icons.push_pin,
+                    label: 'Unicas',
+                    count: onceTasks.length,
+                  ),
                 ],
               ),
             ),
@@ -675,7 +705,9 @@ class _StatItem extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: 12,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.7),
           ),
         ),
       ],
@@ -766,10 +798,7 @@ class _TypeRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: TextStyle(
-                fontSize: 13,
-                color: colorScheme.onSurface,
-              ),
+              style: TextStyle(fontSize: 13, color: colorScheme.onSurface),
             ),
           ),
           Container(
@@ -861,7 +890,7 @@ class _GuideAffinitySection extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final guideColor =
         parseHexColor(guide.themeAccentHex ?? guide.themePrimaryHex) ??
-            colorScheme.primary;
+        colorScheme.primary;
     final affinityAsync = ref.watch(guideAffinityProvider(guide.id));
 
     return Padding(
@@ -909,8 +938,9 @@ class _GuideAffinitySection extends ConsumerWidget {
                             guide.title,
                             style: TextStyle(
                               fontSize: 12,
-                              color: colorScheme.onSurface
-                                  .withValues(alpha: 0.6),
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.6,
+                              ),
                               fontStyle: FontStyle.italic,
                             ),
                           ),
@@ -961,8 +991,9 @@ class _GuideAffinitySection extends ConsumerWidget {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontStyle: FontStyle.italic,
-                                  color: colorScheme.onSurface
-                                      .withValues(alpha: 0.8),
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.8,
+                                  ),
                                 ),
                               ),
                             ),
@@ -985,18 +1016,15 @@ class _GuideAffinitySection extends ConsumerWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () => showGuideSelectorSheet(context),
-                      icon: Icon(
-                        Icons.swap_horiz,
-                        size: 18,
-                        color: guideColor,
-                      ),
+                      icon: Icon(Icons.swap_horiz, size: 18, color: guideColor),
                       label: Text(
                         'Cambiar guia',
                         style: TextStyle(color: guideColor),
                       ),
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(
-                            color: guideColor.withValues(alpha: 0.5)),
+                          color: guideColor.withValues(alpha: 0.5),
+                        ),
                       ),
                     ),
                   ),
@@ -1015,7 +1043,8 @@ class _GuideAffinitySection extends ConsumerWidget {
                       ),
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(
-                            color: guideColor.withValues(alpha: 0.5)),
+                          color: guideColor.withValues(alpha: 0.5),
+                        ),
                       ),
                     ),
                   ),
@@ -1064,7 +1093,8 @@ class _DeleteConfirmationDialog extends StatefulWidget {
   const _DeleteConfirmationDialog({required this.onConfirm});
 
   @override
-  State<_DeleteConfirmationDialog> createState() => _DeleteConfirmationDialogState();
+  State<_DeleteConfirmationDialog> createState() =>
+      _DeleteConfirmationDialogState();
 }
 
 class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
@@ -1092,7 +1122,11 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return AlertDialog(
-      icon: Icon(Icons.warning_amber_rounded, color: colorScheme.error, size: 48),
+      icon: Icon(
+        Icons.warning_amber_rounded,
+        color: colorScheme.error,
+        size: 48,
+      ),
       title: const Text('Confirmacion final'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1161,10 +1195,7 @@ class _AboutSection extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [
-                      colorScheme.primary,
-                      colorScheme.tertiary,
-                    ],
+                    colors: [colorScheme.primary, colorScheme.tertiary],
                   ),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
@@ -1201,9 +1232,7 @@ class _AboutSection extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               // Divider
-              Divider(
-                color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-              ),
+              Divider(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
               const SizedBox(height: 16),
               // Creator info
               Row(
@@ -1264,11 +1293,7 @@ class _AboutSection extends StatelessWidget {
                       color: colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ),
-                  Icon(
-                    Icons.favorite,
-                    size: 14,
-                    color: Colors.redAccent,
-                  ),
+                  Icon(Icons.favorite, size: 14, color: Colors.redAccent),
                   Text(
                     ' en Flutter',
                     style: TextStyle(

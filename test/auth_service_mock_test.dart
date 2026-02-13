@@ -26,6 +26,11 @@ void main() {
   late MockGoogleSignInService mockGoogleSignIn;
   late MockSessionCacheManager mockSessionCache;
 
+  setUpAll(() {
+    registerFallbackValue(ErrorType.unknown);
+    registerFallbackValue(ErrorSeverity.error);
+  });
+
   setUp(() {
     mockAuth = MockFirebaseAuth();
     mockUser = MockUser();
@@ -45,6 +50,22 @@ void main() {
     when(
       () => mockAuth.authStateChanges(),
     ).thenAnswer((_) => Stream.value(null));
+    when(
+      () => mockErrorHandler.handle(
+        any(),
+        type: any(named: 'type'),
+        severity: any(named: 'severity'),
+        message: any(named: 'message'),
+        userMessage: any(named: 'userMessage'),
+        stackTrace: any(named: 'stackTrace'),
+      ),
+    ).thenReturn(
+      AppError(
+        type: ErrorType.unknown,
+        severity: ErrorSeverity.error,
+        message: 'mock error',
+      ),
+    );
   });
 
   group('AuthService Mocked Implementation Tests', () {

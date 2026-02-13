@@ -27,6 +27,18 @@ import 'package:checklist_app/models/user_preferences.dart';
 import 'package:checklist_app/models/sync_metadata.dart';
 import 'package:checklist_app/services/database_service.dart';
 import 'package:checklist_app/services/error_handler.dart';
+import 'package:checklist_app/services/repositories/task_repository.dart';
+import 'package:checklist_app/services/repositories/note_repository.dart';
+import 'package:checklist_app/services/repositories/notebook_repository.dart';
+import 'package:checklist_app/services/storage/local/hive_task_storage.dart';
+import 'package:checklist_app/services/storage/local/hive_note_storage.dart';
+import 'package:checklist_app/services/storage/local/hive_notebook_storage.dart';
+import 'package:checklist_app/services/storage/cloud/firestore_task_storage.dart';
+import 'package:checklist_app/services/storage/cloud/firestore_note_storage.dart';
+import 'package:checklist_app/services/storage/cloud/firestore_notebook_storage.dart';
+import 'package:checklist_app/services/sync/task_sync_service.dart';
+import 'package:checklist_app/services/sync/note_sync_service.dart';
+import 'package:checklist_app/services/sync/notebook_sync_service.dart';
 import 'package:http/http.dart' as http;
 
 /// Test configuration
@@ -440,7 +452,60 @@ void main() {
       }
 
       errorHandler = ErrorHandler();
-      databaseService = DatabaseService(errorHandler);
+
+      // Create storage layers
+      final taskStorage = HiveTaskStorage(errorHandler);
+      final noteStorage = HiveNoteStorage(errorHandler);
+      final notebookStorage = HiveNotebookStorage(errorHandler);
+
+      // Create cloud storage layers
+      final taskCloudStorage = FirestoreTaskStorage(errorHandler);
+      final noteCloudStorage = FirestoreNoteStorage(errorHandler);
+      final notebookCloudStorage = FirestoreNotebookStorage(errorHandler);
+
+      // Create sync services (enabled for integration tests)
+      final taskSyncService = TaskSyncService(
+        localStorage: taskStorage,
+        cloudStorage: taskCloudStorage,
+        errorHandler: errorHandler,
+        isCloudSyncEnabled: () async => true,
+      );
+      final noteSyncService = NoteSyncService(
+        localStorage: noteStorage,
+        cloudStorage: noteCloudStorage,
+        errorHandler: errorHandler,
+        isCloudSyncEnabled: () async => true,
+      );
+      final notebookSyncService = NotebookSyncService(
+        localStorage: notebookStorage,
+        cloudStorage: notebookCloudStorage,
+        errorHandler: errorHandler,
+        isCloudSyncEnabled: () async => true,
+      );
+
+      // Create repositories
+      final taskRepository = TaskRepository(
+        localStorage: taskStorage,
+        syncService: taskSyncService,
+        errorHandler: errorHandler,
+      );
+      final noteRepository = NoteRepository(
+        localStorage: noteStorage,
+        syncService: noteSyncService,
+        errorHandler: errorHandler,
+      );
+      final notebookRepository = NotebookRepository(
+        localStorage: notebookStorage,
+        syncService: notebookSyncService,
+        errorHandler: errorHandler,
+      );
+
+      databaseService = DatabaseService(
+        errorHandler,
+        taskRepository: taskRepository,
+        noteRepository: noteRepository,
+        notebookRepository: notebookRepository,
+      );
       await databaseService.init(path: tempDir.path);
     });
 
