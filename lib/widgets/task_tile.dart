@@ -92,19 +92,39 @@ class TaskTile extends ConsumerWidget {
 
     final currentStreak = ref.read(streakProvider).currentStreak;
 
-    // Verificar logros (simplificado - en produccion se necesita mas contexto)
+    // Estadísticas de tareas del día
+    final dailyTasks = ref.read(tasksProvider('daily'));
+    final completedToday = dailyTasks.where((t) => t.isCompleted).length;
+    final allCompleted =
+        dailyTasks.isNotEmpty && dailyTasks.every((t) => t.isCompleted);
+    final completedCategories = dailyTasks
+        .where((t) => t.isCompleted)
+        .map((t) => t.category)
+        .toSet();
+
+    // Total de tareas recurrentes activas (excluye tipo 'once')
+    final recurrentCount = ref.read(tasksProvider('daily')).length +
+        ref.read(tasksProvider('weekly')).length +
+        ref.read(tasksProvider('monthly')).length +
+        ref.read(tasksProvider('yearly')).length;
+
+    // Datos de afinidad con el guía activo
+    final affinity = await ref
+        .read(guideAffinityNotifierProvider.notifier)
+        .getAffinity(activeGuide.id);
+
     final newAchievements = await ref
         .read(guideAchievementsProvider.notifier)
         .checkAndAwardAchievements(
           activeGuideId: activeGuide.id,
           lastCompletedTask: task,
           currentStreak: currentStreak,
-          totalTasksCompletedToday: 0, // TODO: obtener del provider de stats
-          totalTasksWithGuide: 0, // TODO: obtener del provider de affinity
-          categoriesCompletedToday: {}, // TODO: obtener del provider de stats
-          totalRecurrentTasks: 0, // TODO: obtener del provider de tasks
-          allTasksCompleted: false, // TODO: verificar si todas las tareas estan completadas
-          daysWithGuide: 0, // TODO: obtener del provider de affinity
+          totalTasksCompletedToday: completedToday,
+          totalTasksWithGuide: affinity?.tasksCompletedWithGuide ?? 0,
+          categoriesCompletedToday: completedCategories,
+          totalRecurrentTasks: recurrentCount,
+          allTasksCompleted: allCompleted,
+          daysWithGuide: affinity?.daysWithGuide ?? 0,
         );
 
     // Mostrar logros obtenidos con delay para no solaparse

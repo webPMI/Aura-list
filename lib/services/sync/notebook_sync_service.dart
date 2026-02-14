@@ -67,6 +67,21 @@ class NotebookSyncService implements ISyncService<Notebook> {
   @override
   bool get isSyncing => _isSyncing;
 
+  /// Elimina un notebook de Firestore por su ID de documento.
+  /// No falla si el documento no existe o si el cloud no está disponible.
+  Future<void> deleteFromCloud(String firestoreId, String userId) async {
+    if (!_cloudStorage.isAvailable) return;
+    if (userId.isEmpty || firestoreId.isEmpty) return;
+    try {
+      await _cloudStorage.delete(firestoreId, userId);
+      _logger.debug(
+          'Service', '[NotebookSyncService] Deleted from cloud: $firestoreId');
+    } catch (e) {
+      _logger.warning(
+          'Service', '[NotebookSyncService] Error deleting from cloud: $e');
+    }
+  }
+
   @override
   Future<SyncOperationResult> syncToCloud(Notebook notebook, String userId) async {
     if (!await isSyncEnabled) {

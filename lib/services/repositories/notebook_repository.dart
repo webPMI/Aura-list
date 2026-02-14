@@ -86,10 +86,10 @@ class NotebookRepository implements INotebookRepository {
 
   @override
   Future<void> delete(dynamic key, String userId) async {
-    // Notebooks use hard delete
+    // Notebooks use hard delete: eliminar local y en cloud si estaba sincronizado
     final notebook = await _localStorage.get(key);
     if (notebook != null && notebook.firestoreId.isNotEmpty) {
-      // TODO: Delete from cloud as well
+      await _syncService.deleteFromCloud(notebook.firestoreId, userId);
     }
     await _localStorage.delete(key);
   }
