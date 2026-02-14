@@ -8,18 +8,34 @@ import '../core/constants/motivational_messages.dart';
 import '../core/constants/task_constants.dart';
 import '../models/task_model.dart';
 import '../providers/task_provider.dart';
+import '../providers/task_providers.dart';
 import '../providers/navigation_provider.dart';
 import '../providers/notes_provider.dart';
+import '../widgets/dialogs/add_task_dialog.dart';
 import '../widgets/layouts/dashboard_layout.dart';
 import '../widgets/navigation/drawer_menu_button.dart';
 import '../widgets/dashboard/wellness_suggestions_card.dart';
 import '../widgets/dashboard/user_card.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Registrar actividad diaria con el guía activo (una vez por día).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(checkDailyActivityProvider)();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: DrawerAwareAppBar(
         title: _GreetingHeader(),
@@ -33,6 +49,15 @@ class DashboardScreen extends ConsumerWidget {
             tooltip: 'Buscar',
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => showAddTaskDialog(
+          context: context,
+          ref: ref,
+          defaultType: 'daily',
+        ),
+        icon: const Icon(Icons.add),
+        label: const Text('Nueva tarea'),
       ),
       body: DashboardLayout(
         cards: [
@@ -56,6 +81,13 @@ class _GreetingHeader extends ConsumerWidget {
     final greeting = MotivationalMessages.getTimeBasedGreeting();
     final dateFormat = DateFormat('EEEE d MMMM', 'es');
     final activeGuide = ref.watch(activeGuideProvider);
+
+    // Nivel de afinidad actual (2 = sentencia desbloqueada).
+    // Mientras carga se muestra la sentencia para no interrumpir la experiencia.
+    final affinityLevel = ref.watch(activeGuideAffinityProvider).maybeWhen(
+          data: (a) => a?.connectionLevel ?? 0,
+          orElse: () => 2,
+        );
 
     // Responsive font sizes
     final isMobile = context.isMobile;
@@ -81,8 +113,8 @@ class _GreetingHeader extends ConsumerWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        // Mostrar sentencia de poder del guia si esta activo
-        if (activeGuide != null && activeGuide.powerSentence.isNotEmpty)
+        // Mostrar sentencia de poder (nivel ≥ 2) o incentivo (nivel 0-1)
+        if (activeGuide != null && activeGuide.powerSentence.isNotEmpty && affinityLevel >= 2)
           GestureDetector(
             onTap: () => showGuideSelectorSheet(context),
             child: Tooltip(
@@ -134,6 +166,50 @@ class _GreetingHeader extends ConsumerWidget {
               ),
             ),
           )
+        else if (activeGuide != null && affinityLevel < 2)
+          // Incentivo: el usuario tiene guía pero aún no desbloqueó la sentencia
+          GestureDetector(
+            onTap: () => showGuideSelectorSheet(context),
+            child: Container(
+              margin: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.only(left: 12),
+              decoration: BoxDecoration(
+                border: Border(
+                  left: BorderSide(
+                    color: (guideColor ?? Theme.of(context).colorScheme.primary)
+                        .withValues(alpha: 0.4),
+                    width: 3,
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.lock_outline,
+                    size: 12,
+                    color: (guideColor ?? Theme.of(context).colorScheme.primary)
+                        .withValues(alpha: 0.5),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Completa más tareas con ${activeGuide.name} para desbloquear su sentencia',
+                      style: TextStyle(
+                        fontStyle: FontStyle.italic,
+                        fontSize: powerSentenceFontSize,
+                        color:
+                            (guideColor ?? Theme.of(context).colorScheme.primary)
+                                .withValues(alpha: 0.6),
+                        height: 1.3,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
         else
           Text(
             dateFormat.format(DateTime.now()),
@@ -152,9 +228,11 @@ class _GreetingHeader extends ConsumerWidget {
 class _TodayProgressCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final dailyTasks = ref.watch(tasksProvider('daily'));
-    final completed = dailyTasks.where((t) => t.isCompleted).length;
-    final total = dailyTasks.length;
+    // Usa todas las tareas de hoy (todos los tipos) para el progreso
+    final todayTasksAsync = ref.watch(todaySmartTasksProvider);
+    final todayTasks = todayTasksAsync.valueOrNull ?? [];
+    final completed = todayTasks.where((t) => t.isCompleted).length;
+    final total = todayTasks.length;
     final progress = total > 0 ? completed / total : 0.0;
 
     return QuickStatsCard(
@@ -165,7 +243,6 @@ class _TodayProgressCard extends ConsumerWidget {
       progress: progress,
       color: Colors.orange,
       onTap: () {
-        ref.read(selectedTaskTypeProvider.notifier).state = 'daily';
         ref.read(selectedRouteProvider.notifier).state = AppRoute.tasks;
       },
     );
@@ -183,21 +260,19 @@ class _TodayProgressCard extends ConsumerWidget {
 class _TodayTasksCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final dailyTasks = ref.watch(tasksProvider('daily'));
-    final pendingTasks = dailyTasks
-        .where((t) => !t.isCompleted)
-        .take(3)
-        .toList();
+    // Muestra tareas pendientes de todos los tipos correspondientes a hoy
+    final todayTasksAsync = ref.watch(todaySmartTasksProvider);
+    final allToday = todayTasksAsync.valueOrNull ?? [];
+    final pendingTasks = allToday.where((t) => !t.isCompleted).take(4).toList();
     final colorScheme = Theme.of(context).colorScheme;
 
     return DashboardCard(
       title: 'Pendientes de Hoy',
       icon: Icons.checklist,
       onMoreTap: () {
-        ref.read(selectedTaskTypeProvider.notifier).state = 'daily';
         ref.read(selectedRouteProvider.notifier).state = AppRoute.tasks;
       },
-      height: 220,
+      height: 240,
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
       child: pendingTasks.isEmpty
           ? Center(
@@ -244,6 +319,41 @@ class _CompactTaskTile extends ConsumerStatefulWidget {
 class _CompactTaskTileState extends ConsumerState<_CompactTaskTile> {
   final priorityColors = [Colors.blue, Colors.orange, Colors.red];
 
+  String _getTaskTypeLabel(Task task) {
+    const weekDayNames = [
+      '',
+      'Lunes',
+      'Martes',
+      'Miércoles',
+      'Jueves',
+      'Viernes',
+      'Sábado',
+      'Domingo',
+    ];
+    switch (task.type) {
+      case 'daily':
+        return 'Diaria';
+      case 'weekly':
+        if (task.recurrenceDay != null &&
+            task.recurrenceDay! >= 1 &&
+            task.recurrenceDay! <= 7) {
+          return 'Semanal · ${weekDayNames[task.recurrenceDay!]}';
+        }
+        return 'Semanal';
+      case 'monthly':
+        if (task.recurrenceDay != null) {
+          return 'Mensual · Día ${task.recurrenceDay}';
+        }
+        return 'Mensual';
+      case 'once':
+        return 'Única';
+      case 'yearly':
+        return 'Anual';
+      default:
+        return task.typeLabel;
+    }
+  }
+
   void _showCelebrationOverlay() {
     final overlay = Overlay.of(context);
     late OverlayEntry overlayEntry;
@@ -289,6 +399,14 @@ class _CompactTaskTileState extends ConsumerState<_CompactTaskTile> {
         style: const TextStyle(fontSize: 14),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text(
+        _getTaskTypeLabel(widget.task),
+        style: TextStyle(
+          fontSize: 11,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+        ),
+        maxLines: 1,
       ),
       trailing: Checkbox(
         value: widget.task.isCompleted,

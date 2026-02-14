@@ -349,47 +349,7 @@ class _AffinityLevelIndicatorState
             ),
             if (!isMaxLevel) ...[
               const SizedBox(height: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Siguiente nivel',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                        ),
-                      ),
-                      Text(
-                        '${(progress * 100).toInt()}%',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: guideColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                      valueColor: AlwaysStoppedAnimation<Color>(guideColor),
-                      minHeight: 8,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Necesitas ${affinity.tasksRequiredForNextLevel} tareas y '
-                    '${affinity.daysRequiredForNextLevel} días',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                  ),
-                ],
-              ),
+              _buildSeparateProgressBars(theme, affinity: affinity, guideColor: guideColor),
             ],
             if (isMaxLevel) ...[
               const SizedBox(height: 12),
@@ -416,6 +376,124 @@ class _AffinityLevelIndicatorState
           ],
         ],
       ),
+    );
+  }
+
+  /// Muestra dos barras de progreso independientes: una para tareas y otra para días.
+  /// Cada barra indica cuánto falta en lugar de totales acumulados.
+  Widget _buildSeparateProgressBars(
+    ThemeData theme, {
+    required GuideAffinity affinity,
+    required Color guideColor,
+  }) {
+    final tasksRequired = affinity.tasksRequiredForNextLevel;
+    final daysRequired = affinity.daysRequiredForNextLevel;
+    final tasksDone = affinity.tasksCompletedWithGuide;
+    final daysDone = affinity.daysWithGuide;
+
+    final taskProgress = tasksRequired > 0
+        ? (tasksDone / tasksRequired).clamp(0.0, 1.0)
+        : 1.0;
+    final dayProgress = daysRequired > 0
+        ? (daysDone / daysRequired).clamp(0.0, 1.0)
+        : 1.0;
+
+    final tasksCompleted = tasksDone >= tasksRequired;
+    final daysCompleted = daysDone >= daysRequired;
+
+    final tasksRemaining = (tasksRequired - tasksDone).clamp(0, tasksRequired);
+    final daysRemaining = (daysRequired - daysDone).clamp(0, daysRequired);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Progreso al siguiente nivel',
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Barra de tareas
+        _buildProgressBar(
+          theme,
+          icon: tasksCompleted ? Icons.check_circle : Icons.task_alt,
+          label: tasksCompleted
+              ? 'Tareas completadas'
+              : '$tasksRemaining tarea${tasksRemaining == 1 ? '' : 's'} más',
+          progress: taskProgress,
+          current: tasksDone,
+          required: tasksRequired,
+          guideColor: guideColor,
+          isDone: tasksCompleted,
+        ),
+        const SizedBox(height: 8),
+        // Barra de días
+        _buildProgressBar(
+          theme,
+          icon: daysCompleted ? Icons.check_circle : Icons.calendar_today,
+          label: daysCompleted
+              ? 'Días alcanzados'
+              : '$daysRemaining día${daysRemaining == 1 ? '' : 's'} más',
+          progress: dayProgress,
+          current: daysDone,
+          required: daysRequired,
+          guideColor: guideColor,
+          isDone: daysCompleted,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProgressBar(
+    ThemeData theme, {
+    required IconData icon,
+    required String label,
+    required double progress,
+    required int current,
+    required int required,
+    required Color guideColor,
+    required bool isDone,
+  }) {
+    final barColor = isDone ? guideColor : guideColor.withValues(alpha: 0.8);
+    final textColor = isDone
+        ? guideColor
+        : theme.colorScheme.onSurface.withValues(alpha: 0.7);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 13, color: barColor),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                label,
+                style: theme.textTheme.labelSmall?.copyWith(color: textColor),
+              ),
+            ),
+            Text(
+              '$current/$required',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: barColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: progress,
+            backgroundColor: theme.colorScheme.surfaceContainerHighest,
+            valueColor: AlwaysStoppedAnimation<Color>(barColor),
+            minHeight: 6,
+          ),
+        ),
+      ],
     );
   }
 

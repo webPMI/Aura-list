@@ -155,18 +155,21 @@ class GuideAffinity {
   bool get isMaxLevel => connectionLevel >= 5;
 
   /// Mensaje de felicitación al subir de nivel.
+  /// Usa el NUEVO nivel (connectionLevel + 1) para obtener el nombre correcto.
   String get levelUpMessage {
-    switch (connectionLevel + 1) {
+    final newLevel = connectionLevel + 1;
+    final newLevelName = AffinityLevel.fromValue(newLevel).label;
+    switch (newLevel) {
       case 1:
-        return '¡$levelName! Tu guía comienza a conocerte.';
+        return '¡$newLevelName! Tu guía comienza a conocerte.';
       case 2:
-        return '¡$levelName! Comparten experiencias juntos.';
+        return '¡$newLevelName! Comparten experiencias juntos.';
       case 3:
-        return '¡$levelName! Una relación de confianza mutua.';
+        return '¡$newLevelName! Una relación de confianza mutua.';
       case 4:
-        return '¡$levelName! Un vínculo profundo se ha formado.';
+        return '¡$newLevelName! Un vínculo profundo se ha formado.';
       case 5:
-        return '¡$levelName! Almas que caminan juntas hacia la realización.';
+        return '¡$newLevelName! Almas que caminan juntas hacia la realización.';
       default:
         return '¡Nivel de afinidad alcanzado!';
     }
