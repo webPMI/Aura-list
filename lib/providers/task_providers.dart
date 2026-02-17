@@ -124,6 +124,17 @@ final todayTasksProvider = FutureProvider<List<Task>>((ref) async {
   return localStorage.getDueToday();
 });
 
+/// Stream reactivo de tareas que corresponden a hoy (todos los tipos).
+/// Incluye completadas e incompletas para permitir cálculo de progreso.
+/// - daily: siempre
+/// - weekly: cuyo recurrenceDay coincide con el día de semana actual
+/// - monthly: cuyo recurrenceDay coincide con el día del mes actual
+/// - once/yearly: cuyo dueDate es hoy o está vencida
+final todaySmartTasksProvider = StreamProvider<List<Task>>((ref) {
+  final localStorage = ref.watch(hiveTaskStorageProvider);
+  return localStorage.watchTodayTasksSmart();
+});
+
 /// Provider for completed tasks
 final completedTasksProvider = FutureProvider<List<Task>>((ref) async {
   final localStorage = ref.watch(hiveTaskStorageProvider);

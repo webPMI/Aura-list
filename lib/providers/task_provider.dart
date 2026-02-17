@@ -327,6 +327,29 @@ class TaskNotifier extends StateNotifier<List<Task>> {
       rethrow;
     }
   }
+
+  /// Restaura una tarea eliminada (para deshacer eliminacion).
+  /// Guarda de nuevo localmente y sincroniza con la nube si hay usuario autenticado.
+  Future<void> restoreTask(Task task) async {
+    try {
+      await _db.saveTaskLocally(task);
+
+      final user = _auth.currentUser;
+      if (user != null) {
+        await _db.syncTaskToCloud(task, user.uid);
+      }
+    } catch (e, stack) {
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        severity: ErrorSeverity.error,
+        message: 'Error al restaurar tarea',
+        userMessage: 'No se pudo restaurar la tarea',
+        stackTrace: stack,
+      );
+      rethrow;
+    }
+  }
 }
 
 /// Provider for filtered tasks based on search query

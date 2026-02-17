@@ -137,24 +137,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         actions: [
           // Indicador de sincronización pendiente
           if (_pendingSyncCount > 0)
-            Tooltip(
-              message: '$_pendingSyncCount tareas pendientes de sincronizar',
-              child: IconButton(
-                icon: Badge(
-                  label: Text('$_pendingSyncCount'),
-                  child: const Icon(Icons.cloud_upload_outlined),
-                ),
-                onPressed: () async {
-                  _showSnackBar('Sincronizando...');
-                  await ref.read(databaseServiceProvider).forceSyncPendingTasks();
-                  await _updateSyncCount();
-                  if (mounted) {
-                    _showSnackBar(_pendingSyncCount == 0
-                        ? 'Todo sincronizado'
-                        : '$_pendingSyncCount pendientes');
-                  }
-                },
+            IconButton(
+              icon: Badge(
+                label: Text('$_pendingSyncCount'),
+                child: const Icon(Icons.cloud_upload_outlined),
               ),
+              tooltip: '$_pendingSyncCount tareas pendientes de sincronizar',
+              onPressed: () async {
+                _showSnackBar('Sincronizando...');
+                await ref.read(databaseServiceProvider).forceSyncPendingTasks();
+                await _updateSyncCount();
+                if (mounted) {
+                  _showSnackBar(_pendingSyncCount == 0
+                      ? 'Todo sincronizado'
+                      : '$_pendingSyncCount pendientes');
+                }
+              },
             ),
           IconButton(
             icon: Icon(
@@ -167,6 +165,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
+            tooltip: 'Más opciones',
             onSelected: (value) {
               if (value == 'logout') {
                 _showLogoutDialog();

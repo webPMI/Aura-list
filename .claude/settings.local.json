@@ -29,7 +29,9 @@
       "Bash(ping:*)",
       "Skill(run)",
       "Bash(del \"D:\\\\program\\\\checklist-app\\\\lib\\\\widgets\\\\dialogs\\\\link_account_dialog.dart\")",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(del \"D:\\\\program\\\\checklist-app\\\\test_output.json\")",
+      "Skill(implement)"
     ]
   }
 }

@@ -1,15 +1,25 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Claves de SharedPreferences para persistencia de rachas
 const _keyLastCompletionDate = 'last_task_completion_date';
 const _keyCurrentStreak = 'current_streak';
+const _keyGraceDaysUsed = 'streak_grace_days_used';
+const _keyGraceMonth = 'streak_grace_month';
+
+/// Dias de gracia disponibles por mes
+const _graceDaysPerMonth = 2;
 
 /// Estado de la racha del usuario
 class StreakState {
   const StreakState({
     required this.currentStreak,
     required this.lastCompletionDate,
+    this.needsGraceDayOffer = false,
+    this.graceDaysRemainingThisMonth = _graceDaysPerMonth,
+    this.graceMonth,
   });
 
   /// Dias consecutivos con al menos una tarea completada
@@ -17,6 +27,15 @@ class StreakState {
 
   /// Fecha de la ultima tarea completada (formato: 'yyyy-MM-dd')
   final String? lastCompletionDate;
+
+  /// true cuando se detecta un dia perdido y quedan dias de gracia disponibles
+  final bool needsGraceDayOffer;
+
+  /// Dias de gracia restantes en el mes actual (maximo 2)
+  final int graceDaysRemainingThisMonth;
+
+  /// Mes en que se registraron los dias de gracia usados (1-12)
+  final int? graceMonth;
 
   /// Estado inicial vacio
   factory StreakState.empty() {
@@ -26,44 +45,104 @@ class StreakState {
   StreakState copyWith({
     int? currentStreak,
     String? lastCompletionDate,
+    bool? needsGraceDayOffer,
+    int? graceDaysRemainingThisMonth,
+    int? graceMonth,
   }) {
     return StreakState(
       currentStreak: currentStreak ?? this.currentStreak,
       lastCompletionDate: lastCompletionDate ?? this.lastCompletionDate,
+      needsGraceDayOffer: needsGraceDayOffer ?? this.needsGraceDayOffer,
+      graceDaysRemainingThisMonth:
+          graceDaysRemainingThisMonth ?? this.graceDaysRemainingThisMonth,
+      graceMonth: graceMonth ?? this.graceMonth,
     );
   }
 }
 
 /// Notifier que gestiona el estado de la racha del usuario
 class StreakNotifier extends StateNotifier<StreakState> {
+  final Completer<void> _initCompleter = Completer<void>();
+
   StreakNotifier() : super(StreakState.empty()) {
     _loadStreak();
   }
 
+  /// Completes when the initial load from SharedPreferences finishes.
+  /// Await this before reading state that depends on persisted data
+  /// (e.g., [StreakState.needsGraceDayOffer]).
+  Future<void> ensureInitialized() => _initCompleter.future;
+
+  /// Formatea una fecha como 'yyyy-MM-dd'
+  String _formatDate(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
   /// Carga la racha guardada desde SharedPreferences
   Future<void> _loadStreak() async {
-    final prefs = await SharedPreferences.getInstance();
-    final lastDate = prefs.getString(_keyLastCompletionDate);
-    final streak = prefs.getInt(_keyCurrentStreak) ?? 0;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lastDate = prefs.getString(_keyLastCompletionDate);
+      final streak = prefs.getInt(_keyCurrentStreak) ?? 0;
 
-    // Verificar si la racha sigue activa
-    if (lastDate != null) {
-      final today = _formatDate(DateTime.now());
-      final yesterday = _formatDate(
-        DateTime.now().subtract(const Duration(days: 1)),
-      );
+      // Cargar dias de gracia con reset mensual automatico
+      final now = DateTime.now();
+      final savedMonth = prefs.getInt(_keyGraceMonth);
+      int graceDaysUsed;
+      if (savedMonth == null || savedMonth != now.month) {
+        // Nuevo mes: resetear dias de gracia
+        graceDaysUsed = 0;
+        await prefs.setInt(_keyGraceMonth, now.month);
+        await prefs.setInt(_keyGraceDaysUsed, 0);
+      } else {
+        graceDaysUsed = prefs.getInt(_keyGraceDaysUsed) ?? 0;
+      }
+      final graceDaysRemaining = (_graceDaysPerMonth - graceDaysUsed).clamp(0, _graceDaysPerMonth);
 
-      if (lastDate == today || lastDate == yesterday) {
-        // La racha sigue activa
+      if (lastDate != null && streak > 0) {
+        final today = _formatDate(now);
+        final yesterday = _formatDate(now.subtract(const Duration(days: 1)));
+        final dayBeforeYesterday = _formatDate(now.subtract(const Duration(days: 2)));
+
+        if (lastDate == today || lastDate == yesterday) {
+          // La racha sigue activa
+          state = StreakState(
+            currentStreak: streak,
+            lastCompletionDate: lastDate,
+            graceDaysRemainingThisMonth: graceDaysRemaining,
+            graceMonth: now.month,
+          );
+        } else if (lastDate == dayBeforeYesterday && graceDaysRemaining > 0) {
+          // Falto exactamente 1 dia y hay dias de gracia disponibles: ofrecer rescate
+          state = StreakState(
+            currentStreak: streak,
+            lastCompletionDate: lastDate,
+            needsGraceDayOffer: true,
+            graceDaysRemainingThisMonth: graceDaysRemaining,
+            graceMonth: now.month,
+          );
+        } else {
+          // La racha se rompio (mas de un dia sin completar, o sin dias de gracia)
+          state = StreakState(
+            currentStreak: 0,
+            lastCompletionDate: null,
+            graceDaysRemainingThisMonth: graceDaysRemaining,
+            graceMonth: now.month,
+          );
+          await _saveStreak();
+        }
+      } else {
         state = StreakState(
           currentStreak: streak,
           lastCompletionDate: lastDate,
+          graceDaysRemainingThisMonth: graceDaysRemaining,
+          graceMonth: now.month,
         );
-      } else {
-        // La racha se rompio (mas de un dia sin completar)
-        state = StreakState.empty();
-        await _saveStreak();
       }
+    } finally {
+      // Always signal readiness so callers awaiting ensureInitialized()
+      // are never permanently blocked, even if loading fails.
+      if (!_initCompleter.isCompleted) _initCompleter.complete();
     }
   }
 
@@ -78,11 +157,6 @@ class StreakNotifier extends StateNotifier<StreakState> {
     }
   }
 
-  /// Formatea una fecha como 'yyyy-MM-dd'
-  String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
-
   /// Verifica y actualiza la racha cuando se completa una tarea.
   /// Retorna el nuevo valor de la racha si hubo incremento, null si ya estaba contabilizado hoy.
   Future<int?> checkAndUpdateStreak() async {
@@ -90,6 +164,18 @@ class StreakNotifier extends StateNotifier<StreakState> {
     final yesterday = _formatDate(
       DateTime.now().subtract(const Duration(days: 1)),
     );
+
+    // Si hay una oferta de dia de gracia pendiente y el usuario completa una tarea,
+    // declinar la oferta implicitamente y comenzar nueva racha desde hoy.
+    if (state.needsGraceDayOffer) {
+      state = state.copyWith(
+        needsGraceDayOffer: false,
+        currentStreak: 1,
+        lastCompletionDate: today,
+      );
+      await _saveStreak();
+      return 1;
+    }
 
     // Si ya completamos una tarea hoy, no incrementar
     if (state.lastCompletionDate == today) {
@@ -105,13 +191,48 @@ class StreakNotifier extends StateNotifier<StreakState> {
       newStreak = 1;
     }
 
-    state = StreakState(
+    state = state.copyWith(
       currentStreak: newStreak,
       lastCompletionDate: today,
+      needsGraceDayOffer: false,
     );
 
     await _saveStreak();
     return newStreak;
+  }
+
+  /// Acepta el dia de gracia: preserva la racha actual como si ayer se hubiera completado.
+  Future<void> acceptGraceDay() async {
+    if (!state.needsGraceDayOffer) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final yesterday = _formatDate(DateTime.now().subtract(const Duration(days: 1)));
+    final newGraceDaysUsed = (_graceDaysPerMonth - state.graceDaysRemainingThisMonth) + 1;
+
+    await prefs.setInt(_keyGraceDaysUsed, newGraceDaysUsed);
+
+    state = state.copyWith(
+      needsGraceDayOffer: false,
+      lastCompletionDate: yesterday,
+      graceDaysRemainingThisMonth: state.graceDaysRemainingThisMonth - 1,
+    );
+
+    await _saveStreak();
+  }
+
+  /// Declina el dia de gracia: reinicia la racha.
+  Future<void> declineGraceDay() async {
+    if (!state.needsGraceDayOffer) return;
+
+    state = StreakState(
+      currentStreak: 0,
+      lastCompletionDate: null,
+      needsGraceDayOffer: false,
+      graceDaysRemainingThisMonth: state.graceDaysRemainingThisMonth,
+      graceMonth: state.graceMonth,
+    );
+
+    await _saveStreak();
   }
 
   /// Reinicia la racha manualmente (para pruebas o reset)

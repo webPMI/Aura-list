@@ -87,12 +87,18 @@ class _AddTaskDialogContentState extends State<_AddTaskDialogContent> {
   DateTime? _selectedDeadline;
   String? _errorMessage;
   bool _isSubmitting = false;
-
+  int? _recurrenceDay; // día de semana (1-7) o día del mes (1-31)
 
   @override
   void initState() {
     super.initState();
     _selectedType = widget.defaultType;
+    // Pre-seleccionar el día actual según el tipo por defecto
+    if (_selectedType == 'weekly') {
+      _recurrenceDay = DateTime.now().weekday;
+    } else if (_selectedType == 'monthly') {
+      _recurrenceDay = DateTime.now().day;
+    }
   }
 
   @override
@@ -194,6 +200,7 @@ class _AddTaskDialogContentState extends State<_AddTaskDialogContent> {
                 ? _rewardController.text
                 : null,
             deadline: _selectedDeadline,
+            recurrenceDay: _recurrenceDay,
           );
 
       if (mounted) {
@@ -214,6 +221,14 @@ class _AddTaskDialogContentState extends State<_AddTaskDialogContent> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
+    // Count active advanced fields to show a badge on the collapsed tile.
+    final advancedCount = [
+      _selectedDueDate != null,
+      _motivationController.text.isNotEmpty,
+      _rewardController.text.isNotEmpty,
+      _selectedDeadline != null,
+    ].where((v) => v).length;
+
     Widget content = SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -224,6 +239,8 @@ class _AddTaskDialogContentState extends State<_AddTaskDialogContent> {
             DialogUtils.buildErrorContainer(_errorMessage!),
             const SizedBox(height: 16),
           ],
+
+          // ── Required fields ──────────────────────────────────────────────
 
           // Task type selector
           const Text(
@@ -242,12 +259,31 @@ class _AddTaskDialogContentState extends State<_AddTaskDialogContent> {
                 selected: isSelected,
                 onSelected: (selected) {
                   if (selected) {
-                    setState(() => _selectedType = item.$1);
+                    setState(() {
+                      _selectedType = item.$1;
+                      if (_selectedType == 'weekly') {
+                        _recurrenceDay = DateTime.now().weekday;
+                      } else if (_selectedType == 'monthly') {
+                        _recurrenceDay = DateTime.now().day;
+                      } else {
+                        _recurrenceDay = null;
+                      }
+                    });
                   }
                 },
               );
             }).toList(),
           ),
+
+          // Recurrence day (conditional – only weekly/monthly)
+          if (_selectedType == 'weekly' || _selectedType == 'monthly') ...[
+            const SizedBox(height: 16),
+            _RecurrenceDaySelector(
+              taskType: _selectedType,
+              selectedDay: _recurrenceDay,
+              onDaySelected: (day) => setState(() => _recurrenceDay = day),
+            ),
+          ],
           const SizedBox(height: 16),
 
           // Title field
@@ -268,93 +304,6 @@ class _AddTaskDialogContentState extends State<_AddTaskDialogContent> {
           ),
           const SizedBox(height: 20),
 
-          // Due date picker
-          const Text(
-            'Fecha de vencimiento',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          ),
-          const SizedBox(height: 8),
-          InkWell(
-            onTap: _pickDueDate,
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today,
-                    size: 20,
-                    color: _selectedDueDate != null
-                        ? colorScheme.primary
-                        : Colors.grey,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    _selectedDueDate != null
-                        ? DateFormat('dd/MM/yyyy').format(_selectedDueDate!)
-                        : 'Sin fecha (opcional)',
-                    style: TextStyle(
-                      color: _selectedDueDate != null ? null : Colors.grey,
-                    ),
-                  ),
-                  const Spacer(),
-                  if (_selectedDueDate != null)
-                    GestureDetector(
-                      onTap: _clearDueDate,
-                      child: const Icon(Icons.close, size: 18, color: Colors.grey),
-                    ),
-                ],
-              ),
-            ),
-          ),
-
-          // Due time picker (only shown if due date is selected)
-          if (_selectedDueDate != null) ...[
-            const SizedBox(height: 12),
-            InkWell(
-              onTap: _pickDueTime,
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.access_time,
-                      size: 20,
-                      color: _selectedDueTime != null
-                          ? colorScheme.primary
-                          : Colors.grey,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      _selectedDueTime != null
-                          ? TimeUtils.formatTimeOfDay(_selectedDueTime!)
-                          : 'Sin hora (opcional)',
-                      style: TextStyle(
-                        color: _selectedDueTime != null ? null : Colors.grey,
-                      ),
-                    ),
-                    const Spacer(),
-                    if (_selectedDueTime != null)
-                      GestureDetector(
-                        onTap: _clearDueTime,
-                        child: const Icon(Icons.close, size: 18, color: Colors.grey),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 20),
-
           // Priority selector
           const Text(
             'Prioridad',
@@ -365,7 +314,6 @@ class _AddTaskDialogContentState extends State<_AddTaskDialogContent> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(3, (index) {
               final isSelected = _selectedPriority == index;
-
               return Expanded(
                 child: Padding(
                   padding: EdgeInsets.only(
@@ -382,7 +330,8 @@ class _AddTaskDialogContentState extends State<_AddTaskDialogContent> {
                       ),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? TaskConstants.priorityColors[index].withValues(alpha: 0.2)
+                            ? TaskConstants.priorityColors[index]
+                                .withValues(alpha: 0.2)
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
@@ -395,7 +344,9 @@ class _AddTaskDialogContentState extends State<_AddTaskDialogContent> {
                         TaskConstants.priorityLabels[index],
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: isSelected ? TaskConstants.priorityColors[index] : Colors.grey,
+                          color: isSelected
+                              ? TaskConstants.priorityColors[index]
+                              : Colors.grey,
                           fontWeight: isSelected
                               ? FontWeight.bold
                               : FontWeight.normal,
@@ -424,91 +375,253 @@ class _AddTaskDialogContentState extends State<_AddTaskDialogContent> {
                 label: Text(cat),
                 selected: isSelected,
                 onSelected: (selected) {
-                  if (selected) {
-                    setState(() => _selectedCategory = cat);
-                  }
+                  if (selected) setState(() => _selectedCategory = cat);
                 },
               );
             }).toList(),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 4),
 
-          // Motivation field
-          const Text(
-            '💪 Motivación (opcional)',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _motivationController,
-            decoration: InputDecoration(
-              hintText: '¿Por qué quieres lograr esto?',
-              prefixIcon: const Icon(Icons.emoji_emotions_outlined),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+          // ── Advanced options (collapsed by default) ──────────────────────
+          Theme(
+            // Remove ExpansionTile's built-in top/bottom dividers
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              leading: Icon(
+                Icons.tune_rounded,
+                size: 20,
+                color: advancedCount > 0
+                    ? colorScheme.primary
+                    : colorScheme.onSurface.withValues(alpha: 0.6),
               ),
-            ),
-            maxLines: 2,
-            textCapitalization: TextCapitalization.sentences,
-          ),
-          const SizedBox(height: 12),
-
-          // Reward field
-          TextField(
-            controller: _rewardController,
-            decoration: InputDecoration(
-              hintText: '🎁 ¿Cómo te premiarás al completarla?',
-              prefixIcon: const Icon(Icons.card_giftcard_outlined),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            textCapitalization: TextCapitalization.sentences,
-          ),
-          const SizedBox(height: 16),
-
-          // Deadline picker
-          const Text(
-            '⏰ Fecha límite',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          ),
-          const SizedBox(height: 8),
-          InkWell(
-            onTap: _pickDeadline,
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
+              title: Row(
                 children: [
-                  Icon(
-                    Icons.alarm,
-                    color: _selectedDeadline != null
-                        ? Colors.redAccent
-                        : Colors.grey,
-                  ),
-                  const SizedBox(width: 12),
                   Text(
-                    _selectedDeadline != null
-                        ? 'Límite: ${_selectedDeadline!.day}/${_selectedDeadline!.month}/${_selectedDeadline!.year}'
-                        : 'Sin fecha límite',
+                    'Más opciones',
                     style: TextStyle(
-                      color: _selectedDeadline != null
-                          ? Colors.redAccent
-                          : Colors.grey,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: advancedCount > 0
+                          ? colorScheme.primary
+                          : colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
-                  const Spacer(),
-                  if (_selectedDeadline != null)
-                    GestureDetector(
-                      onTap: _clearDeadline,
-                      child: const Icon(Icons.close, size: 18, color: Colors.grey),
+                  if (advancedCount > 0) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$advancedCount',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
+                  ],
                 ],
               ),
+              children: [
+                const SizedBox(height: 8),
+
+                // Due date picker
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Fecha de vencimiento',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: _pickDueDate,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                          color: Colors.grey.withValues(alpha: 0.3)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          size: 20,
+                          color: _selectedDueDate != null
+                              ? colorScheme.primary
+                              : Colors.grey,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          _selectedDueDate != null
+                              ? DateFormat('dd/MM/yyyy')
+                                  .format(_selectedDueDate!)
+                              : 'Sin fecha (opcional)',
+                          style: TextStyle(
+                            color:
+                                _selectedDueDate != null ? null : Colors.grey,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (_selectedDueDate != null)
+                          GestureDetector(
+                            onTap: _clearDueDate,
+                            child: const Icon(Icons.close,
+                                size: 18, color: Colors.grey),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Due time picker (only shown if due date is selected)
+                if (_selectedDueDate != null) ...[
+                  const SizedBox(height: 12),
+                  InkWell(
+                    onTap: _pickDueTime,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                            color: Colors.grey.withValues(alpha: 0.3)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.access_time,
+                            size: 20,
+                            color: _selectedDueTime != null
+                                ? colorScheme.primary
+                                : Colors.grey,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            _selectedDueTime != null
+                                ? TimeUtils.formatTimeOfDay(_selectedDueTime!)
+                                : 'Sin hora (opcional)',
+                            style: TextStyle(
+                              color: _selectedDueTime != null
+                                  ? null
+                                  : Colors.grey,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (_selectedDueTime != null)
+                            GestureDetector(
+                              onTap: _clearDueTime,
+                              child: const Icon(Icons.close,
+                                  size: 18, color: Colors.grey),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 20),
+
+                // Motivation field
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '💪 Motivación (opcional)',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _motivationController,
+                  decoration: InputDecoration(
+                    hintText: '¿Por qué quieres lograr esto?',
+                    prefixIcon: const Icon(Icons.emoji_emotions_outlined),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  maxLines: 2,
+                  textCapitalization: TextCapitalization.sentences,
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: 12),
+
+                // Reward field
+                TextField(
+                  controller: _rewardController,
+                  decoration: InputDecoration(
+                    hintText: '🎁 ¿Cómo te premiarás al completarla?',
+                    prefixIcon: const Icon(Icons.card_giftcard_outlined),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  textCapitalization: TextCapitalization.sentences,
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: 16),
+
+                // Deadline picker
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '⏰ Fecha límite',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: _pickDeadline,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                          color: Colors.grey.withValues(alpha: 0.3)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.alarm,
+                          color: _selectedDeadline != null
+                              ? Colors.redAccent
+                              : Colors.grey,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          _selectedDeadline != null
+                              ? 'Límite: ${_selectedDeadline!.day}/${_selectedDeadline!.month}/${_selectedDeadline!.year}'
+                              : 'Sin fecha límite',
+                          style: TextStyle(
+                            color: _selectedDeadline != null
+                                ? Colors.redAccent
+                                : Colors.grey,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (_selectedDeadline != null)
+                          GestureDetector(
+                            onTap: _clearDeadline,
+                            child: const Icon(Icons.close,
+                                size: 18, color: Colors.grey),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
             ),
           ),
         ],
@@ -649,5 +762,89 @@ class _AddTaskDialogContentState extends State<_AddTaskDialogContent> {
         ],
       );
     }
+  }
+}
+
+/// Selector de día de recurrencia para tareas semanales (Lun-Dom) o mensuales (1-31).
+class _RecurrenceDaySelector extends StatelessWidget {
+  final String taskType;
+  final int? selectedDay;
+  final ValueChanged<int> onDaySelected;
+
+  const _RecurrenceDaySelector({
+    required this.taskType,
+    required this.selectedDay,
+    required this.onDaySelected,
+  });
+
+  static const _weekDays = [
+    (1, 'Lun'),
+    (2, 'Mar'),
+    (3, 'Mié'),
+    (4, 'Jue'),
+    (5, 'Vie'),
+    (6, 'Sáb'),
+    (7, 'Dom'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    if (taskType == 'weekly') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Repetir cada',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            children: _weekDays.map((day) {
+              final (num, label) = day;
+              return ChoiceChip(
+                label: Text(label),
+                selected: selectedDay == num,
+                onSelected: (_) => onDaySelected(num),
+              );
+            }).toList(),
+          ),
+        ],
+      );
+    }
+
+    if (taskType == 'monthly') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Día del mes',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<int>(
+            initialValue: selectedDay ?? DateTime.now().day,
+            items: List.generate(31, (i) => i + 1)
+                .map(
+                  (d) => DropdownMenuItem(value: d, child: Text('Día $d')),
+                )
+                .toList(),
+            onChanged: (v) {
+              if (v != null) onDaySelected(v);
+            },
+            decoration: InputDecoration(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              filled: true,
+              isDense: true,
+              prefixIcon: const Icon(Icons.calendar_month_outlined),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 }

@@ -108,10 +108,12 @@ class _TabletNavigation extends ConsumerWidget {
             leading: Column(
               children: [
                 const SizedBox(height: 8),
-                Icon(
-                  Icons.check_circle_outline,
-                  size: 32,
-                  color: colorScheme.primary,
+                ExcludeSemantics(
+                  child: Icon(
+                    Icons.check_circle_outline,
+                    size: 32,
+                    color: colorScheme.primary,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 // Menu button to open drawer - use Builder to get scaffold context

@@ -195,6 +195,7 @@ class _NoteSearchSheetState extends ConsumerState<_NoteSearchSheet> {
                 suffixIcon: _query.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear),
+                        tooltip: 'Limpiar búsqueda',
                         onPressed: () {
                           _searchController.clear();
                           setState(() => _query = '');

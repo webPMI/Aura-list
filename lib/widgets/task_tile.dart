@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import 'package:checklist_app/features/guides/guides.dart';
 import '../models/task_model.dart';
+import '../services/logger_service.dart';
 import '../providers/task_provider.dart';
 import '../providers/stats_provider.dart';
 import '../providers/streak_provider.dart';
@@ -37,15 +38,19 @@ class TaskTile extends ConsumerWidget {
 
   /// Verifica y muestra celebracion de racha si corresponde.
   void _checkAndShowStreakCelebration(BuildContext context, WidgetRef ref) async {
-    // Actualizar racha y verificar si alcanzamos un hito
-    final newStreak = await ref.read(checkStreakProvider)();
-    if (newStreak != null && isStreakMilestone(newStreak) && context.mounted) {
-      // Delay para no solaparse con otras celebraciones
-      Future.delayed(const Duration(milliseconds: 800), () {
-        if (context.mounted) {
-          showStreakCelebration(context, newStreak);
-        }
-      });
+    try {
+      // Actualizar racha y verificar si alcanzamos un hito
+      final newStreak = await ref.read(checkStreakProvider)();
+      if (newStreak != null && isStreakMilestone(newStreak) && context.mounted) {
+        // Delay para no solaparse con otras celebraciones
+        Future.delayed(const Duration(milliseconds: 800), () {
+          if (context.mounted) {
+            showStreakCelebration(context, newStreak);
+          }
+        });
+      }
+    } catch (e, stack) {
+      LoggerService().error('TaskTile', 'Error al verificar racha', error: e, stack: stack);
     }
   }
 
@@ -87,55 +92,59 @@ class TaskTile extends ConsumerWidget {
 
   /// Verifica y muestra logros recien obtenidos.
   void _checkAndShowAchievements(BuildContext context, WidgetRef ref) async {
-    final activeGuide = ref.read(activeGuideProvider);
-    if (activeGuide == null) return;
+    try {
+      final activeGuide = ref.read(activeGuideProvider);
+      if (activeGuide == null) return;
 
-    final currentStreak = ref.read(streakProvider).currentStreak;
+      final currentStreak = ref.read(streakProvider).currentStreak;
 
-    // Estadísticas de tareas del día
-    final dailyTasks = ref.read(tasksProvider('daily'));
-    final completedToday = dailyTasks.where((t) => t.isCompleted).length;
-    final allCompleted =
-        dailyTasks.isNotEmpty && dailyTasks.every((t) => t.isCompleted);
-    final completedCategories = dailyTasks
-        .where((t) => t.isCompleted)
-        .map((t) => t.category)
-        .toSet();
+      // Estadísticas de tareas del día
+      final dailyTasks = ref.read(tasksProvider('daily'));
+      final completedToday = dailyTasks.where((t) => t.isCompleted).length;
+      final allCompleted =
+          dailyTasks.isNotEmpty && dailyTasks.every((t) => t.isCompleted);
+      final completedCategories = dailyTasks
+          .where((t) => t.isCompleted)
+          .map((t) => t.category)
+          .toSet();
 
-    // Total de tareas recurrentes activas (excluye tipo 'once')
-    final recurrentCount = ref.read(tasksProvider('daily')).length +
-        ref.read(tasksProvider('weekly')).length +
-        ref.read(tasksProvider('monthly')).length +
-        ref.read(tasksProvider('yearly')).length;
+      // Total de tareas recurrentes activas (excluye tipo 'once')
+      final recurrentCount = ref.read(tasksProvider('daily')).length +
+          ref.read(tasksProvider('weekly')).length +
+          ref.read(tasksProvider('monthly')).length +
+          ref.read(tasksProvider('yearly')).length;
 
-    // Datos de afinidad con el guía activo
-    final affinity = await ref
-        .read(guideAffinityNotifierProvider.notifier)
-        .getAffinity(activeGuide.id);
+      // Datos de afinidad con el guía activo
+      final affinity = await ref
+          .read(guideAffinityNotifierProvider.notifier)
+          .getAffinity(activeGuide.id);
 
-    final newAchievements = await ref
-        .read(guideAchievementsProvider.notifier)
-        .checkAndAwardAchievements(
-          activeGuideId: activeGuide.id,
-          lastCompletedTask: task,
-          currentStreak: currentStreak,
-          totalTasksCompletedToday: completedToday,
-          totalTasksWithGuide: affinity?.tasksCompletedWithGuide ?? 0,
-          categoriesCompletedToday: completedCategories,
-          totalRecurrentTasks: recurrentCount,
-          allTasksCompleted: allCompleted,
-          daysWithGuide: affinity?.daysWithGuide ?? 0,
-        );
+      final newAchievements = await ref
+          .read(guideAchievementsProvider.notifier)
+          .checkAndAwardAchievements(
+            activeGuideId: activeGuide.id,
+            lastCompletedTask: task,
+            currentStreak: currentStreak,
+            totalTasksCompletedToday: completedToday,
+            totalTasksWithGuide: affinity?.tasksCompletedWithGuide ?? 0,
+            categoriesCompletedToday: completedCategories,
+            totalRecurrentTasks: recurrentCount,
+            allTasksCompleted: allCompleted,
+            daysWithGuide: affinity?.daysWithGuide ?? 0,
+          );
 
-    // Mostrar logros obtenidos con delay para no solaparse
-    if (newAchievements.isNotEmpty && context.mounted) {
-      Future.delayed(const Duration(milliseconds: 1200), () {
-        if (context.mounted) {
-          for (final achievement in newAchievements) {
-            AchievementEarnedWidget.show(context, achievement);
+      // Mostrar logros obtenidos con delay para no solaparse
+      if (newAchievements.isNotEmpty && context.mounted) {
+        Future.delayed(const Duration(milliseconds: 1200), () {
+          if (context.mounted) {
+            for (final achievement in newAchievements) {
+              AchievementEarnedWidget.show(context, achievement);
+            }
           }
-        }
-      });
+        });
+      }
+    } catch (e, stack) {
+      LoggerService().error('TaskTile', 'Error al verificar logros', error: e, stack: stack);
     }
   }
 
@@ -161,9 +170,255 @@ class TaskTile extends ConsumerWidget {
           });
         }
       }
-    } catch (e) {
-      // Silently fail - no queremos interrumpir el flujo del usuario
+    } catch (e, stack) {
+      // No interrumpir el flujo del usuario, pero registrar para diagnóstico
+      LoggerService().error('TaskTile', 'Error al incrementar afinidad con guia', error: e, stack: stack);
     }
+  }
+
+  /// Toggles the task completion state and shows a 5-second undo SnackBar.
+  ///
+  /// Handles celebrations (only on completion), history recording for daily
+  /// tasks, and a "Deshacer" action that restores the exact pre-toggle state.
+  Future<void> _performToggle(BuildContext context, WidgetRef ref) async {
+    final wasCompleted = task.isCompleted;
+    HapticFeedback.mediumImpact();
+    try {
+      await ref.read(tasksProvider(task.type).notifier).toggleTask(task);
+
+      // Record completion in history for daily tasks
+      if (task.type == 'daily') {
+        final taskId = task.key?.toString() ?? task.firestoreId;
+        if (taskId.isNotEmpty) {
+          await ref.read(recordCompletionProvider)(taskId, !wasCompleted);
+        }
+      }
+
+      if (!context.mounted) return;
+
+      // Celebrations only when completing (not uncompleting)
+      if (!wasCompleted) {
+        HapticFeedback.heavyImpact();
+        _showCelebrationOverlay(context, ref);
+        _checkAndShowBlessingFeedback(context, ref);
+        _checkAndShowStreakCelebration(context, ref);
+        _incrementGuideAffinity(context, ref);
+        _checkAndShowAchievements(context, ref);
+      }
+
+      // Show undo SnackBar
+      final message =
+          wasCompleted ? 'Tarea marcada como pendiente' : 'Tarea completada';
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'Deshacer',
+            onPressed: () async {
+              try {
+                // Restore exact pre-toggle state using the captured task
+                await ref
+                    .read(tasksProvider(task.type).notifier)
+                    .updateTask(task.copyWith(isCompleted: wasCompleted));
+                // Undo history record for daily tasks
+                if (task.type == 'daily') {
+                  final taskId = task.key?.toString() ?? task.firestoreId;
+                  if (taskId.isNotEmpty) {
+                    await ref
+                        .read(recordCompletionProvider)(taskId, wasCompleted);
+                  }
+                }
+              } catch (e, stack) {
+                LoggerService().error(
+                  'TaskTile',
+                  'Error al deshacer estado de tarea',
+                  error: e,
+                  stack: stack,
+                );
+              }
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      onFeedback?.call('Error al actualizar');
+    }
+  }
+
+  /// Shows a quick-edit bottom sheet on long-press.
+  /// Lets users change priority, category, or completion without opening
+  /// the full edit form.
+  void _showQuickEditSheet(BuildContext context, WidgetRef ref) {
+    HapticFeedback.selectionClick();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        final colorScheme = Theme.of(ctx).colorScheme;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Handle bar
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: colorScheme.onSurface.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                // Task title
+                Text(
+                  task.title,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 20),
+
+                // ── Priority ─────────────────────────────────────
+                Text(
+                  'PRIORIDAD',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onSurface.withValues(alpha: 0.45),
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: List.generate(3, (i) {
+                    final isSelected = task.priority == i;
+                    final color = TaskConstants.getPriorityColor(i);
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(TaskConstants.getPriorityLabel(i)),
+                        selected: isSelected,
+                        selectedColor: color,
+                        showCheckmark: false,
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.white : colorScheme.onSurface,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                          fontSize: 13,
+                        ),
+                        onSelected: (_) async {
+                          if (task.priority == i) return;
+                          Navigator.of(ctx).pop();
+                          try {
+                            await ref
+                                .read(tasksProvider(task.type).notifier)
+                                .updateTask(task.copyWith(priority: i));
+                            onFeedback?.call('Prioridad actualizada');
+                          } catch (_) {}
+                        },
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 16),
+
+                // ── Category ──────────────────────────────────────
+                Text(
+                  'CATEGORÍA',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onSurface.withValues(alpha: 0.45),
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: TaskConstants.categories.map((cat) {
+                    final isSelected = task.category == cat;
+                    return ChoiceChip(
+                      label: Text(cat),
+                      selected: isSelected,
+                      selectedColor: colorScheme.primary,
+                      showCheckmark: false,
+                      labelStyle: TextStyle(
+                        color: isSelected ? Colors.white : colorScheme.onSurface,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                        fontSize: 13,
+                      ),
+                      onSelected: (_) async {
+                        if (task.category == cat) return;
+                        Navigator.of(ctx).pop();
+                        try {
+                          await ref
+                              .read(tasksProvider(task.type).notifier)
+                              .updateTask(task.copyWith(category: cat));
+                          onFeedback?.call('Categoría actualizada');
+                        } catch (_) {}
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+
+                // ── Toggle completion ─────────────────────────────
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    icon: Icon(
+                      task.isCompleted
+                          ? Icons.radio_button_unchecked
+                          : Icons.check_circle_outline,
+                    ),
+                    label: Text(
+                      task.isCompleted
+                          ? 'Marcar como pendiente'
+                          : 'Marcar como completada',
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: task.isCompleted
+                          ? colorScheme.surfaceContainerHighest
+                          : Colors.green,
+                      foregroundColor:
+                          task.isCompleted ? colorScheme.onSurface : Colors.white,
+                    ),
+                    onPressed: () async {
+                      Navigator.of(ctx).pop();
+                      try {
+                        await ref
+                            .read(tasksProvider(task.type).notifier)
+                            .toggleTask(task);
+                        onFeedback?.call(
+                          task.isCompleted
+                              ? 'Tarea marcada como pendiente'
+                              : 'Tarea completada',
+                        );
+                      } catch (_) {}
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -232,45 +487,8 @@ class TaskTile extends ConsumerWidget {
         ),
         confirmDismiss: (direction) async {
           if (direction == DismissDirection.startToEnd) {
-            // Swipe RIGHT: Complete/Toggle task
-            final wasCompleted = task.isCompleted;
-
-            // Haptic feedback
-            HapticFeedback.mediumImpact();
-
-            try {
-              await ref.read(tasksProvider(task.type).notifier).toggleTask(task);
-
-              // Record completion in history for daily tasks
-              if (task.type == 'daily') {
-                final taskId = task.key?.toString() ?? task.firestoreId;
-                if (taskId.isNotEmpty) {
-                  await ref.read(recordCompletionProvider)(taskId, !wasCompleted);
-                }
-              }
-
-              if (!wasCompleted) {
-                // Task completed - show celebration (con color del guia activo)
-                HapticFeedback.heavyImpact();
-                if (context.mounted) {
-                  _showCelebrationOverlay(context, ref);
-                  // Verificar y mostrar bendicion si hay guia activo
-                  _checkAndShowBlessingFeedback(context, ref);
-                  // Verificar y actualizar racha de dias
-                  _checkAndShowStreakCelebration(context, ref);
-                  // Incrementar contador de afinidad con el guia activo
-                  _incrementGuideAffinity(context, ref);
-                  // Verificar y mostrar logros obtenidos
-                  _checkAndShowAchievements(context, ref);
-                }
-                onFeedback?.call('Tarea completada');
-              } else {
-                onFeedback?.call('Tarea marcada como pendiente');
-              }
-            } catch (e) {
-              onFeedback?.call('Error al actualizar');
-            }
-
+            // Swipe RIGHT: toggle completion with undo SnackBar
+            await _performToggle(context, ref);
             return false; // Don't dismiss, just toggle
           } else {
             // Swipe LEFT: Delete - show confirmation
@@ -297,12 +515,34 @@ class TaskTile extends ConsumerWidget {
         onDismissed: (_) async {
           // Only delete triggers actual dismiss
           HapticFeedback.mediumImpact();
+          // Capture full task data before deletion for undo
+          final deletedTask = task;
           try {
             await ref.read(tasksProvider(task.type).notifier).deleteTask(task);
-            onFeedback?.call('Tarea eliminada');
           } catch (e) {
             onFeedback?.call('Error al eliminar');
+            return;
           }
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Tarea eliminada'),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 5),
+              action: SnackBarAction(
+                label: 'Deshacer',
+                onPressed: () async {
+                  try {
+                    await ref
+                        .read(tasksProvider(deletedTask.type).notifier)
+                        .restoreTask(deletedTask);
+                  } catch (e, stack) {
+                    LoggerService().error('TaskTile', 'Error al restaurar tarea eliminada', error: e, stack: stack);
+                  }
+                },
+              ),
+            ),
+          );
         },
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -336,38 +576,7 @@ class TaskTile extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 onChanged: (value) async {
-                  final wasCompleted = task.isCompleted;
-                  HapticFeedback.mediumImpact();
-                  try {
-                    await ref.read(tasksProvider(task.type).notifier).toggleTask(task);
-                    // Record completion in history for daily tasks
-                    if (task.type == 'daily') {
-                      final taskId = task.key?.toString() ?? task.firestoreId;
-                      if (taskId.isNotEmpty) {
-                        await ref.read(recordCompletionProvider)(taskId, !wasCompleted);
-                      }
-                    }
-                    if (!wasCompleted) {
-                      // Task completed! Show celebration
-                      HapticFeedback.heavyImpact();
-                      if (context.mounted) {
-                        _showCelebrationOverlay(context, ref);
-                        // Verificar y mostrar bendicion si hay guia activo
-                        _checkAndShowBlessingFeedback(context, ref);
-                        // Verificar y actualizar racha de dias
-                        _checkAndShowStreakCelebration(context, ref);
-                        // Incrementar contador de afinidad con el guia activo
-                        _incrementGuideAffinity(context, ref);
-                        // Verificar y mostrar logros obtenidos
-                        _checkAndShowAchievements(context, ref);
-                      }
-                      onFeedback?.call('Tarea completada');
-                    } else {
-                      onFeedback?.call('Tarea marcada como pendiente');
-                    }
-                  } catch (e) {
-                    onFeedback?.call('Error al actualizar');
-                  }
+                  await _performToggle(context, ref);
                 },
               ),
             ),
@@ -594,6 +803,7 @@ class TaskTile extends ConsumerWidget {
             ],
           ),
           onTap: onEdit != null ? () => onEdit!(task) : null,
+          onLongPress: () => _showQuickEditSheet(context, ref),
         ),
       ),
     ),

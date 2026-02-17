@@ -435,6 +435,44 @@ class HiveTaskStorage implements ILocalStorage<Task> {
         task.dueDate!.isBefore(tomorrow));
   }
 
+  /// Stream reactivo de tareas que corresponden al día de hoy según su tipo:
+  /// - daily: siempre incluidas
+  /// - weekly: si recurrenceDay coincide con el día de semana (1=Lun, 7=Dom)
+  /// - monthly: si recurrenceDay coincide con el día del mes
+  /// - once/yearly: si dueDate es hoy o ya venció
+  /// Incluye tareas completadas e incompletas para permitir cálculo de progreso.
+  Stream<List<Task>> watchTodayTasksSmart() {
+    final now = DateTime.now();
+    final weekday = now.weekday; // 1=Lunes, 7=Domingo
+    final dayOfMonth = now.day;
+    final today = DateTime(now.year, now.month, now.day);
+
+    return watchWhere((task) {
+      if (task.deleted) return false;
+      switch (task.type) {
+        case 'daily':
+          return true;
+        case 'weekly':
+          if (task.recurrenceDay == null) return true;
+          return task.recurrenceDay == weekday;
+        case 'monthly':
+          if (task.recurrenceDay == null) return true;
+          return task.recurrenceDay == dayOfMonth;
+        case 'once':
+        case 'yearly':
+          if (task.dueDate == null) return false;
+          final dueDay = DateTime(
+            task.dueDate!.year,
+            task.dueDate!.month,
+            task.dueDate!.day,
+          );
+          return !dueDay.isAfter(today);
+        default:
+          return false;
+      }
+    });
+  }
+
   /// Find task by firestoreId
   Future<Task?> findByFirestoreId(String firestoreId) async {
     if (firestoreId.isEmpty) return null;

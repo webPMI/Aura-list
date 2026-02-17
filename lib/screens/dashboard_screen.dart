@@ -16,6 +16,8 @@ import '../widgets/layouts/dashboard_layout.dart';
 import '../widgets/navigation/drawer_menu_button.dart';
 import '../widgets/dashboard/wellness_suggestions_card.dart';
 import '../widgets/dashboard/user_card.dart';
+import '../providers/streak_provider.dart';
+import 'today_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -31,7 +33,129 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // Registrar actividad diaria con el guía activo (una vez por día).
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(checkDailyActivityProvider)();
+      _checkGraceDayOffer();
     });
+  }
+
+  /// Muestra el dialogo de dia de gracia si el usuario perdio exactamente 1 dia
+  /// y todavia tiene dias de gracia disponibles este mes.
+  Future<void> _checkGraceDayOffer() async {
+    // Wait for StreakNotifier to finish loading from SharedPreferences.
+    // This is deterministic — no fixed delay needed.
+    await ref.read(streakProvider.notifier).ensureInitialized();
+    if (!mounted) return;
+
+    final streakState = ref.read(streakProvider);
+    if (!streakState.needsGraceDayOffer) return;
+
+    final streak = streakState.currentStreak;
+    final remaining = streakState.graceDaysRemainingThisMonth;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Text('🌿', style: TextStyle(fontSize: 24)),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'Dia de gracia',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Te tomaste un descanso ayer. Eso también importa.',
+              style: TextStyle(
+                fontSize: 15,
+                color: Theme.of(ctx).colorScheme.onSurface.withValues(alpha: 0.85),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Theme.of(ctx).colorScheme.primaryContainer.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.local_fire_department,
+                    color: Theme.of(ctx).colorScheme.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Racha de $streak ${streak == 1 ? "dia" : "dias"}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(ctx).colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '¿Quieres usar un dia de gracia para preservar tu racha?',
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(ctx).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Te quedan $remaining ${remaining == 1 ? "dia" : "dias"} de gracia este mes.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(ctx).colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await ref.read(streakProvider.notifier).declineGraceDay();
+            },
+            child: Text(
+              'Reiniciar racha',
+              style: TextStyle(
+                color: Theme.of(ctx).colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await ref.read(streakProvider.notifier).acceptGraceDay();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Racha preservada. ¡Sigue adelante!'),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                );
+              }
+            },
+            child: const Text('Usar dia de gracia'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -63,6 +187,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         cards: [
           const UserCard(),
           _TodayProgressCard(),
+          _FocusModeCard(),
           _TodayTasksCard(),
           const WellnessSuggestionsCard(),
           _UpcomingDeadlinesCard(),
@@ -254,6 +379,27 @@ class _TodayProgressCard extends ConsumerWidget {
     if (progress < 0.5) return 'Buen comienzo, sigue asi';
     if (progress < 1) return 'Casi lo logras, tu puedes';
     return MotivationalMessages.randomTaskCompleted;
+  }
+}
+
+class _FocusModeCard extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final todayTasksAsync = ref.watch(todaySmartTasksProvider);
+    final todayTasks = todayTasksAsync.valueOrNull ?? [];
+    final pending = todayTasks.where((t) => !t.isCompleted).length;
+
+    return QuickStatsCard(
+      title: 'Modo Enfoque',
+      value: pending > 0 ? '$pending pendiente${pending == 1 ? '' : 's'}' : '¡Todo listo!',
+      subtitle: 'Concentra toda tu atención aquí',
+      icon: Icons.self_improvement,
+      color: Colors.deepPurple,
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const TodayScreen()),
+      ),
+    );
   }
 }
 

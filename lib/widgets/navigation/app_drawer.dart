@@ -10,6 +10,7 @@ import '../../providers/theme_provider.dart';
 import '../../providers/task_provider.dart';
 import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
+import '../../screens/today_screen.dart';
 
 class AppDrawer extends ConsumerWidget {
   final VoidCallback? onNavigate;
@@ -53,6 +54,29 @@ class AppDrawer extends ConsumerWidget {
           icon: Icon(Icons.calendar_today_outlined),
           selectedIcon: Icon(Icons.calendar_today),
           label: Text('Calendario'),
+        ),
+
+        // Focus Mode — pushes a new route, not a nav destination
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: _AnimatedListTile(
+            leading: const Icon(Icons.self_improvement_outlined),
+            title: const Text('Modo Enfoque'),
+            subtitle: const Text(
+              'Tareas de hoy en un solo lugar',
+              style: TextStyle(fontSize: 12),
+            ),
+            trailing: const Icon(Icons.chevron_right, size: 20),
+            onTap: () {
+              onNavigate?.call();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const TodayScreen(),
+                ),
+              );
+            },
+          ),
         ),
 
         const Padding(

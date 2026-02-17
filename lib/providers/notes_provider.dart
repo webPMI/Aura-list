@@ -61,10 +61,42 @@ final totalNotesCountProvider = FutureProvider.autoDispose<int>((ref) async {
   return notes.length;
 });
 
-class IndependentNotesNotifier extends StateNotifier<List<Note>> {
-  final DatabaseService _db;
-  final AuthService _auth;
-  final ErrorHandler _errorHandler;
+/// Consolidates the repeated saveNoteLocally → syncNoteToCloud pattern shared
+/// across all note notifiers. Fix sync logic once here instead of in 3 places.
+mixin _NoteSyncMixin on StateNotifier<List<Note>> {
+  DatabaseService get _db;
+  AuthService get _auth;
+  ErrorHandler get _errorHandler;
+
+  Future<void> _saveAndSync(
+    Note note, {
+    required String errorMessage,
+    String? userMessage,
+  }) async {
+    try {
+      await _db.saveNoteLocally(note);
+      final user = _auth.currentUser;
+      if (user != null) {
+        await _db.syncNoteToCloud(note, user.uid);
+      }
+    } catch (e, stack) {
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        severity: ErrorSeverity.error,
+        message: errorMessage,
+        userMessage: userMessage,
+        stackTrace: stack,
+      );
+      rethrow;
+    }
+  }
+}
+
+class IndependentNotesNotifier extends StateNotifier<List<Note>> with _NoteSyncMixin {
+  @override final DatabaseService _db;
+  @override final AuthService _auth;
+  @override final ErrorHandler _errorHandler;
   StreamSubscription? _subscription;
 
   IndependentNotesNotifier(this._db, this._auth, this._errorHandler)
@@ -94,78 +126,38 @@ class IndependentNotesNotifier extends StateNotifier<List<Note>> {
     String? richContent,
     String contentType = 'plain',
   }) async {
-    try {
-      final newNote = Note(
-        title: title,
-        content: content,
-        createdAt: DateTime.now(),
-        color: color,
-        tags: tags,
-        checklist: checklist,
-        richContent: richContent,
-        contentType: contentType,
-      );
-
-      await _db.saveNoteLocally(newNote);
-
-      final user = _auth.currentUser;
-      if (user != null) {
-        await _db.syncNoteToCloud(newNote, user.uid);
-      }
-    } catch (e, stack) {
-      _errorHandler.handle(
-        e,
-        type: ErrorType.database,
-        severity: ErrorSeverity.error,
-        message: 'Error al agregar nota',
-        userMessage: 'No se pudo agregar la nota',
-        stackTrace: stack,
-      );
-      rethrow;
-    }
+    final newNote = Note(
+      title: title,
+      content: content,
+      createdAt: DateTime.now(),
+      color: color,
+      tags: tags,
+      checklist: checklist,
+      richContent: richContent,
+      contentType: contentType,
+    );
+    await _saveAndSync(
+      newNote,
+      errorMessage: 'Error al agregar nota',
+      userMessage: 'No se pudo agregar la nota',
+    );
   }
 
   Future<void> addQuickNote(String content) async {
-    try {
-      final newNote = Note.quick(content);
-      await _db.saveNoteLocally(newNote);
-
-      final user = _auth.currentUser;
-      if (user != null) {
-        await _db.syncNoteToCloud(newNote, user.uid);
-      }
-    } catch (e, stack) {
-      _errorHandler.handle(
-        e,
-        type: ErrorType.database,
-        severity: ErrorSeverity.error,
-        message: 'Error al agregar nota rapida',
-        userMessage: 'No se pudo agregar la nota',
-        stackTrace: stack,
-      );
-      rethrow;
-    }
+    final newNote = Note.quick(content);
+    await _saveAndSync(
+      newNote,
+      errorMessage: 'Error al agregar nota rapida',
+      userMessage: 'No se pudo agregar la nota',
+    );
   }
 
   Future<void> updateNote(Note note) async {
-    try {
-      await _db.saveNoteLocally(note);
-
-      final user = _auth.currentUser;
-      if (user != null) {
-        await _db.syncNoteToCloud(note, user.uid);
-      }
-    } catch (e, stack) {
-      _errorHandler.handle(
-        e,
-        type: ErrorType.database,
-        severity: ErrorSeverity.error,
-        message: 'Error al actualizar nota',
-        userMessage: 'No se pudo actualizar la nota',
-        stackTrace: stack,
-      );
-      rethrow;
-    }
+    await _saveAndSync(
+      note,
+      errorMessage: 'Error al actualizar nota',
+      userMessage: 'No se pudo actualizar la nota',
+    );
   }
 
   Future<void> togglePin(Note note) async {
@@ -212,10 +204,10 @@ class IndependentNotesNotifier extends StateNotifier<List<Note>> {
   }
 }
 
-class ArchivedNotesNotifier extends StateNotifier<List<Note>> {
-  final DatabaseService _db;
-  final AuthService _auth;
-  final ErrorHandler _errorHandler;
+class ArchivedNotesNotifier extends StateNotifier<List<Note>> with _NoteSyncMixin {
+  @override final DatabaseService _db;
+  @override final AuthService _auth;
+  @override final ErrorHandler _errorHandler;
   StreamSubscription? _subscription;
 
   ArchivedNotesNotifier(this._db, this._auth, this._errorHandler)
@@ -265,31 +257,18 @@ class ArchivedNotesNotifier extends StateNotifier<List<Note>> {
   }
 
   Future<void> _updateNote(Note note) async {
-    try {
-      await _db.saveNoteLocally(note);
-
-      final user = _auth.currentUser;
-      if (user != null) {
-        await _db.syncNoteToCloud(note, user.uid);
-      }
-    } catch (e, stack) {
-      _errorHandler.handle(
-        e,
-        type: ErrorType.database,
-        severity: ErrorSeverity.error,
-        message: 'Error al actualizar nota',
-        userMessage: 'No se pudo actualizar la nota',
-        stackTrace: stack,
-      );
-      rethrow;
-    }
+    await _saveAndSync(
+      note,
+      errorMessage: 'Error al actualizar nota',
+      userMessage: 'No se pudo actualizar la nota',
+    );
   }
 }
 
-class TaskNotesNotifier extends StateNotifier<List<Note>> {
-  final DatabaseService _db;
-  final AuthService _auth;
-  final ErrorHandler _errorHandler;
+class TaskNotesNotifier extends StateNotifier<List<Note>> with _NoteSyncMixin {
+  @override final DatabaseService _db;
+  @override final AuthService _auth;
+  @override final ErrorHandler _errorHandler;
   final String _taskId;
   StreamSubscription? _subscription;
 
@@ -319,75 +298,32 @@ class TaskNotesNotifier extends StateNotifier<List<Note>> {
     String color = '#FFFDE7', // Default yellow for task notes
     List<ChecklistItem> checklist = const [],
   }) async {
-    try {
-      final newNote = Note(
-        title: title,
-        content: content,
-        createdAt: DateTime.now(),
-        taskId: _taskId,
-        color: color,
-        checklist: checklist,
-      );
-
-      await _db.saveNoteLocally(newNote);
-
-      final user = _auth.currentUser;
-      if (user != null) {
-        await _db.syncNoteToCloud(newNote, user.uid);
-      }
-    } catch (e, stack) {
-      _errorHandler.handle(
-        e,
-        type: ErrorType.database,
-        severity: ErrorSeverity.error,
-        message: 'Error al agregar nota a tarea',
-        userMessage: 'No se pudo agregar la nota',
-        stackTrace: stack,
-      );
-      rethrow;
-    }
+    final newNote = Note(
+      title: title,
+      content: content,
+      createdAt: DateTime.now(),
+      taskId: _taskId,
+      color: color,
+      checklist: checklist,
+    );
+    await _saveAndSync(
+      newNote,
+      errorMessage: 'Error al agregar nota a tarea',
+      userMessage: 'No se pudo agregar la nota',
+    );
   }
 
   Future<void> addQuickNote(String content) async {
-    try {
-      final newNote = Note.quick(content, taskId: _taskId);
-      await _db.saveNoteLocally(newNote);
-
-      final user = _auth.currentUser;
-      if (user != null) {
-        await _db.syncNoteToCloud(newNote, user.uid);
-      }
-    } catch (e, stack) {
-      _errorHandler.handle(
-        e,
-        type: ErrorType.database,
-        severity: ErrorSeverity.error,
-        message: 'Error al agregar nota rapida',
-        userMessage: 'No se pudo agregar la nota',
-        stackTrace: stack,
-      );
-      rethrow;
-    }
+    final newNote = Note.quick(content, taskId: _taskId);
+    await _saveAndSync(
+      newNote,
+      errorMessage: 'Error al agregar nota rapida',
+      userMessage: 'No se pudo agregar la nota',
+    );
   }
 
   Future<void> updateNote(Note note) async {
-    try {
-      await _db.saveNoteLocally(note);
-
-      final user = _auth.currentUser;
-      if (user != null) {
-        await _db.syncNoteToCloud(note, user.uid);
-      }
-    } catch (e, stack) {
-      _errorHandler.handle(
-        e,
-        type: ErrorType.database,
-        severity: ErrorSeverity.error,
-        message: 'Error al actualizar nota',
-        stackTrace: stack,
-      );
-      rethrow;
-    }
+    await _saveAndSync(note, errorMessage: 'Error al actualizar nota');
   }
 
   Future<void> deleteNote(Note note) async {
@@ -416,23 +352,7 @@ class TaskNotesNotifier extends StateNotifier<List<Note>> {
   /// Unlink note from task (converts to independent note)
   Future<void> unlinkNote(Note note) async {
     final updatedNote = note.copyWith(clearTaskId: true);
-    try {
-      await _db.saveNoteLocally(updatedNote);
-
-      final user = _auth.currentUser;
-      if (user != null) {
-        await _db.syncNoteToCloud(updatedNote, user.uid);
-      }
-    } catch (e, stack) {
-      _errorHandler.handle(
-        e,
-        type: ErrorType.database,
-        severity: ErrorSeverity.error,
-        message: 'Error al desvincular nota',
-        stackTrace: stack,
-      );
-      rethrow;
-    }
+    await _saveAndSync(updatedNote, errorMessage: 'Error al desvincular nota');
   }
 }
 
