@@ -652,11 +652,18 @@ class SyncOrchestrator {
 
   Future<void> _syncItem(SyncQueueItem item) async {
     final fs = _firestore;
-    if (fs == null) throw Exception('Firestore not available');
+    if (fs == null) {
+      throw SyncException.uploadFailed(
+        originalError: 'Firestore not available',
+        failedCount: 1,
+      );
+    }
 
     final userId = item.userId;
     if (userId == null || userId.isEmpty) {
-      throw Exception('No user ID available');
+      throw AuthException.notAuthenticated(
+        originalError: 'No user ID available for sync',
+      );
     }
 
     switch (item.entityType) {

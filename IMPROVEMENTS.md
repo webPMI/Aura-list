@@ -192,16 +192,293 @@ Multi-day implementations. Strategic improvements to the product.
 
 ---
 
+---
+
+## AUTH & SYNC — Análisis 2026-02-17 (Agentes especializados)
+
+> Análisis profundo de autenticación, perfiles de usuario, sincronización y flujos de cuenta.
+
+### AUTH-1: Crear Documento de Perfil en Firestore al Registrarse ⚠️ CRÍTICO
+**Files:** `lib/services/auth_service.dart`, `lib/services/database_service.dart`, `lib/models/user_profile_model.dart`
+**Problema:** El modelo `UserProfile` (typeId:8) existe con campos: uid, email, displayName, photoUrl, createdAt, lastLoginAt, hasAcceptedTerms, preferredGuideId. Sin embargo, NUNCA se guarda en Hive ni en Firestore después del registro. Si las reglas de seguridad de Firestore requieren que exista `users/{uid}` antes de poder escribir `users/{uid}/tasks`, los usuarios nuevos no pueden sincronizar.
+**Solución:**
+1. Agregar `saveUserProfile(UserProfile profile)` a `DatabaseService` que guarde en Hive y en `users/{uid}` de Firestore
+2. Llamar `saveUserProfile()` después de registro con email, después de vincular Google, y después del primer auth anónimo
+3. Verificar que las reglas de Firestore permitan escritura si no existe el documento de perfil (o crearlo automáticamente)
+**Impacto:** Usuarios nuevos que se registran no pueden sincronizar sus datos — bloquea la función principal de la app.
+**Use /implement AUTH-1**
+
+### AUTH-2: Visibilidad de "Eliminar Cuenta" en Ajustes ⚠️ CRÍTICO
+**Files:** `lib/screens/settings_screen.dart`, `lib/screens/profile_screen.dart`
+**Problema:** La opción "Eliminar cuenta" EXISTE y está completamente implementada (profile_screen.dart:213-317, con confirmación en 2 pasos y texto "ELIMINAR"), pero está enterrada dentro de la pantalla de Perfil → sección de privacidad. Muchos usuarios no la encuentran. En Ajustes (`settings_screen.dart`) solo aparece "Eliminar todos los datos locales" (diferente).
+**Solución:**
+1. Agregar un acceso directo a "Eliminar cuenta" en `settings_screen.dart` en la sección de "Cuenta"
+2. En la pantalla de Perfil, mover la acción a una sección "Zona de peligro" claramente etiquetada con un separador visual rojo
+3. El `delete_account_dialog.dart` existente es excelente — solo necesita ser más accesible
+**Impacto:** Usuarios que buscan la opción no la encuentran — frustración, posibles reseñas negativas.
+**Use /implement AUTH-2**
+
+### AUTH-3: Cambio de Contraseña desde la App
+**Files:** `lib/screens/profile_screen.dart`, new `lib/widgets/dialogs/change_password_dialog.dart`
+**Problema:** No existe UI para cambiar contraseña mientras estás autenticado. Solo hay un "Olvidé mi contraseña" en la pantalla de login que envía email. El método `updatePassword()` de Firebase Auth existe pero no está expuesto en ninguna pantalla.
+**Solución:**
+1. Crear `change_password_dialog.dart` con: campo contraseña actual (verificación), campo contraseña nueva (con `password_strength_indicator.dart` existente), campo confirmar nueva
+2. Llamar `FirebaseAuth.currentUser!.reauthenticateWithCredential()` antes de `updatePassword()`
+3. Agregar opción en `profile_screen.dart` → sección Cuenta, solo visible si el proveedor es email
+**Impacto:** Usuarios con email/contraseña no pueden actualizar su contraseña de forma segura sin salir de la app.
+**Use /implement AUTH-3**
+
+### AUTH-4: Edición de Perfil (Nombre y Avatar)
+**Files:** `lib/screens/profile_screen.dart`, `lib/services/database_service.dart`
+**Problema:** El perfil es solo lectura. `UserProfile` tiene campos `displayName` y `photoUrl` pero no hay UI para editarlos. El `displayName` de Firebase Auth tampoco se actualiza. Los widgets `_LoggedInCard` en `user_card.dart` muestran `displayName` de Firebase pero no tienen forma de que el usuario lo cambie.
+**Solución:**
+1. Agregar botón "Editar perfil" en sección Cuenta de `profile_screen.dart`
+2. Modal o pantalla inline con: campo nombre (3-30 chars), picker de avatar (emoji o color predeterminados)
+3. Llamar `FirebaseAuth.currentUser!.updateDisplayName()` + guardar en Hive y Firestore vía `saveUserProfile()`
+**Impacto:** Usuarios anónimos que vinculan Google ven su nombre de Google. Usuarios de email aparecen como "Usuario" sin nombre.
+**Use /implement AUTH-4**
+
+### AUTH-5: Verificación de Email Post-Registro
+**Files:** `lib/screens/register_screen.dart`, `lib/services/auth_service.dart`
+**Problema:** Usuarios pueden registrarse con cualquier email sin verificación. No se llama `sendEmailVerification()` post-registro. No hay indicador en la UI de si el email está verificado.
+**Solución:**
+1. Después del registro exitoso, llamar `FirebaseAuth.currentUser!.sendEmailVerification()`
+2. Mostrar banner en `profile_screen.dart` si `user.emailVerified == false` con botón "Reenviar verificación"
+3. Opcional: requerir verificación antes de habilitar sync a la nube
+**Impacto:** Cualquiera puede crear cuentas con emails ajenos. Datos de otros usuarios podrían quedar en Firestore sin owner real.
+**Use /implement AUTH-5**
+
+### DATA-1: Exportar Datos (Implementación Real)
+**Files:** `lib/screens/settings_screen.dart:86-91`, `lib/services/session_cache_manager.dart`
+**Problema:** El botón "Exportar datos" en Ajustes tiene código placeholder que solo muestra un SnackBar de "próximamente". Sin embargo, `SessionCacheManager.exportBeforeClear()` y `DatabaseService.exportAllData()` ya están implementados y devuelven todos los datos.
+**Solución:**
+1. Conectar el botón existente a `exportBeforeClear()` del `session_cache_manager.dart`
+2. Serializar a JSON y usar `share_plus` o `path_provider` para compartir/guardar el archivo
+3. Mostrar diálogo con resumen de lo que se exportará (N tareas, N notas) antes de confirmar
+**Impacto:** Feature prometida a usuarios que no funciona. Importante para cumplimiento GDPR.
+**Use /implement DATA-1**
+
+---
+
+## SYNC & DATA INTEGRITY — Análisis Profundo 2026-02-17
+
+> Análisis de integridad de datos, cola de sincronización y ciclo de vida de los datos de usuario.
+
+### SYNC-1: Dead-Letter Queue sin Auto-Retry ⚠️ CRÍTICO
+**Files:** `lib/services/sync/sync_queue.dart`, `lib/services/sync_orchestrator.dart`
+**Problema:** La cola de sincronización tiene un sistema de dead-letter (después de 3 reintentos fallidos los items se mueven a dead-letter). Sin embargo, NO hay ningún mecanismo automático que reintente esos items. Los datos quedan atrapados en dead-letter indefinidamente. El método `retryDeadLetterItems()` existe pero no está expuesto en la UI ni llamado automáticamente. Usuarios con conexión inestable perderán datos en la nube sin saberlo.
+**Solución:**
+1. En `SyncOrchestrator`, agregar un timer periódico (cada 24h o al reconectarse) que llame `retryDeadLetterItems()`
+2. Agregar badge/indicador en el icono de sync cuando hay items en dead-letter
+3. Agregar botón "Reintentar sincronización fallida" en Ajustes → Datos
+**Impacto:** Datos de usuario que fallan al sincronizar 3 veces quedan atrapados en dead-letter para siempre. El usuario cree que están en la nube pero no lo están.
+**Use /implement SYNC-1**
+
+### SYNC-2: `_markAllForResync()` Posiblemente Indefinido ⚠️ CRÍTICO
+**Files:** `lib/services/session_cache_manager.dart:171`
+**Problema:** La función `migrateAnonymousData()` llama a `_markAllForResync()` en la línea 171, pero esta función puede no estar definida o estar incompleta. Esto es el corazón de la migración de cuenta anónima → cuenta vinculada. Sin este paso, las tareas creadas como usuario anónimo no se re-sincronizan con el nuevo userId, quedando atrapadas en la cola con el userId anónimo antiguo que ya no coincide con las reglas de seguridad de Firestore.
+**Solución:**
+1. Verificar si `_markAllForResync()` está definido en `session_cache_manager.dart`
+2. Si no: implementarlo — debe iterar por todos los items en la cola de sync y actualizar su `userId` al nuevo userId
+3. Alternativamente: al vincular cuenta, hacer full resync (download + upload) con el nuevo userId
+**Impacto:** Todos los datos creados como usuario anónimo fallan al sincronizarse después de vincular cuenta con Google o email.
+**Use /implement SYNC-2**
+
+### SYNC-3: Eliminación de Cuenta no es Atómica
+**Files:** `lib/services/auth_service.dart:542-610`
+**Problema:** La secuencia de borrado es: (1) borrar Firestore → (2) limpiar Hive local → (3) borrar Auth. Si el paso 1 falla (red, cuota, permisos), los pasos 2 y 3 aún se ejecutan. Resultado: el usuario pierde sus datos locales pero los datos en la nube permanecen. No hay rollback. Tampoco se limpian los items de la cola de sync pendientes del usuario borrado.
+**Solución:**
+1. Verificar éxito de paso 1 antes de continuar con paso 2. Si falla, mostrar error y abortar
+2. Al inicio de la eliminación, guardar backup temporal de datos locales (ya existe `exportBeforeClear()`)
+3. Restaurar backup si los pasos de la nube fallan
+4. Limpiar queue de sync antes de borrar Hive
+**Impacto:** Usuario que intenta borrar cuenta con mala conexión puede perder todos sus datos locales sin borrar los datos de la nube.
+**Use /implement SYNC-3**
+
+### SYNC-4: Filtro de UserId en TaskProvider
+**Files:** `lib/providers/task_provider.dart`, `lib/services/storage/local/hive_task_storage.dart`
+**Problema:** El `TaskProvider` observa el box de Hive global y devuelve TODAS las tareas sin filtrar por el userId actual. Si dos usuarios inician sesión en el mismo dispositivo sin limpiar datos, el segundo usuario verá las tareas del primero. El TaskProvider filtra por `type` pero no por `userId` del usuario autenticado actualmente.
+**Solución:**
+1. Al cargar tareas de Hive, filtrar por `task.userId == currentUserId` donde `currentUserId` viene del `authServiceProvider`
+2. Al hacer logout, limpiar datos locales del usuario anterior (o al menos guardar en memoria qué userId corresponde a qué datos)
+3. Agregar campo `userId` a la tarea si no existe, o usar el firestoreId para determinar ownership
+**Impacto:** Privacidad y seguridad — datos de un usuario visibles para otro usuario en el mismo dispositivo.
+**Use /implement SYNC-4**
+
+---
+
+## ANÁLISIS FRESCO — 2026-02-19 (5 agentes especializados)
+
+> Segunda ronda de análisis. Los agentes exploraron el código actualizado e identificaron nuevas brechas no cubiertas por las iteraciones anteriores.
+
+---
+
+### UX-8: Sticky Submit Button en Formulario de Tarea
+**Files:** `lib/widgets/dialogs/add_task_dialog.dart`
+**What:** El formulario usa `SingleChildScrollView` pero el botón de guardar queda al final del scroll. Añadir un botón de guardar fijo en el footer que permanezca visible mientras el usuario llena el formulario.
+**Why:** Agente encontró que `add_task_dialog.dart:232` usa scroll sin botón persistente. Usuarios no saben cómo guardar hasta hacer scroll completo. Aumenta tasa de abandono en creación de tareas.
+**Use /implement UX-8**
+
+### UX-9: Validación en Tiempo Real en Formulario
+**Files:** `lib/widgets/dialogs/add_task_dialog.dart`
+**What:** La validación del título solo ocurre al hacer submit (línea 167-174). Añadir: indicador "Requerido" en el campo título, validación inline mientras se escribe, contador de caracteres en motivación/recompensa, botón submit deshabilitado si título vacío.
+**Why:** Los errores de validación solo aparecen después de submit fallido (`add_task_dialog.dart:238-241`). Elimina la frustración del ciclo "llenar → submit → error → corregir".
+**Use /implement UX-9**
+
+### UX-10: Agrupación Visual en Formulario de Edición
+**Files:** `lib/widgets/dialogs/task_form_dialog.dart`
+**What:** Agregar separadores de sección entre campos requeridos/opcionales. Usar patrón de selección consistente (todos chips o todos dropdowns). Añadir texto de ayuda bajo campos opcionales.
+**Why:** `task_form_dialog.dart:212-430` mezcla prioridad como dropdown y categoría como chips. Sin separadores visuales entre secciones. Crea formulario confuso visualmente.
+**Use /implement UX-10**
+
+### UX-11: Feedback de Estado Deshabilitado durante Submit
+**Files:** `lib/widgets/dialogs/add_task_dialog.dart`
+**What:** Cuando `_isSubmitting = true`, los campos permanecen activos. Deshabilitar todos los `TextField` (`enabled: false`), añadir overlay semitransparente, texto "Guardando..." y prevenir múltiples envíos.
+**Why:** `add_task_dialog.dart:167-217` no deshabilita campos durante submit. Usuarios pueden editar mientras se guarda o tocar submit múltiples veces. Causa inconsistencias y duplicados.
+**Use /implement UX-11**
+
+### UX-12: Empty States Contextuales con Acciones Directas
+**Files:** `lib/widgets/task_list.dart`
+**What:** Unificar los 3 estados vacíos (filtro activo, búsqueda activa, sin tareas) con iconos específicos por contexto, botones de acción prominentes ("Limpiar filtros", "Crear primera tarea"), y mensajes contextuales. Añadir botón "Crear tarea" en el estado vacío de "sin tareas".
+**Why:** `task_list.dart:103-205` tiene 3 empty states con mensajes inconsistentes. El estado de 0 tareas dice "toca el botón +" sin mostrar dónde está ese botón. Usuarios nuevos se sienten perdidos.
+**Use /implement UX-12**
+
+---
+
+### PROD-8: Snooze / Aplazamiento Inteligente de Tareas
+**Files:** `lib/models/task_model.dart`, `lib/providers/task_provider.dart`, `lib/widgets/task_tile.dart`
+**What:** Añadir campo `deferredUntil?: DateTime` al modelo Task. Opciones de snooze en gesto swipe-up o menú largo: "Mañana", "Próxima semana", "En 2 días", "Personalizado". Sección "Tareas aplazadas" en Today Screen.
+**Why:** No existe forma de posponer una tarea sin eliminarla y recrearla. El modelo ya tiene `dueDate` y `deadline` pero no tiene snooze (`task_model.dart:24-25,45`). Los usuarios gestionan esto mentalmente en lugar de con la app.
+**Use /implement PROD-8**
+
+### PROD-9: Detección de Conflictos de Bloques de Tiempo
+**Files:** `lib/models/task_model.dart`, `lib/widgets/calendar_view.dart`, `lib/providers/task_providers.dart`
+**What:** Añadir campo `estimatedDurationMinutes?: int` al Task. Crear `timeBlockConflictProvider` que detecte solapamientos entre tareas con hora asignada. Badge de advertencia en TaskTile si hay conflicto. Vista de línea de tiempo en TodayScreen.
+**Why:** `task_model.dart:33` tiene `dueTimeMinutes` pero sin duración. El calendario (`calendar_view.dart`) es estático y no detecta si 2 tareas en el mismo día se superponen horariamente. Usuarios se sobrecomprométen sin saberlo.
+**Use /implement PROD-9**
+
+### PROD-10: Etiquetas de Contexto y Completado por Contexto
+**Files:** `lib/models/task_model.dart`, `lib/widgets/task_tile.dart`, `lib/widgets/task_list.dart`
+**What:** Añadir `contextTags: List<String>` al Task con etiquetas predefinidas: "En casa", "En el trabajo", "Con pareja", etc. Mostrar pills de contexto en TaskTile. Filtrar tareas por contexto. Selección múltiple para completar todas las tareas de un contexto.
+**Why:** `task_model.dart` solo tiene categoría semántica (Personal/Trabajo). Las notas ya tienen `tags` (`note_model.dart:78`) pero las tareas no. Los usuarios no pueden agrupar "qué hacer ahora que estoy en casa" vs "qué hacer en la oficina".
+**Use /implement PROD-10**
+
+### PROD-11: Dependencias entre Tareas
+**Files:** `lib/models/task_model.dart`, `lib/providers/task_provider.dart`, `lib/widgets/task_tile.dart`
+**What:** Añadir `dependsOn: List<String>` al Task. Mostrar badge "Bloqueada por: Tarea A" en TaskTile. Prevenir completado si dependencias no están hechas. Notificación cuando una tarea bloqueante se completa.
+**Why:** No existe sistema de dependencias. Usuarios con flujos multi-paso (sprints, proyectos casa, rutas de aprendizaje) no pueden estructurar orden de ejecución. Los subtareas (PROD-6) manejan pasos internos; las dependencias manejan orden entre tareas distintas.
+**Use /implement PROD-11**
+
+---
+
+### WB-9: Indicador de Tiempo de Completado (Gasto de Energía)
+**Files:** `lib/models/task_history.dart`, `lib/providers/stats_provider.dart`, `lib/widgets/task_tile.dart`
+**What:** Calcular `completionDurationMinutes` desde `createdAt` a `completedAt`. Widget en dashboard: "Estás completando tareas 25% más lento de lo normal — considera un descanso". Proveedor: `weeklyCompletionTimeProvider` con duración promedio por tipo de tarea.
+**Why:** `task_history.dart:17` registra `completedAt` pero no calcula duración. Sin este dato el sistema no puede detectar cuándo el usuario está en modo burnout. Completar una tarea en 3 min vs 45 min son señales de energía muy distintas.
+**Use /implement WB-9**
+
+### WB-10: Auto-evaluación de Esfuerzo en Creación de Tarea
+**Files:** `lib/models/task_model.dart`, `lib/widgets/dialogs/add_task_dialog.dart`, `lib/widgets/task_tile.dart`
+**What:** Añadir `effort: 'light' | 'moderate' | 'heavy'` al Task (equivale a "5 min", "30 min", "2+ horas"). 3 botones de esfuerzo en AddTaskDialog. Dashboard muestra "Presupuesto de esfuerzo: 4h disponibles, 3.5h programadas".
+**Why:** `add_task_dialog.dart:77-280` tiene prioridad pero no esfuerzo. Los usuarios confunden prioridad con duración. 5 tareas de alta prioridad pueden ser 15 minutos o 10 horas. Sin esta distinción, el síndrome del "día imposible" es inevitable.
+**Use /implement WB-10**
+
+### WB-11: Sugerencias de Bienestar según Estado de Ánimo
+**Files:** `lib/providers/wellness_provider.dart`, `lib/widgets/dashboard/wellness_suggestions_card.dart`, `lib/core/constants/wellness_catalog.dart`
+**What:** Check-in rápido en dashboard: "¿Cómo te sientes?" (5 estados: Energizado, Normal, Cansado, Agobiado, Ansioso). Filtrar sugerencias según estado: Cansado → sugerencias restaurativas; Agobiado → simplificación; Energizado → desafíos.
+**Why:** `wellness_provider.dart:360-413` genera recomendaciones por hora del día pero ignora el estado emocional del usuario. Sugerir "1 hora de senderismo" a alguien agobiado es contraproducente y reduce engagement con el módulo de bienestar.
+**Use /implement WB-11**
+
+### WB-12: Recordatorios de Micro-Descanso en Días de Alta Carga
+**Files:** `lib/widgets/task_tile.dart`, `lib/providers/streak_provider.dart`, `lib/widgets/shared/celebration_overlay.dart`
+**What:** Rastrear velocidad de completado: si se completan 4+ tareas en <30 min o >10 en 2h, mostrar card opcional: "¿Tomas 5 minutos?" con animación de respiración o enlace a sugerencia de bienestar. Streak se preserva aunque el usuario tome la pausa.
+**Why:** `task_tile.dart:33-36` muestra celebración en CADA completado sin detectar intensidad de sesión. No hay sistema que detecte cuándo el usuario lleva horas en modo sprint. Los microdescansos mejoran el foco y reducen errores.
+**Use /implement WB-12**
+
+### WB-13: Resumen Compasivo de Tareas Incompletas
+**Files:** `lib/providers/day_cycle_provider.dart`, `lib/models/task_history.dart`, `lib/widgets/dashboard/evening_reflection_card.dart`
+**What:** Al final del día, mostrar prompt: "3/5 tareas completas. ¿Por qué no llegó [tarea]?" con chips rápidos: "Inesperado", "Repriorizado", "Sin tiempo", "Necesitaba descanso". Mensaje compasivo: "Completaste el 60%. Eso es progreso real." Opción de deferir, eliminar o ajustar deadline.
+**Why:** `day_cycle_provider.dart` tiene lógica de despedida pero sin revisión de incompletos. `task_history.dart` registra completados pero no razones de no completado. Los usuarios se culpan por tareas incompletas. Este sistema normaliza la incompletitud con datos, no con silencio.
+**Use /implement WB-13**
+
+---
+
+### CODE-7: StreamSubscription Leak en ErrorStateNotifier
+**Files:** `lib/providers/error_provider.dart:121-127`
+**What:** La suscripción en el constructor de `ErrorStateNotifier` puede quedar activa si Riverpod recarga el provider sin llamar `dispose()`. Mover la suscripción al ciclo de vida del provider con `ref.onDispose()`.
+**Why:** `error_provider.dart:121-127` suscribe en constructor sin garantía de cleanup en rutas de error. Pequeña fuga de memoria que escala con recargas de estado.
+**Use /implement CODE-7**
+
+### ~~CODE-8: Excepciones Genéricas en SyncOrchestrator~~ ✅ COMPLETADO (2026-02-20)
+**File changed:** `lib/services/sync_orchestrator.dart`
+**Implemented:** Replaced generic `Exception('Firestore not available')` at line 655 with `SyncException.uploadFailed()` and `Exception('No user ID available')` at line 659 with `AuthException.notAuthenticated()`. Both exceptions now properly integrate with the error handler's classification system, providing appropriate user messages, retry logic, and error categorization. The sync queue can now correctly identify auth failures vs infrastructure issues and apply the appropriate retry strategy.
+
+### CODE-9: Cast Inseguro `.cast<T>()` sin Verificación de Tipo
+**Files:** `lib/services/database_service.dart:434,502,542,704,814`
+**What:** Añadir verificación de tipo antes de cada `.cast<Task/Note/Notebook>()`. Si un elemento no es del tipo esperado, lanzar `ValidationException` con mensaje descriptivo en lugar de crash silencioso.
+**Why:** 5 lugares en `database_service.dart` usan `.cast<T>()` en listas de repositorios que devuelven `dynamic`. Un fallo de tipo en Hive causaría crash en runtime sin mensaje útil. Corrupción de datos pasaría silenciosamente.
+**Use /implement CODE-9**
+
+### CODE-10: O(N) Scan Completo en Stream Watchers de Hive
+**Files:** `lib/services/database_service.dart:637-699`
+**What:** `watchArchivedNotes()` y `watchNotesForTask()` hacen `box.values.toList()` (scan completo) en cada evento de `box.watch()`. Refactorizar para usar streams reactivos con `.map()` en lugar de re-escaneo completo.
+**Why:** `database_service.dart:638,671,836` escanean todas las notas en CADA cambio del box. Con N notas y M cambios por sesión, el costo es O(N×M). Escala pobremente con usuarios que tienen cientos de notas.
+**Use /implement CODE-10**
+
+### CODE-11: StreamController sin Cleanup Garantizado en SyncOrchestrator
+**Files:** `lib/services/sync_orchestrator.dart:244-245,344`, `lib/services/app_bootstrap.dart`
+**What:** Si `init()` lanza excepción, `dispose()` nunca se llama y `_stateController` queda abierto. Envolver la inicialización en `try/finally` o registrar `ref.onDispose()` en el provider para garantizar cierre.
+**Why:** `sync_orchestrator.dart:244` crea `StreamController.broadcast()` sin garantía de cierre en rutas de error de `init()`. Cualquier excepción en startup deja el controller abierto indefinidamente.
+**Use /implement CODE-11**
+
+---
+
+### A11Y-6: Anuncios de Lector de Pantalla en Overlays de Celebración
+**Files:** `lib/widgets/shared/celebration_overlay.dart:94`, `lib/widgets/shared/blessing_feedback.dart:150`, `lib/widgets/streak_celebration_widget.dart:129`
+**What:** Envolver los 3 overlays en `Semantics(liveRegion: true, label: 'Tarea completada exitosamente')`. Llamar `SemanticsService.announce()` al mostrar el overlay.
+**Why:** Los 3 overlays usan `IgnorePointer` que silencia el árbol de accesibilidad. Los usuarios con lector de pantalla no reciben ningún feedback cuando completan una tarea — el momento de celebración queda vacío para ellos.
+**Use /implement A11Y-6**
+
+### A11Y-7: Navegación por Teclado en Celdas de Calendario
+**Files:** `lib/widgets/calendar_view.dart:189-258`
+**What:** Reemplazar `GestureDetector` en celdas de día con `InkWell` dentro de `Material`, o añadir `FocusableActionDetector` con `ActivateIntent`. Añadir nodo de foco y soporte para Enter/Espacio en cada celda.
+**Why:** `calendar_view.dart:193` usa `GestureDetector` puro para días del calendario. Los semánticos dicen "botón" pero no hay soporte de teclado real. Los usuarios que navegan con teclado no pueden seleccionar fechas.
+**Use /implement A11Y-7**
+
+### A11Y-8: Contraste de Color en Widget de Estadísticas
+**Files:** `lib/widgets/task_stats.dart:145-211,274-284`
+**What:** Reemplazar `Colors.yellow.shade700` con `Colors.amber.shade900` para texto de racha. Reemplazar `Colors.red.withValues(alpha: 0.6)` con `Colors.red.shade800` para puntos semanales. Verificar contraste usando `ColorUtils.getTextColorFor()`.
+**Why:** `task_stats.dart:150` usa amarillo-700 y `task_stats.dart:280` usa rojo con 0.6 de opacidad. Ambos pueden fallar WCAG AA (4.5:1 para texto normal) en fondos claros. El 8% de hombres tiene deficiencia visual del color.
+**Use /implement A11Y-8**
+
+### A11Y-9: Alternativa de Teclado para Gestos de Deslizamiento
+**Files:** `lib/widgets/task_tile.dart:430-546`
+**What:** Añadir `CallbackShortcuts` alrededor del tile que mapee Ctrl+Derecha → completar, Ctrl+Izquierda → eliminar. Actualizar label semántico: "Deslizar derecha para completar, o Ctrl+Derecha con teclado".
+**Why:** `task_tile.dart:430` usa `Dismissible` que es solo táctil. Los gestos swipe derecha (completar) e izquierda (eliminar) son las acciones principales de la app pero completamente inaccesibles para usuarios de teclado.
+**Use /implement A11Y-9**
+
+### A11Y-10: Labels Semánticos en Campos de Formulario de Edición
+**Files:** `lib/widgets/dialogs/task_form_dialog.dart:47-49`
+**What:** Usar `TextFormField` con `labelText:` en lugar de `TextField` con solo `hintText`. O añadir `Semantics(label: 'Nombre de la tarea')` sobre cada `TextField`. Asegurar que chips de prioridad/categoría tengan labels descriptivos.
+**Why:** `task_form_dialog.dart:47-49` declara controladores para título, motivación y recompensa. Si usan `hintText` sin `labelText`, el lector de pantalla no puede identificar el propósito del campo cuando tiene contenido (hint desaparece al escribir).
+**Use /implement A11Y-10**
+
+---
+
 ## Recommended Next Steps
 
-All Quick Wins from 2026-02-15 are complete. Next priorities:
+Orden de prioridad basado en impacto de usuario:
 
-1. **UX-4 (Undo completion)** — Symmetry with UX-1. 1 hour, eliminates a frustrating UX gap.
-2. **CODE-3 (Streak race condition)** — Prevents subtle bugs; 30 min fix.
-3. **UX-6 (Progressive form)** — Most-impactful UX change for new users; cuts cognitive load on task creation.
-4. **WB-5 (Celebration settings)** — Prevents celebration fatigue for daily users.
-5. **CODE-5 (Consolidate providers)** — Architectural cleanup that simplifies future work.
-6. **PROD-2 (Notifications)** — Highest-value major feature; deadlines exist but are unenforced.
+1. **AUTH-1 (Crear perfil en Firestore)** — CRÍTICO: bloquea sync para nuevos usuarios registrados.
+2. **AUTH-2 (Visibilidad de eliminar cuenta)** — CRÍTICO: usuarios no pueden encontrar la opción.
+3. **UX-5 (Swipe affordance)** — Quick win: gestos no son descubribles por nuevos usuarios.
+4. **AUTH-3 (Cambio de contraseña)** — Importante: feature básica de gestión de cuenta faltante.
+5. **PROD-2 (Notificaciones)** — Mayor impacto en retención: deadlines actualmente sin enforcement.
+6. **AUTH-4 (Editar perfil)** — Mejora la experiencia de usuario registrado.
+7. **WB-5 (Celebration settings)** — Previene fatiga en usuarios frecuentes.
+8. **DATA-1 (Export datos)** — Cumple promesa de feature existente.
+9. **AUTH-5 (Email verification)** — Seguridad y confianza.
+10. **UX-7 (Skeleton loading)** — Mejora percepción de rendimiento.
 
 ---
 
@@ -210,9 +487,9 @@ All Quick Wins from 2026-02-15 are complete. Next priorities:
 Use the `/implement` skill with the ID of any improvement:
 
 ```
-/implement UX-4
-/implement CODE-3
-/implement UX-6
+/implement AUTH-1
+/implement AUTH-2
+/implement UX-5
 ```
 
 Each implementation is atomic and won't break existing functionality.
