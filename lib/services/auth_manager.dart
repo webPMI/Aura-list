@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auth_service.dart';
 import 'database_service.dart';
+import 'error_handler.dart';
 import 'logger_service.dart';
 
 /// Provider del AuthManager centralizado
