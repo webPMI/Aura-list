@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/database_service.dart';
 
 /// Claves de SharedPreferences para persistencia de rachas
 const _keyLastCompletionDate = 'last_task_completion_date';
@@ -63,8 +64,9 @@ class StreakState {
 /// Notifier que gestiona el estado de la racha del usuario
 class StreakNotifier extends StateNotifier<StreakState> {
   final Completer<void> _initCompleter = Completer<void>();
+  final Future<int?> Function() _getRestDayOfWeek;
 
-  StreakNotifier() : super(StreakState.empty()) {
+  StreakNotifier(this._getRestDayOfWeek) : super(StreakState.empty()) {
     _loadStreak();
   }
 
@@ -76,6 +78,15 @@ class StreakNotifier extends StateNotifier<StreakState> {
   /// Formatea una fecha como 'yyyy-MM-dd'
   String _formatDate(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  /// Verifica si una fecha es un dia de descanso
+  /// Retorna true si la fecha coincide con el dia de descanso configurado
+  Future<bool> _isRestDay(DateTime date) async {
+    final restDay = await _getRestDayOfWeek();
+    if (restDay == null) return false;
+    // DateTime.weekday: 1=Monday, 7=Sunday
+    return date.weekday == restDay;
   }
 
   /// Carga la racha guardada desde SharedPreferences
@@ -102,10 +113,22 @@ class StreakNotifier extends StateNotifier<StreakState> {
       if (lastDate != null && streak > 0) {
         final today = _formatDate(now);
         final yesterday = _formatDate(now.subtract(const Duration(days: 1)));
+        final yesterdayDate = now.subtract(const Duration(days: 1));
         final dayBeforeYesterday = _formatDate(now.subtract(const Duration(days: 2)));
+
+        // Verificar si ayer fue dia de descanso
+        final yesterdayWasRestDay = await _isRestDay(yesterdayDate);
 
         if (lastDate == today || lastDate == yesterday) {
           // La racha sigue activa
+          state = StreakState(
+            currentStreak: streak,
+            lastCompletionDate: lastDate,
+            graceDaysRemainingThisMonth: graceDaysRemaining,
+            graceMonth: now.month,
+          );
+        } else if (yesterdayWasRestDay && lastDate == dayBeforeYesterday) {
+          // Ayer fue dia de descanso, la racha sigue si se completo anteayer
           state = StreakState(
             currentStreak: streak,
             lastCompletionDate: lastDate,
@@ -244,7 +267,11 @@ class StreakNotifier extends StateNotifier<StreakState> {
 
 /// Provider principal del estado de la racha
 final streakProvider = StateNotifierProvider<StreakNotifier, StreakState>((ref) {
-  return StreakNotifier();
+  final dbService = ref.watch(databaseServiceProvider);
+  return StreakNotifier(() async {
+    final prefs = await dbService.getUserPreferences();
+    return prefs?.restDayOfWeek;
+  });
 });
 
 /// Provider que expone solo el contador de dias de racha actual

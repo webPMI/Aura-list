@@ -239,22 +239,31 @@ class AppBootstrap {
 
       if (firebaseAvailable && isAuthenticated && userId != null) {
         final syncEnabled = await dbService.isCloudSyncEnabled();
-        if (syncEnabled) {
-          try {
-            final result = await dbService.performFullSync(userId);
-            if (result.hasChanges) {
-              _logger.info(
-                'AppBootstrap',
-                'Sincronizacion inicial completada: ${result.totalDownloaded} elementos',
-              );
-            }
-          } catch (e) {
-            _logger.warning(
+
+        // Ensure sync is enabled for authenticated users
+        if (!syncEnabled) {
+          _logger.info(
+            'AppBootstrap',
+            'Usuario autenticado sin sync habilitado - activando sync',
+          );
+          await dbService.setCloudSyncEnabled(true);
+        }
+
+        // Perform initial sync
+        try {
+          final result = await dbService.performFullSync(userId);
+          if (result.hasChanges) {
+            _logger.info(
               'AppBootstrap',
-              'Error en sincronizacion inicial (no critico)',
-              metadata: {'error': e.toString()},
+              'Sincronizacion inicial completada: ${result.totalDownloaded} elementos',
             );
           }
+        } catch (e) {
+          _logger.warning(
+            'AppBootstrap',
+            'Error en sincronizacion inicial (no critico)',
+            metadata: {'error': e.toString()},
+          );
         }
       }
 

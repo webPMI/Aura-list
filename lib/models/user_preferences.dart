@@ -46,6 +46,11 @@ class UserPreferences extends HiveObject {
   @HiveField(13)
   DateTime? lastUpdatedAt; // For conflict resolution
 
+  /// Day of week designated as rest day (1=Monday, 7=Sunday, null=none)
+  /// On rest days, tasks are optional and streaks won't break if nothing is completed
+  @HiveField(14)
+  int? restDayOfWeek;
+
   UserPreferences({
     this.odId = 'default',
     this.hasAcceptedTerms = false,
@@ -58,9 +63,10 @@ class UserPreferences extends HiveObject {
     Map<String, String>? collectionLastSync,
     this.syncOnMobileData = true,
     this.syncDebounceMs = 3000,
-    this.cloudSyncEnabled = false,
+    this.cloudSyncEnabled = true, // Enable by default - sync requires auth anyway
     String? firestoreId,
     this.lastUpdatedAt,
+    this.restDayOfWeek,
   })  : collectionLastSync = collectionLastSync ?? {},
         firestoreId = firestoreId ?? '';
 
@@ -120,6 +126,7 @@ class UserPreferences extends HiveObject {
       'syncOnMobileData': syncOnMobileData,
       'syncDebounceMs': syncDebounceMs,
       'cloudSyncEnabled': cloudSyncEnabled,
+      'restDayOfWeek': restDayOfWeek,
     };
   }
 
@@ -137,6 +144,7 @@ class UserPreferences extends HiveObject {
       'syncOnMobileData': syncOnMobileData,
       'syncDebounceMs': syncDebounceMs,
       'cloudSyncEnabled': cloudSyncEnabled,
+      'restDayOfWeek': restDayOfWeek,
       'lastUpdatedAt': (lastUpdatedAt ?? DateTime.now()).toIso8601String(),
     };
   }
@@ -164,6 +172,7 @@ class UserPreferences extends HiveObject {
       syncOnMobileData: data['syncOnMobileData'] as bool? ?? true,
       syncDebounceMs: data['syncDebounceMs'] as int? ?? 3000,
       cloudSyncEnabled: data['cloudSyncEnabled'] as bool? ?? false,
+      restDayOfWeek: data['restDayOfWeek'] as int?,
       firestoreId: docId,
       lastUpdatedAt: data['lastUpdatedAt'] != null
           ? DateTime.parse(data['lastUpdatedAt'] as String)
@@ -189,6 +198,7 @@ class UserPreferences extends HiveObject {
       syncOnMobileData: data['syncOnMobileData'] ?? true,
       syncDebounceMs: data['syncDebounceMs'] ?? 3000,
       cloudSyncEnabled: data['cloudSyncEnabled'] ?? false,
+      restDayOfWeek: data['restDayOfWeek'] as int?,
     );
   }
 
@@ -206,6 +216,7 @@ class UserPreferences extends HiveObject {
     bool? cloudSyncEnabled,
     String? firestoreId,
     DateTime? lastUpdatedAt,
+    int? restDayOfWeek,
   }) {
     return UserPreferences(
       odId: odId,
@@ -220,6 +231,7 @@ class UserPreferences extends HiveObject {
       syncOnMobileData: syncOnMobileData ?? this.syncOnMobileData,
       syncDebounceMs: syncDebounceMs ?? this.syncDebounceMs,
       cloudSyncEnabled: cloudSyncEnabled ?? this.cloudSyncEnabled,
+      restDayOfWeek: restDayOfWeek ?? this.restDayOfWeek,
       firestoreId: firestoreId ?? this.firestoreId,
       lastUpdatedAt: lastUpdatedAt ?? this.lastUpdatedAt,
     );

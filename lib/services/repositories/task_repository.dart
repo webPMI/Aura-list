@@ -31,9 +31,9 @@ class TaskRepository implements ITaskRepository {
     required HiveTaskStorage localStorage,
     required TaskSyncService syncService,
     required ErrorHandler errorHandler,
-  })  : _localStorage = localStorage,
-        _syncService = syncService,
-        _errorHandler = errorHandler;
+  }) : _localStorage = localStorage,
+       _syncService = syncService,
+       _errorHandler = errorHandler;
 
   @override
   bool get isInitialized => _initialized;
@@ -73,8 +73,18 @@ class TaskRepository implements ITaskRepository {
   Future<void> save(dynamic item, String userId) async {
     final task = item as Task;
     task.lastUpdatedAt = DateTime.now();
-    await _localStorage.save(task);
-    await _syncService.syncToCloudDebounced(task, userId);
+    await _localStorage
+        .save(task)
+        .handleErrors(
+          type: ErrorType.database,
+          userMessage: 'Error al guardar la tarea localmente',
+        );
+    await _syncService
+        .syncToCloudDebounced(task, userId)
+        .handleErrorsOrNull(
+          type: ErrorType.network,
+          userMessage: 'Error al programar sincronización',
+        );
   }
 
   @override
@@ -91,8 +101,16 @@ class TaskRepository implements ITaskRepository {
       task.deleted = true;
       task.deletedAt = DateTime.now();
       task.lastUpdatedAt = DateTime.now();
-      await task.save();
-      await _syncService.syncToCloudDebounced(task, userId);
+      await task.save().handleErrors(
+        type: ErrorType.database,
+        userMessage: 'Error al eliminar la tarea',
+      );
+      await _syncService
+          .syncToCloudDebounced(task, userId)
+          .handleErrorsOrNull(
+            type: ErrorType.network,
+            userMessage: 'Error al programar eliminación en la nube',
+          );
     }
   }
 
@@ -193,8 +211,13 @@ class TaskRepository implements ITaskRepository {
     if (task != null) {
       task.isCompleted = true;
       task.lastUpdatedAt = DateTime.now();
-      await task.save();
-      await _syncService.syncToCloudDebounced(task, userId);
+      await task.save().handleErrors(
+        type: ErrorType.database,
+        userMessage: 'Error al marcar tarea como completada',
+      );
+      await _syncService
+          .syncToCloudDebounced(task, userId)
+          .handleErrorsOrNull(type: ErrorType.network);
     }
   }
 

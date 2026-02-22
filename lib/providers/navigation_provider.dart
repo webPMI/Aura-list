@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Available routes in the app
-enum AppRoute { dashboard, tasks, notes, calendar, settings, profile }
+enum AppRoute { dashboard, tasks, finance, notes, calendar, settings, profile }
 
 /// Extension to get route metadata
 extension AppRouteExtension on AppRoute {
@@ -9,6 +9,7 @@ extension AppRouteExtension on AppRoute {
     return switch (this) {
       AppRoute.dashboard => 'Inicio',
       AppRoute.tasks => 'Mis Tareas',
+      AppRoute.finance => 'Finanzas',
       AppRoute.notes => 'Notas',
       AppRoute.calendar => 'Calendario',
       AppRoute.settings => 'Ajustes',
@@ -20,6 +21,7 @@ extension AppRouteExtension on AppRoute {
     return switch (this) {
       AppRoute.dashboard => 'dashboard',
       AppRoute.tasks => 'checklist',
+      AppRoute.finance => 'payments',
       AppRoute.notes => 'note',
       AppRoute.calendar => 'calendar_today',
       AppRoute.settings => 'settings',
@@ -31,10 +33,11 @@ extension AppRouteExtension on AppRoute {
     return switch (this) {
       AppRoute.dashboard => 0,
       AppRoute.tasks => 1,
-      AppRoute.notes => 2,
-      AppRoute.calendar => 3,
-      AppRoute.settings => 4,
-      AppRoute.profile => 5, // Profile is a detail screen, not in main nav
+      AppRoute.finance => 2,
+      AppRoute.notes => 3,
+      AppRoute.calendar => 4,
+      AppRoute.settings => 5,
+      AppRoute.profile => 6, // Profile is a detail screen, not in main nav
     };
   }
 
@@ -42,10 +45,11 @@ extension AppRouteExtension on AppRoute {
     return switch (index) {
       0 => AppRoute.dashboard,
       1 => AppRoute.tasks,
-      2 => AppRoute.notes,
-      3 => AppRoute.calendar,
-      4 => AppRoute.settings,
-      5 => AppRoute.profile,
+      2 => AppRoute.finance,
+      3 => AppRoute.notes,
+      4 => AppRoute.calendar,
+      5 => AppRoute.settings,
+      6 => AppRoute.profile,
       _ => AppRoute.dashboard,
     };
   }

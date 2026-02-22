@@ -135,10 +135,13 @@ class ErrorStateNotifier extends StateNotifier<ErrorState> {
   ///
   /// [autoDismiss] - Si es true, el error se eliminara automaticamente
   /// despues de [dismissAfter].
+  /// [severity] - Severidad del error. Solo errores de tipo info/warning
+  /// se auto-descartan. Errores criticos permanecen visibles.
   void addError(
     AppException error, {
     bool autoDismiss = true,
     Duration dismissAfter = defaultAutoDismiss,
+    ErrorSeverity? severity,
   }) {
     final newErrors = [error, ...state.errors];
 
@@ -151,11 +154,66 @@ class ErrorStateNotifier extends StateNotifier<ErrorState> {
       lastErrorTime: DateTime.now(),
     );
 
-    // Auto-dismiss si esta habilitado
+    // Auto-dismiss solo para errores de severidad info/warning
+    // Los errores criticos y de error permanecen visibles hasta descarte manual
     if (autoDismiss) {
-      Future.delayed(dismissAfter, () {
-        removeError(error);
-      });
+      final errorSeverity = severity ?? _detectSeverity(error);
+      final shouldAutoDismiss = _shouldAutoDismiss(errorSeverity);
+
+      if (shouldAutoDismiss) {
+        Future.delayed(dismissAfter, () {
+          removeError(error);
+        });
+      }
+    }
+  }
+
+  /// Detecta la severidad de un error basado en su tipo.
+  ErrorSeverity _detectSeverity(AppException error) {
+    // Errores criticos que requieren atencion inmediata
+    if (error is FirebasePermissionException) {
+      return ErrorSeverity.critical;
+    }
+    if (error is HiveStorageException) {
+      return ErrorSeverity.critical;
+    }
+    if (error is AuthException && !error.isRetryable) {
+      return ErrorSeverity.critical;
+    }
+
+    // Errores normales que pueden reintentarse
+    if (error is NetworkException && error.isRetryable) {
+      return ErrorSeverity.warning;
+    }
+    if (error is SyncException && error.isRetryable) {
+      return ErrorSeverity.warning;
+    }
+
+    // Errores de validacion son informativos
+    if (error is ValidationException) {
+      return ErrorSeverity.info;
+    }
+
+    // Por defecto, errores que no pueden reintentarse son criticos
+    if (!error.isRetryable) {
+      return ErrorSeverity.critical;
+    }
+
+    // Otros errores son de nivel error
+    return ErrorSeverity.error;
+  }
+
+  /// Determina si un error debe auto-descartarse basado en su severidad.
+  /// Solo errores de info y warning se auto-descartan.
+  /// Errores criticos y de error permanecen visibles.
+  bool _shouldAutoDismiss(ErrorSeverity severity) {
+    switch (severity) {
+      case ErrorSeverity.info:
+      case ErrorSeverity.warning:
+        return true;
+      case ErrorSeverity.error:
+      case ErrorSeverity.critical:
+        return false;
     }
   }
 

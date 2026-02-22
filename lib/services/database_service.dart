@@ -10,6 +10,8 @@ import '../models/notebook_model.dart';
 import '../models/user_preferences.dart';
 import '../models/sync_metadata.dart';
 import '../models/guide_achievement_model.dart';
+import '../features/finance/models/finance_category.dart';
+import '../features/finance/models/transaction.dart';
 import '../core/cache/cache_policy.dart';
 import 'error_handler.dart';
 import 'hive_integrity_checker.dart';
@@ -81,9 +83,9 @@ class DatabaseService {
     required TaskRepository taskRepository,
     required NoteRepository noteRepository,
     required NotebookRepository notebookRepository,
-  })  : _taskRepository = taskRepository,
-        _noteRepository = noteRepository,
-        _notebookRepository = notebookRepository;
+  }) : _taskRepository = taskRepository,
+       _noteRepository = noteRepository,
+       _notebookRepository = notebookRepository;
 
   // Box names for services managed directly by DatabaseService
   static const String _historyBoxName = 'task_history';
@@ -165,6 +167,15 @@ class DatabaseService {
       if (!Hive.isAdapterRegistered(13)) {
         Hive.registerAdapter(GuideAchievementAdapter());
       }
+      if (!Hive.isAdapterRegistered(14)) {
+        Hive.registerAdapter(FinanceCategoryTypeAdapter());
+      }
+      if (!Hive.isAdapterRegistered(15)) {
+        Hive.registerAdapter(FinanceCategoryAdapter());
+      }
+      if (!Hive.isAdapterRegistered(16)) {
+        Hive.registerAdapter(TransactionAdapter());
+      }
 
       // Open boxes managed directly by DatabaseService
       _historyBox = Hive.isBoxOpen(_historyBoxName)
@@ -206,7 +217,10 @@ class DatabaseService {
       // Run migrations for existing data
       await _runMigrations();
 
-      _logger.debug('Service', '[DatabaseService] Initialized with repositories');
+      _logger.debug(
+        'Service',
+        '[DatabaseService] Initialized with repositories',
+      );
     } catch (e) {
       _initCompleter!.completeError(e);
       _initCompleter = null;
@@ -991,10 +1005,7 @@ class DatabaseService {
       return SyncResult(tasksDownloaded: 0, notesDownloaded: 0, errors: 0);
     }
 
-    _logger.debug(
-      'Service',
-      '[SYNC] Starting full bidirectional sync',
-    );
+    _logger.debug('Service', '[SYNC] Starting full bidirectional sync');
 
     // First, download from cloud
     final downloadResult = await syncFromCloud(userId);
@@ -1348,10 +1359,7 @@ class DatabaseService {
         olderThanDays: olderThanDays,
       );
 
-      _logger.debug(
-        'Service',
-        'Purged $tasksPurged tasks, $notesPurged notes',
-      );
+      _logger.debug('Service', 'Purged $tasksPurged tasks, $notesPurged notes');
     } catch (e) {
       _logger.debug('Service', 'Error purging soft-deleted items: $e');
     }

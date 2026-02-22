@@ -91,6 +91,17 @@ UI (ConsumerWidget) ← watches ← Riverpod Providers ← streams ← Hive (loc
 - **Providers**: `StateNotifierProvider` for stateful logic, watch Hive streams
 - **Localization**: All UI text in Spanish
 
+## Documentation
+
+Complete documentation is organized in `docs/`:
+
+- **[docs/README.md](docs/README.md)** - Documentation navigation hub
+- **[docs/features/avatars/](docs/features/avatars/)** - Avatar generation system
+- **[docs/features/guides/](docs/features/guides/)** - Guide character documentation
+- **[docs/architecture/](docs/architecture/)** - Technical architecture
+- **[docs/development/](docs/development/)** - Development guides
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
+
 ## Slash Commands (Claude Code Skills)
 
 ### Development

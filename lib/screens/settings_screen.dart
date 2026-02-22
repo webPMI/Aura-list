@@ -12,6 +12,7 @@ import '../services/auth_service.dart';
 import '../widgets/navigation/drawer_menu_button.dart';
 import '../widgets/auth/auth_action_sheet.dart';
 import '../widgets/auth/sync_toggle_tile.dart';
+import '../widgets/settings/rest_day_tile.dart';
 import 'profile_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -41,6 +42,12 @@ class SettingsScreen extends ConsumerWidget {
             children: [
               // Profile Section
               const _ProfileTile(),
+
+              const Divider(),
+
+              // Wellbeing Section
+              _SectionHeader('Bienestar'),
+              const RestDayTile(),
 
               const Divider(),
 

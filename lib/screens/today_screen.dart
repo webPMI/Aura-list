@@ -7,6 +7,7 @@ import '../providers/task_providers.dart';
 import '../core/responsive/breakpoints.dart';
 import '../widgets/task_tile.dart';
 import '../widgets/dialogs/task_form_dialog.dart';
+import '../widgets/rest_day_banner.dart';
 
 /// Focus Mode / Today View.
 ///
@@ -57,6 +58,7 @@ class TodayScreen extends ConsumerWidget {
             children: [
               _TodayProgressHeader(completed: completed, total: total),
               const Divider(height: 1),
+              const RestDayBanner(),
               Expanded(
                 child: total == 0
                     ? _buildEmptyState(colorScheme)

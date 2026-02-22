@@ -31,13 +31,14 @@ class UserPreferencesAdapter extends TypeAdapter<UserPreferences> {
       cloudSyncEnabled: fields[11] as bool,
       firestoreId: fields[12] as String?,
       lastUpdatedAt: fields[13] as DateTime?,
+      restDayOfWeek: fields[14] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserPreferences obj) {
     writer
-      ..writeByte(14)
+      ..writeByte(15)
       ..writeByte(0)
       ..write(obj.odId)
       ..writeByte(1)
@@ -65,7 +66,9 @@ class UserPreferencesAdapter extends TypeAdapter<UserPreferences> {
       ..writeByte(12)
       ..write(obj.firestoreId)
       ..writeByte(13)
-      ..write(obj.lastUpdatedAt);
+      ..write(obj.lastUpdatedAt)
+      ..writeByte(14)
+      ..write(obj.restDayOfWeek);
   }
 
   @override

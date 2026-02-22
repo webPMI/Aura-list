@@ -31,9 +31,9 @@ class NotebookRepository implements INotebookRepository {
     required HiveNotebookStorage localStorage,
     required NotebookSyncService syncService,
     required ErrorHandler errorHandler,
-  })  : _localStorage = localStorage,
-        _syncService = syncService,
-        _errorHandler = errorHandler;
+  }) : _localStorage = localStorage,
+       _syncService = syncService,
+       _errorHandler = errorHandler;
 
   @override
   bool get isInitialized => _initialized;
@@ -73,8 +73,18 @@ class NotebookRepository implements INotebookRepository {
   Future<void> save(dynamic item, String userId) async {
     final notebook = item as Notebook;
     notebook.updatedAt = DateTime.now();
-    await _localStorage.save(notebook);
-    await _syncService.syncToCloudDebounced(notebook, userId);
+    await _localStorage
+        .save(notebook)
+        .handleErrors(
+          type: ErrorType.database,
+          userMessage: 'Error al guardar el cuaderno localmente',
+        );
+    await _syncService
+        .syncToCloudDebounced(notebook, userId)
+        .handleErrorsOrNull(
+          type: ErrorType.network,
+          userMessage: 'Error al programar sincronización del cuaderno',
+        );
   }
 
   @override
@@ -89,9 +99,16 @@ class NotebookRepository implements INotebookRepository {
     // Notebooks use hard delete: eliminar local y en cloud si estaba sincronizado
     final notebook = await _localStorage.get(key);
     if (notebook != null && notebook.firestoreId.isNotEmpty) {
-      await _syncService.deleteFromCloud(notebook.firestoreId, userId);
+      await _syncService
+          .deleteFromCloud(notebook.firestoreId, userId)
+          .handleErrorsOrNull(type: ErrorType.network);
     }
-    await _localStorage.delete(key);
+    await _localStorage
+        .delete(key)
+        .handleErrors(
+          type: ErrorType.database,
+          userMessage: 'Error al eliminar el cuaderno',
+        );
   }
 
   @override
@@ -128,10 +145,7 @@ class NotebookRepository implements INotebookRepository {
     // This would need to be implemented with a note storage reference
     // For now, return notebooks without counts
     final notebooks = await _localStorage.getAll();
-    return notebooks.map((n) => {
-      'notebook': n,
-      'noteCount': 0,
-    }).toList();
+    return notebooks.map((n) => {'notebook': n, 'noteCount': 0}).toList();
   }
 
   @override
@@ -187,7 +201,10 @@ class NotebookRepository implements INotebookRepository {
   }
 
   /// Force sync a specific notebook
-  Future<SyncOperationResult> forceSyncNotebook(Notebook notebook, String userId) async {
+  Future<SyncOperationResult> forceSyncNotebook(
+    Notebook notebook,
+    String userId,
+  ) async {
     return _syncService.syncToCloud(notebook, userId);
   }
 

@@ -16,7 +16,10 @@ import '../widgets/note_editor.dart';
 import 'calendar_screen.dart';
 import 'settings_screen.dart';
 import 'profile_screen.dart';
+import '../features/finance/screens/finance_screen.dart';
+import '../features/finance/widgets/add_transaction_dialog.dart';
 import '../features/guides/providers/guide_onboarding_provider.dart';
+
 import '../features/guides/widgets/guide_intro_modal.dart';
 
 class MainScaffold extends ConsumerStatefulWidget {
@@ -98,6 +101,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     return switch (route) {
       AppRoute.dashboard => const DashboardScreen(),
       AppRoute.tasks => const TasksScreen(),
+      AppRoute.finance => const FinanceScreen(),
       AppRoute.notes => const NotesScreen(),
       AppRoute.calendar => const CalendarScreen(),
       AppRoute.settings => const SettingsScreen(),
@@ -153,6 +157,23 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
         foregroundColor: colorScheme.onTertiary,
         icon: const Icon(Icons.note_add),
         label: const Text('Nueva Nota'),
+      );
+    }
+
+    // Finance: FAB para nueva transaccion
+    if (route == AppRoute.finance) {
+      return FloatingActionButton.extended(
+        onPressed: () {
+          HapticFeedback.mediumImpact();
+          showDialog(
+            context: context,
+            builder: (context) => const AddTransactionDialog(),
+          );
+        },
+        backgroundColor: colorScheme.secondary,
+        foregroundColor: colorScheme.onSecondary,
+        icon: const Icon(Icons.add),
+        label: const Text('Nueva Transaccion'),
       );
     }
 

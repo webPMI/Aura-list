@@ -32,13 +32,14 @@ class NoteCard extends StatelessWidget {
               Icon(
                 Icons.checklist,
                 size: 14,
-                color: textColor.withValues(alpha: 0.6),
+                color: textColor,
               ),
               const SizedBox(width: 4),
               Text(
                 note.checklistProgressText,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: textColor.withValues(alpha: 0.6),
+                      color: textColor,
+                      fontWeight: FontWeight.w600,
                     ),
               ),
             ],
@@ -56,18 +57,18 @@ class NoteCard extends StatelessWidget {
                           ? Icons.check_box
                           : Icons.check_box_outline_blank,
                       size: 14,
-                      color: textColor.withValues(alpha: item.isCompleted ? 0.5 : 0.8),
+                      color: textColor,
                     ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         item.text,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: textColor.withValues(
-                                  alpha: item.isCompleted ? 0.5 : 0.8),
+                              color: textColor,
                               decoration: item.isCompleted
                                   ? TextDecoration.lineThrough
                                   : null,
+                              fontWeight: item.isCompleted ? FontWeight.w300 : FontWeight.w500,
                             ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -100,14 +101,15 @@ class NoteCard extends StatelessWidget {
                 Icon(
                   Icons.format_bold,
                   size: 12,
-                  color: textColor.withValues(alpha: 0.5),
+                  color: textColor,
                 ),
                 const SizedBox(width: 2),
                 Text(
                   'Texto enriquecido',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: textColor.withValues(alpha: 0.5),
+                        color: textColor,
                         fontSize: 10,
+                        fontWeight: FontWeight.w600,
                       ),
                 ),
               ],
@@ -117,7 +119,8 @@ class NoteCard extends StatelessWidget {
           child: Text(
             content,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: textColor.withValues(alpha: 0.8),
+                  color: textColor,
+                  fontWeight: FontWeight.w500,
                 ),
             maxLines: note.isRichText ? maxLines - 1 : maxLines,
             overflow: TextOverflow.ellipsis,
@@ -231,7 +234,7 @@ class NoteCard extends StatelessWidget {
                                 ? Icons.push_pin
                                 : Icons.push_pin_outlined,
                             size: 20,
-                            color: textColor.withValues(alpha: 0.8),
+                            color: textColor,
                           ),
                           onPressed: onTogglePin,
                           tooltip: note.isPinned ? 'Desanclar' : 'Anclar',
@@ -252,7 +255,8 @@ class NoteCard extends StatelessWidget {
                       child: Text(
                         DateFormat('dd MMM', 'es').format(note.updatedAt),
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: textColor.withValues(alpha: 0.8),
+                          color: textColor,
+                          fontWeight: FontWeight.w500,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -267,7 +271,7 @@ class NoteCard extends StatelessWidget {
                         child: Icon(
                           Icons.link,
                           size: 12,
-                          color: textColor.withValues(alpha: 0.8),
+                          color: textColor,
                         ),
                       ),
                       if (note.tags.isNotEmpty)
@@ -280,7 +284,8 @@ class NoteCard extends StatelessWidget {
                           child: Text(
                             note.tags.take(2).join(', ') + (note.tags.length > 2 ? ' +${note.tags.length - 2}' : ''),
                             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: textColor.withValues(alpha: 0.6),
+                              color: textColor,
+                              fontWeight: FontWeight.w500,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -351,7 +356,7 @@ class CompactNoteCard extends StatelessWidget {
             ? Text(
                 note.displayContent,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                  color: colorScheme.onSurfaceVariant,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -359,7 +364,7 @@ class CompactNoteCard extends StatelessWidget {
             : null,
         trailing: Icon(
           Icons.chevron_right,
-          color: colorScheme.onSurface.withValues(alpha: 0.3),
+          color: colorScheme.outline,
         ),
       ),
     );

@@ -31,9 +31,9 @@ class NoteRepository implements INoteRepository {
     required HiveNoteStorage localStorage,
     required NoteSyncService syncService,
     required ErrorHandler errorHandler,
-  })  : _localStorage = localStorage,
-        _syncService = syncService,
-        _errorHandler = errorHandler;
+  }) : _localStorage = localStorage,
+       _syncService = syncService,
+       _errorHandler = errorHandler;
 
   @override
   bool get isInitialized => _initialized;
@@ -73,8 +73,18 @@ class NoteRepository implements INoteRepository {
   Future<void> save(dynamic item, String userId) async {
     final note = item as Note;
     note.updatedAt = DateTime.now();
-    await _localStorage.save(note);
-    await _syncService.syncToCloudDebounced(note, userId);
+    await _localStorage
+        .save(note)
+        .handleErrors(
+          type: ErrorType.database,
+          userMessage: 'Error al guardar la nota localmente',
+        );
+    await _syncService
+        .syncToCloudDebounced(note, userId)
+        .handleErrorsOrNull(
+          type: ErrorType.network,
+          userMessage: 'Error al programar sincronización de nota',
+        );
   }
 
   @override
@@ -92,8 +102,13 @@ class NoteRepository implements INoteRepository {
       note.deletedAt = DateTime.now();
       note.updatedAt = DateTime.now();
       note.status = 'deleted';
-      await note.save();
-      await _syncService.syncToCloudDebounced(note, userId);
+      await note.save().handleErrors(
+        type: ErrorType.database,
+        userMessage: 'Error al eliminar la nota',
+      );
+      await _syncService
+          .syncToCloudDebounced(note, userId)
+          .handleErrorsOrNull(type: ErrorType.network);
     }
   }
 
@@ -243,7 +258,11 @@ class NoteRepository implements INoteRepository {
   }
 
   /// Move note to notebook
-  Future<void> moveToNotebook(dynamic key, String? notebookId, String userId) async {
+  Future<void> moveToNotebook(
+    dynamic key,
+    String? notebookId,
+    String userId,
+  ) async {
     await _localStorage.moveToNotebook(key, notebookId);
     final note = await _localStorage.get(key);
     if (note != null) {

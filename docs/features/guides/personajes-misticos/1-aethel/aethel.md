@@ -16,7 +16,7 @@
 
 Aethel no es simplemente un motivador; es la encarnación de la voluntad necesaria para romper la inercia. En la psicología de AuraList representa el "Arquetipo del Guerrero de la Luz". Su personalidad es expansiva, cálida y magnética, pero posee una severidad sagrada. No tolera la autocomplacencia, pero no castiga, sino que ilumina. Cuando un usuario posterga una tarea importante, Aethel "eleva su temperatura", haciendo que la interfaz brille con una intensidad solar que invita a la acción.
 
-Se comunica con una voz que suena a bronce golpeado rítmicamente. Sus frases son cortas, cargadas de significado y siempre enfocadas en el "ahora". Es el guía que el usuario elige cuando tiene miedo de empezar un proyecto grande o cuando el cansancio mental nubla el propósito. Aethel cree que cada tarea completada es una pequeña victoria que alimenta el fuego del alma, y celebra cada "check" con una explosión visual de partículas doradas que imitan una eyección de masa coronal.
+Se comunica con una voz que suena a bronce golpeado rítmicamente. Sus frases son cortas, cargadas de significado y siempre enfocadas en el "ahora". Es el guía que el usuario elige cuando tiene miedo de empezar un proyecto grande o cuando el cansancio mental nubla el propósito. Aethel cree que cada tarea completada es una pequeña victoria que alimenta el fuego del alma, y celebra cada "check" con una explosión visual de part"../01-aethel"ículas doradas que imitan una eyección de masa coronal.
 
 **Fisonomía Astral (Aspecto)**
 
@@ -79,7 +79,7 @@ Guide(
 ## EXPERIENCIA: Diseño sensorial
 
 - **Paleta:** `#E65100` (primary), `#1A0A00` (secondary), `#FFB300` (accent). Dorados y naranjas solares sobre fondo oscuro.
-- **Háptica:** Al activar guía: vibración corta única (despertar). Al completar tarea crítica: pulsación media + partículas doradas.
+- **Háptica:** Al activar guía: vibración corta única (despertar). Al completar tarea crítica: pulsación media + part"../01-aethel"ículas doradas.
 - **Animaciones:** Partículas doradas tipo eyección de masa coronal al completar tarea; idle: brillo suave en "Horas del Cenit".
 - **Transición:** Entrada con ascenso solar (de abajo a centro); salida con atardecer (naranja a gris).
 - **Particulas/Efectos:** Partículas doradas de densidad media; sin parpadeos agresivos.

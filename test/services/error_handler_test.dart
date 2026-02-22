@@ -69,5 +69,40 @@ void main() {
       expect(counts[ErrorType.network], 1);
       expect(counts[ErrorType.database], 0);
     });
+    test('handle supports actionLabel and onAction', () {
+      bool actionCalled = false;
+      errorHandler.handle(
+        'Error',
+        actionLabel: 'RETRY',
+        onAction: () => actionCalled = true,
+      );
+
+      final error = errorHandler.lastError!;
+      expect(error.actionLabel, 'RETRY');
+      expect(error.onAction, isNotNull);
+
+      error.onAction!();
+      expect(actionCalled, true);
+    });
+
+    test('toAppException preserves action data', () {
+      bool actionCalled = false;
+      final error = AppError(
+        originalError: 'Test',
+        type: ErrorType.unknown,
+        severity: ErrorSeverity.error,
+        message: 'Test message',
+        actionLabel: 'RETRY',
+        onAction: () => actionCalled = true,
+      );
+
+      final exception = errorHandler.toAppException(error);
+      expect(exception.message, contains('Test message'));
+
+      if (error.onAction != null) {
+        error.onAction!();
+        expect(actionCalled, true);
+      }
+    });
   });
 }

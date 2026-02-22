@@ -113,7 +113,7 @@ class _TaskListState extends ConsumerState<TaskList> {
             Icon(
               Icons.filter_list_off_rounded,
               size: 64,
-              color: colorScheme.onSurface.withValues(alpha: 0.15),
+              color: colorScheme.outlineVariant,
             ),
             const SizedBox(height: 16),
             Text(
@@ -121,7 +121,7 @@ class _TaskListState extends ConsumerState<TaskList> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
-                color: colorScheme.onSurface.withValues(alpha: 0.65),
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 8),
@@ -145,7 +145,7 @@ class _TaskListState extends ConsumerState<TaskList> {
             Icon(
               Icons.search_off_rounded,
               size: 64,
-              color: colorScheme.onSurface.withValues(alpha: 0.1),
+              color: colorScheme.outlineVariant,
             ),
             const SizedBox(height: 16),
             Text(
@@ -153,7 +153,7 @@ class _TaskListState extends ConsumerState<TaskList> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
-                color: colorScheme.onSurface.withValues(alpha: 0.65),
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 8),
@@ -161,7 +161,7 @@ class _TaskListState extends ConsumerState<TaskList> {
               'No se encontraron tareas para "${widget.searchQuery}"',
               style: TextStyle(
                 fontSize: 14,
-                color: colorScheme.onSurface.withValues(alpha: 0.65),
+                color: colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
@@ -177,7 +177,7 @@ class _TaskListState extends ConsumerState<TaskList> {
           Icon(
             Icons.checklist_rtl_rounded,
             size: 64,
-            color: colorScheme.onSurface.withValues(alpha: 0.1),
+            color: colorScheme.outlineVariant,
           ),
           const SizedBox(height: 16),
           Text(
@@ -189,7 +189,7 @@ class _TaskListState extends ConsumerState<TaskList> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w500,
-              color: colorScheme.onSurface.withValues(alpha: 0.65),
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
@@ -197,7 +197,7 @@ class _TaskListState extends ConsumerState<TaskList> {
             '¡Toca el botón + para empezar!',
             style: TextStyle(
               fontSize: 14,
-              color: colorScheme.onSurface.withValues(alpha: 0.65),
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -346,7 +346,7 @@ class _FilterChipItem extends StatelessWidget {
             decoration: BoxDecoration(
               color: selected
                   ? Colors.white.withValues(alpha: 0.3)
-                  : colorScheme.onSurface.withValues(alpha: 0.08),
+                  : colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -356,7 +356,7 @@ class _FilterChipItem extends StatelessWidget {
                 fontWeight: FontWeight.bold,
                 color: selected
                     ? Colors.white
-                    : colorScheme.onSurface.withValues(alpha: 0.7),
+                    : colorScheme.onSurface,
               ),
             ),
           ),

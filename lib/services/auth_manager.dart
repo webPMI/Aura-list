@@ -235,7 +235,18 @@ class AuthManager {
 
       final user = currentUser;
       if (user != null) {
-        await _dbService.performFullSync(user.uid);
+        final result = await _dbService.performFullSync(user.uid);
+        if (result.hasErrors) {
+          _logger.warning(
+            'AuthManager',
+            'Sync activado pero con errores: ${result.errors} errores',
+          );
+          ErrorHandler().handle(
+            Exception('Error al sincronizar datos'),
+            type: ErrorType.network,
+            message: 'La sincronización se activó pero hubo problemas al sincronizar algunos datos',
+          );
+        }
       }
 
       _logger.info(
@@ -244,18 +255,42 @@ class AuthManager {
       );
     } catch (e) {
       _logger.error('AuthManager', 'Error al activar sync', error: e);
+      ErrorHandler().handle(
+        e,
+        type: ErrorType.network,
+        message: 'No se pudo activar la sincronización en la nube',
+      );
     }
   }
 
   /// Activa o desactiva la sincronizacion manualmente
   Future<void> setSyncEnabled(bool enabled) async {
-    await _dbService.setCloudSyncEnabled(enabled);
+    try {
+      await _dbService.setCloudSyncEnabled(enabled);
 
-    if (enabled) {
-      final user = currentUser;
-      if (user != null) {
-        await _dbService.performFullSync(user.uid);
+      if (enabled) {
+        final user = currentUser;
+        if (user != null) {
+          final result = await _dbService.performFullSync(user.uid);
+          if (result.hasErrors) {
+            ErrorHandler().handle(
+              Exception('Error al sincronizar datos'),
+              type: ErrorType.network,
+              message: 'Sincronización activada pero algunos datos no se sincronizaron correctamente',
+            );
+          }
+        }
       }
+    } catch (e) {
+      _logger.error('AuthManager', 'Error al cambiar sync enabled', error: e);
+      ErrorHandler().handle(
+        e,
+        type: ErrorType.network,
+        message: enabled
+            ? 'No se pudo activar la sincronización'
+            : 'No se pudo desactivar la sincronización',
+      );
+      rethrow; // Re-throw so UI can handle it
     }
   }
 

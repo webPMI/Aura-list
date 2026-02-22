@@ -39,28 +39,15 @@ final authInitializationProvider = FutureProvider<void>((ref) async {
       return;
     }
 
-    if (authService.currentUser == null) {
-      LoggerService().info(
-        'AuthInit',
-        'No hay usuario, intentando login anonimo...',
-      );
-      final result = await authService.signInAnonymously();
-      if (result != null) {
-        LoggerService().info(
-          'AuthInit',
-          'Login anonimo exitoso: ${result.user?.uid}',
-        );
-      } else {
-        LoggerService().warning(
-          'AuthInit',
-          'Login anonimo omitido (Firebase no disponible o error)',
-        );
-        LoggerService().info('AuthInit', 'App funcionara en modo local');
-      }
-    } else {
+    if (authService.currentUser != null) {
       LoggerService().info(
         'AuthInit',
         'Usuario ya autenticado: ${authService.currentUser?.uid}',
+      );
+    } else {
+      LoggerService().info(
+        'AuthInit',
+        'No hay usuario, la app funcionará en modo local.',
       );
     }
   } catch (e) {

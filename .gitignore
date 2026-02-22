@@ -76,3 +76,33 @@ app.*.map.json
 nul
 test_output.txt
 test_stderr.txt
+firebase-service-account.json
+CREDENCIALES_ADMIN.txt
+
+# Admin scripts and sensitive files (do not commit)
+*-admin*.js
+delete-all-*.js
+setup-admins.*
+create-admins*.js
+add-admins.js
+CREDENCIALES*.txt
+DESCARGAR_KEY*.md
+INSTRUCCIONES_SERVICE*.md
+LIMPIAR_USUARIOS*.md
+
+# Temporary Python scripts
+*.pyc
+__pycache__/
+
+# Node modules
+node_modules/
+package-lock.json
+
+# Temporary user exports
+users.json
+temp-users.json
+verify-users.json
+user-uids.txt
+
+# Docker compose files (if sensitive)
+# docker-compose*.yml

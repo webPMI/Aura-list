@@ -12,6 +12,8 @@ import 'providers/theme_provider.dart';
 import 'services/auth_service.dart';
 import 'services/database_service.dart';
 import 'services/logger_service.dart';
+import 'features/guides/services/avatar_preload_service.dart';
+import 'widgets/global_error_listener.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -64,7 +66,23 @@ class _ChecklistAppState extends ConsumerState<ChecklistApp> {
     // The AuthService will handle Firebase availability internally
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeAuth();
+      _preloadAvatars();
     });
+  }
+
+  /// Preload available guide avatars for better performance
+  Future<void> _preloadAvatars() async {
+    try {
+      await AvatarPreloadService.instance.preloadAvailableAvatars(context);
+      final stats = AvatarPreloadService.instance.getStats();
+      _logger.info(
+        'AvatarPreload',
+        'Avatares precargados: ${stats.preloaded} de ${stats.total}',
+      );
+    } catch (e) {
+      _logger.error('AvatarPreload', 'Error al precargar avatares', error: e);
+      // Non-critical - app continues without preload optimization
+    }
   }
 
   Future<void> _initializeAuth() async {
@@ -89,27 +107,7 @@ class _ChecklistAppState extends ConsumerState<ChecklistApp> {
       }
 
       final currentUser = authService.currentUser;
-
-      if (currentUser == null) {
-        _logger.info(
-          'AuthInit',
-          'No hay usuario autenticado, iniciando sesion anonima...',
-        );
-        final result = await authService.signInAnonymously();
-        if (result != null) {
-          _logger.info(
-            'AuthInit',
-            'Usuario anonimo creado correctamente: ${result.user?.uid}',
-          );
-          // Perform initial sync after new login
-          _performInitialSync(result.user?.uid);
-        } else {
-          _logger.warning(
-            'AuthInit',
-            'Login anonimo omitido - app funcionara en modo local',
-          );
-        }
-      } else {
+      if (currentUser != null) {
         _logger.info(
           'AuthInit',
           'Usuario ya autenticado: ${currentUser.uid}',
@@ -120,6 +118,11 @@ class _ChecklistAppState extends ConsumerState<ChecklistApp> {
         );
         // Perform sync for existing user
         _performInitialSync(currentUser.uid);
+      } else {
+        _logger.info(
+          'AuthInit',
+          'No hay usuario autenticado. La app funcionará en modo local hasta que el usuario inicie sesión.',
+        );
       }
     } catch (e) {
       _logger.error('AuthInit', 'Error al inicializar autenticacion', error: e);
@@ -163,36 +166,45 @@ class _ChecklistAppState extends ConsumerState<ChecklistApp> {
   Widget build(BuildContext context) {
     final themeMode = ref.watch(themeProvider);
 
-    return MaterialApp(
-      title: 'AuraList',
-      debugShowCheckedModeBanner: false,
-      themeMode: themeMode,
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        FlutterQuillLocalizations.delegate,
-      ],
-      supportedLocales: const [Locale('en', ''), Locale('es', '')],
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6750A4),
-          brightness: Brightness.light,
+    return GlobalErrorListener(
+      child: MaterialApp(
+        title: 'AuraList',
+
+        debugShowCheckedModeBanner: false,
+        themeMode: themeMode,
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+          FlutterQuillLocalizations.delegate,
+        ],
+        supportedLocales: const [Locale('en', ''), Locale('es', '')],
+        theme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF6750A4),
+            brightness: Brightness.light,
+          ),
+          textTheme: GoogleFonts.outfitTextTheme(),
+          cardTheme: const CardThemeData(
+            elevation: 2,
+            margin: EdgeInsets.all(8),
+          ),
         ),
-        textTheme: GoogleFonts.outfitTextTheme(),
-        cardTheme: const CardThemeData(elevation: 2, margin: EdgeInsets.all(8)),
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFD0BCFF),
-          brightness: Brightness.dark,
+        darkTheme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFFD0BCFF),
+            brightness: Brightness.dark,
+          ),
+          textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
+          cardTheme: const CardThemeData(
+            elevation: 2,
+            margin: EdgeInsets.all(8),
+          ),
         ),
-        textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
-        cardTheme: const CardThemeData(elevation: 2, margin: EdgeInsets.all(8)),
+        home: const AppRouter(),
       ),
-      home: const AppRouter(),
     );
   }
 }

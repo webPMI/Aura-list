@@ -275,7 +275,7 @@ class TaskTile extends ConsumerWidget {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: colorScheme.onSurface.withValues(alpha: 0.2),
+                      color: colorScheme.outlineVariant,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -286,7 +286,7 @@ class TaskTile extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface.withValues(alpha: 0.7),
+                    color: colorScheme.onSurfaceVariant,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -299,7 +299,7 @@ class TaskTile extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: colorScheme.onSurface.withValues(alpha: 0.45),
+                    color: colorScheme.outline,
                     letterSpacing: 0.8,
                   ),
                 ),
@@ -342,7 +342,7 @@ class TaskTile extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: colorScheme.onSurface.withValues(alpha: 0.45),
+                    color: colorScheme.outline,
                     letterSpacing: 0.8,
                   ),
                 ),
@@ -588,7 +588,7 @@ class TaskTile extends ConsumerWidget {
               fontSize: 16,
               decoration: task.isCompleted ? TextDecoration.lineThrough : null,
               color: task.isCompleted
-                  ? colorScheme.onSurface.withValues(alpha:0.5)
+                  ? colorScheme.outline
                   : colorScheme.onSurface,
             ),
             maxLines: 2,
@@ -620,7 +620,7 @@ class TaskTile extends ConsumerWidget {
                           TaskConstants.getPriorityLabel(task.priority),
                           style: TextStyle(
                             fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w900,
                             color: TaskConstants.getPriorityColor(task.priority),
                           ),
                         ),
@@ -632,7 +632,7 @@ class TaskTile extends ConsumerWidget {
                         task.category,
                         style: TextStyle(
                           fontSize: 11,
-                          color: colorScheme.onSurface.withValues(alpha:0.6),
+                          color: colorScheme.onSurfaceVariant,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -648,7 +648,7 @@ class TaskTile extends ConsumerWidget {
                               size: 11,
                               color: _isDueDatePast(task.dueDate!)
                                   ? Colors.redAccent
-                                  : colorScheme.onSurface.withValues(alpha:0.6),
+                                  : colorScheme.onSurfaceVariant,
                             ),
                             const SizedBox(width: 3),
                             Flexible(
@@ -658,7 +658,7 @@ class TaskTile extends ConsumerWidget {
                                   fontSize: 10,
                                   color: _isDueDatePast(task.dueDate!)
                                       ? Colors.redAccent
-                                      : colorScheme.onSurface.withValues(alpha:0.6),
+                                      : colorScheme.onSurfaceVariant,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -676,7 +676,7 @@ class TaskTile extends ConsumerWidget {
                             Icon(
                               Icons.access_time,
                               size: 11,
-                              color: colorScheme.onSurface.withValues(alpha:0.6),
+                              color: colorScheme.onSurfaceVariant,
                             ),
                             const SizedBox(width: 3),
                             Flexible(
@@ -684,7 +684,7 @@ class TaskTile extends ConsumerWidget {
                                 TimeUtils.formatMinutes(task.dueTimeMinutes!),
                                 style: TextStyle(
                                   fontSize: 10,
-                                  color: colorScheme.onSurface.withValues(alpha:0.6),
+                                  color: colorScheme.onSurfaceVariant,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -758,7 +758,7 @@ class TaskTile extends ConsumerWidget {
                           style: TextStyle(
                             fontSize: 11,
                             fontStyle: FontStyle.italic,
-                            color: colorScheme.onSurface.withValues(alpha: 0.6),
+                            color: colorScheme.onSurfaceVariant,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

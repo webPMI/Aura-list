@@ -1,6 +1,6 @@
-
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/exceptions/app_exceptions.dart';
@@ -8,21 +8,9 @@ import 'logger_service.dart';
 
 export '../core/exceptions/app_exceptions.dart';
 
-enum ErrorType {
-  database,
-  network,
-  auth,
-  validation,
-  sync,
-  unknown,
-}
+enum ErrorType { database, network, auth, validation, sync, unknown }
 
-enum ErrorSeverity {
-  info,
-  warning,
-  error,
-  critical,
-}
+enum ErrorSeverity { info, warning, error, critical }
 
 class AppError {
   final ErrorType type;
@@ -33,6 +21,8 @@ class AppError {
   final StackTrace? stackTrace;
   final DateTime timestamp;
   final bool isRetryable;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   AppError({
     required this.type,
@@ -42,6 +32,8 @@ class AppError {
     this.originalError,
     this.stackTrace,
     bool? isRetryable,
+    this.actionLabel,
+    this.onAction,
   }) : timestamp = DateTime.now(),
        isRetryable = isRetryable ?? _defaultIsRetryable(type, originalError);
 
@@ -158,14 +150,16 @@ class ErrorHandler {
 
   final List<AppError> _errorHistory = [];
   final StreamController<AppError> _errorStream = StreamController.broadcast();
-  final StreamController<AppException> _appExceptionStream = StreamController.broadcast();
+  final StreamController<AppException> _appExceptionStream =
+      StreamController.broadcast();
   final LoggerService _logger = LoggerService();
   static const String _tag = 'ErrorHandler';
 
   Stream<AppError> get errorStream => _errorStream.stream;
   Stream<AppException> get appExceptionStream => _appExceptionStream.stream;
   List<AppError> get errorHistory => List.unmodifiable(_errorHistory);
-  AppError? get lastError => _errorHistory.isNotEmpty ? _errorHistory.last : null;
+  AppError? get lastError =>
+      _errorHistory.isNotEmpty ? _errorHistory.last : null;
   AppException? get lastAppException => lastError?.toAppException();
 
   AppError handle(
@@ -176,6 +170,8 @@ class ErrorHandler {
     String? userMessage,
     StackTrace? stackTrace,
     bool shouldLog = true,
+    String? actionLabel,
+    VoidCallback? onAction,
   }) {
     final appError = _createAppError(
       error,
@@ -184,6 +180,8 @@ class ErrorHandler {
       message: message,
       userMessage: userMessage,
       stackTrace: stackTrace,
+      actionLabel: actionLabel,
+      onAction: onAction,
     );
 
     _errorHistory.add(appError);
@@ -231,6 +229,8 @@ class ErrorHandler {
     String? message,
     String? userMessage,
     StackTrace? stackTrace,
+    String? actionLabel,
+    VoidCallback? onAction,
   }) {
     // Si el error es un AppException, extraer informacion
     if (error is AppException) {
@@ -243,6 +243,8 @@ class ErrorHandler {
         originalError: error,
         stackTrace: stackTrace ?? error.stackTrace,
         isRetryable: error.isRetryable,
+        actionLabel: actionLabel,
+        onAction: onAction,
       );
     }
 
@@ -257,6 +259,8 @@ class ErrorHandler {
       userMessage: userMessage,
       originalError: error,
       stackTrace: stackTrace,
+      actionLabel: actionLabel,
+      onAction: onAction,
     );
   }
 
@@ -272,7 +276,8 @@ class ErrorHandler {
 
   ErrorType _detectErrorType(dynamic error) {
     if (error is FirebaseException) {
-      if (error.code == 'permission-denied' || error.code == 'unauthenticated') {
+      if (error.code == 'permission-denied' ||
+          error.code == 'unauthenticated') {
         return ErrorType.auth;
       }
       if (error.code == 'unavailable' || error.code == 'deadline-exceeded') {
@@ -405,7 +410,9 @@ class ErrorHandler {
 
   Map<ErrorType, int> getErrorCountsByType({int hours = 24}) {
     final cutoff = DateTime.now().subtract(Duration(hours: hours));
-    final recentErrors = _errorHistory.where((e) => e.timestamp.isAfter(cutoff));
+    final recentErrors = _errorHistory.where(
+      (e) => e.timestamp.isAfter(cutoff),
+    );
 
     final counts = <ErrorType, int>{};
     for (final type in ErrorType.values) {
@@ -441,6 +448,8 @@ extension ErrorHandlerExtension on dynamic {
     String? message,
     String? userMessage,
     StackTrace? stackTrace,
+    String? actionLabel,
+    VoidCallback? onAction,
   }) {
     ErrorHandler().handle(
       this,
@@ -449,6 +458,8 @@ extension ErrorHandlerExtension on dynamic {
       message: message,
       userMessage: userMessage,
       stackTrace: stackTrace,
+      actionLabel: actionLabel,
+      onAction: onAction,
     );
   }
 }
@@ -459,6 +470,8 @@ extension FutureErrorHandlerExtension<T> on Future<T> {
     ErrorSeverity severity = ErrorSeverity.error,
     String? message,
     String? userMessage,
+    String? actionLabel,
+    VoidCallback? onAction,
   }) async {
     try {
       return await this;
@@ -470,6 +483,8 @@ extension FutureErrorHandlerExtension<T> on Future<T> {
         message: message,
         userMessage: userMessage,
         stackTrace: stack,
+        actionLabel: actionLabel,
+        onAction: onAction,
       );
       rethrow;
     }
@@ -480,6 +495,8 @@ extension FutureErrorHandlerExtension<T> on Future<T> {
     ErrorSeverity severity = ErrorSeverity.error,
     String? message,
     String? userMessage,
+    String? actionLabel,
+    VoidCallback? onAction,
   }) async {
     try {
       return await this;
@@ -491,6 +508,8 @@ extension FutureErrorHandlerExtension<T> on Future<T> {
         message: message,
         userMessage: userMessage,
         stackTrace: stack,
+        actionLabel: actionLabel,
+        onAction: onAction,
       );
       return null;
     }

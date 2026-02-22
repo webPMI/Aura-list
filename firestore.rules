@@ -7,6 +7,11 @@ rules_version = '2';
 // - users/{userId}/tasks/{taskId}
 // - users/{userId}/notes/{noteId}
 // - users/{userId}/preferences/{prefId}
+// - users/{userId}/transactions/{transactionId} (Finance)
+// - users/{userId}/categories/{categoryId} (Finance)
+// - public/guides/{guideId} (Read-only for all, write for admins)
+// - public/wellness/{categoryId}/{suggestionId} (Read-only for all, write for admins)
+// - admins/{userId} (Admin user registry)
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -18,6 +23,13 @@ service cloud.firestore {
     // Helper function to check if user owns the document
     function isOwner(userId) {
       return request.auth.uid == userId;
+    }
+
+    // Helper function to check if user is an admin
+    function isAdmin() {
+      // Check if the user is in the admins collection
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
     // Helper function to validate task data
@@ -47,6 +59,51 @@ service cloud.firestore {
         // Optional soft delete fields
         && (!('deleted' in data.keys()) || data.deleted is bool)
         && (!('deletedAt' in data.keys()) || data.deletedAt is string);
+    }
+
+    // Helper function to validate transaction data
+    function isValidTransaction() {
+      let data = request.resource.data;
+      return data.title is string
+        && data.title.size() > 0
+        && data.amount is number
+        && data.amount > 0
+        && data.type in ['expense', 'income']
+        && data.categoryId is string
+        // Optional fields
+        && (!('deleted' in data.keys()) || data.deleted is bool)
+        && (!('deletedAt' in data.keys()) || data.deletedAt is string);
+    }
+
+    // Helper function to validate finance category data
+    function isValidFinanceCategory() {
+      let data = request.resource.data;
+      return data.id is string
+        && data.name is string
+        && data.type in ['expense', 'income']
+        && data.icon is string
+        && data.color is string;
+    }
+
+    // Helper function to validate guide data
+    function isValidGuide() {
+      let data = request.resource.data;
+      return data.id is string
+        && data.name is string
+        && data.title is string
+        && data.affinity is string
+        && data.themePrimaryHex is string;
+    }
+
+    // Helper function to validate wellness data
+    function isValidWellness() {
+      let data = request.resource.data;
+      return data.id is string
+        && data.title is string
+        && data.description is string
+        && data.category is string
+        && data.durationMinutes is number
+        && data.durationMinutes > 0;
     }
 
     // User document rules
@@ -83,6 +140,68 @@ service cloud.firestore {
         allow read: if isAuthenticated() && isOwner(userId);
         allow write: if isAuthenticated() && isOwner(userId);
       }
+
+      // Finance transactions subcollection
+      match /transactions/{transactionId} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow create: if isAuthenticated() && isOwner(userId) && isValidTransaction();
+        allow update: if isAuthenticated() && isOwner(userId) && isValidTransaction();
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
+
+      // Finance categories subcollection
+      match /categories/{categoryId} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow create: if isAuthenticated() && isOwner(userId) && isValidFinanceCategory();
+        allow update: if isAuthenticated() && isOwner(userId) && isValidFinanceCategory();
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
+    }
+
+    // ==================== PUBLIC DATA (Read for all authenticated, Write for admins only) ====================
+
+    // Public guides collection
+    match /public/guides/{guideId} {
+      // All authenticated users can read
+      allow read: if isAuthenticated();
+      // Only admins can create, update, or delete
+      allow create, update: if isAdmin() && isValidGuide();
+      allow delete: if isAdmin();
+    }
+
+    // Public wellness suggestions
+    match /public/wellness/{categoryId}/{suggestionId} {
+      // All authenticated users can read
+      allow read: if isAuthenticated();
+      // Only admins can create, update, or delete
+      allow create, update: if isAdmin() && isValidWellness();
+      allow delete: if isAdmin();
+    }
+
+    // Public wellness categories
+    match /public/wellness/categories/{categoryId} {
+      // All authenticated users can read
+      allow read: if isAuthenticated();
+      // Only admins can create, update, or delete
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Public resources (prompts, tips, updates, etc.)
+    match /public/resources/{resourceId=**} {
+      // All authenticated users can read
+      allow read: if isAuthenticated();
+      // Only admins can create, update, or delete
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ==================== ADMIN COLLECTION ====================
+
+    // Admin users registry
+    match /admins/{userId} {
+      // All authenticated users can read (to check if someone is admin)
+      allow read: if isAuthenticated();
+      // Only admins can add/modify/remove admin users
+      allow write: if isAdmin();
     }
 
     // Deny all other access

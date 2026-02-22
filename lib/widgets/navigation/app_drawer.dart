@@ -46,10 +46,16 @@ class AppDrawer extends ConsumerWidget {
           label: Text('Mis Tareas'),
         ),
         const NavigationDrawerDestination(
+          icon: Icon(Icons.payments_outlined),
+          selectedIcon: Icon(Icons.payments),
+          label: Text('Finanzas'),
+        ),
+        const NavigationDrawerDestination(
           icon: Icon(Icons.note_outlined),
           selectedIcon: Icon(Icons.note),
           label: Text('Notas'),
         ),
+
         const NavigationDrawerDestination(
           icon: Icon(Icons.calendar_today_outlined),
           selectedIcon: Icon(Icons.calendar_today),
@@ -71,9 +77,7 @@ class AppDrawer extends ConsumerWidget {
               onNavigate?.call();
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => const TodayScreen(),
-                ),
+                MaterialPageRoute(builder: (_) => const TodayScreen()),
               );
             },
           ),
@@ -98,9 +102,7 @@ class AppDrawer extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _AnimatedListTile(
             leading: Icon(
-              themeMode == ThemeMode.dark
-                  ? Icons.dark_mode
-                  : Icons.light_mode,
+              themeMode == ThemeMode.dark ? Icons.dark_mode : Icons.light_mode,
             ),
             title: const Text('Tema'),
             subtitle: Text(
@@ -109,8 +111,7 @@ class AppDrawer extends ConsumerWidget {
             ),
             trailing: Switch(
               value: themeMode == ThemeMode.dark,
-              onChanged: (_) =>
-                  ref.read(themeProvider.notifier).toggleTheme(),
+              onChanged: (_) => ref.read(themeProvider.notifier).toggleTheme(),
             ),
             onTap: () => ref.read(themeProvider.notifier).toggleTheme(),
           ),
@@ -139,10 +140,7 @@ class AppDrawer extends ConsumerWidget {
         // Profile Section
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          child: _SectionHeader(
-            icon: Icons.person_outline,
-            title: 'Perfil',
-          ),
+          child: _SectionHeader(icon: Icons.person_outline, title: 'Perfil'),
         ),
 
         // Account Section
@@ -153,10 +151,7 @@ class AppDrawer extends ConsumerWidget {
         // About Section
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          child: _SectionHeader(
-            icon: Icons.info_outline,
-            title: 'Acerca de',
-          ),
+          child: _SectionHeader(icon: Icons.info_outline, title: 'Acerca de'),
         ),
 
         _AboutSection(),
@@ -198,10 +193,7 @@ class _SectionHeader extends StatelessWidget {
   final IconData icon;
   final String title;
 
-  const _SectionHeader({
-    required this.icon,
-    required this.title,
-  });
+  const _SectionHeader({required this.icon, required this.title});
 
   @override
   Widget build(BuildContext context) {
@@ -211,11 +203,7 @@ class _SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          Icon(
-            icon,
-            size: 16,
-            color: colorScheme.primary,
-          ),
+          Icon(icon, size: 16, color: colorScheme.primary),
           const SizedBox(width: 8),
           Text(
             title,
@@ -344,8 +332,10 @@ class _DrawerHeader extends ConsumerWidget {
                               ),
                             ),
                             Text(
-                              DateFormat('EEEE, d MMM', 'es_ES')
-                                  .format(DateTime.now()),
+                              DateFormat(
+                                'EEEE, d MMM',
+                                'es_ES',
+                              ).format(DateTime.now()),
                               style: TextStyle(
                                 fontSize: 11,
                                 color: Colors.white.withValues(alpha: 0.8),
@@ -407,7 +397,9 @@ class _DrawerHeader extends ConsumerWidget {
                             child: LinearProgressIndicator(
                               value: progressPercent,
                               minHeight: 6,
-                              backgroundColor: Colors.white.withValues(alpha: 0.2),
+                              backgroundColor: Colors.white.withValues(
+                                alpha: 0.2,
+                              ),
                               color: Colors.white,
                             ),
                           ),
@@ -502,24 +494,21 @@ class _SyncStatusTile extends ConsumerWidget {
                     ),
                   )
                 : syncCount > 0
-                    ? Badge(
-                        label: Text('$syncCount'),
-                        backgroundColor: colorScheme.error,
-                        child: Icon(
-                          Icons.cloud_upload_outlined,
-                          color: colorScheme.onSurface,
-                        ),
-                      )
-                    : Icon(
-                        Icons.cloud_done_outlined,
-                        color: Colors.green.shade600,
-                      ),
+                ? Badge(
+                    label: Text('$syncCount'),
+                    backgroundColor: colorScheme.error,
+                    child: Icon(
+                      Icons.cloud_upload_outlined,
+                      color: colorScheme.onSurface,
+                    ),
+                  )
+                : Icon(Icons.cloud_done_outlined, color: Colors.green.shade600),
             title: Text(
               syncCount > 0
                   ? 'Sincronizacion'
                   : isSyncing
-                      ? 'Verificando...'
-                      : 'Todo sincronizado',
+                  ? 'Verificando...'
+                  : 'Todo sincronizado',
             ),
             subtitle: syncCount > 0
                 ? Text(
@@ -601,10 +590,7 @@ class _AccountSection extends ConsumerWidget {
             ),
             title: Text(
               userName,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
             ),
@@ -628,8 +614,8 @@ class _AccountSection extends ConsumerWidget {
                         user?.isAnonymous == true
                             ? 'Solo en este dispositivo'
                             : user != null
-                                ? 'Sincronizado en la nube'
-                                : 'Sin conexion',
+                            ? 'Sincronizado en la nube'
+                            : 'Sin conexion',
                         style: TextStyle(
                           fontSize: 12,
                           color: colorScheme.onSurface.withValues(alpha: 0.7),
@@ -752,18 +738,11 @@ class _AboutSection extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              colorScheme.primary,
-              colorScheme.secondary,
-            ],
+            colors: [colorScheme.primary, colorScheme.secondary],
           ),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: const Icon(
-          Icons.check_circle,
-          size: 32,
-          color: Colors.white,
-        ),
+        child: const Icon(Icons.check_circle, size: 32, color: Colors.white),
       ),
       applicationLegalese: '© 2026 AuraList',
       children: [
