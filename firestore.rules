@@ -6,9 +6,15 @@ rules_version = '2';
 // Structure:
 // - users/{userId}/tasks/{taskId}
 // - users/{userId}/notes/{noteId}
+// - users/{userId}/notebooks/{notebookId}
 // - users/{userId}/preferences/{prefId}
 // - users/{userId}/transactions/{transactionId} (Finance)
 // - users/{userId}/categories/{categoryId} (Finance)
+// - users/{userId}/recurringTransactions/{docId} (Finance - Auto-repeating transactions)
+// - users/{userId}/budgets/{docId} (Finance - Category budgets with alerts)
+// - users/{userId}/cashFlowProjections/{docId} (Finance - Future balance predictions)
+// - users/{userId}/taskFinanceLinks/{docId} (Finance - Task-finance associations)
+// - users/{userId}/financeAlerts/{docId} (Finance - Budget and anomaly alerts)
 // - public/guides/{guideId} (Read-only for all, write for admins)
 // - public/wellness/{categoryId}/{suggestionId} (Read-only for all, write for admins)
 // - admins/{userId} (Admin user registry)
@@ -154,6 +160,50 @@ service cloud.firestore {
         allow read: if isAuthenticated() && isOwner(userId);
         allow create: if isAuthenticated() && isOwner(userId) && isValidFinanceCategory();
         allow update: if isAuthenticated() && isOwner(userId) && isValidFinanceCategory();
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
+
+      // Recurring transactions subcollection
+      match /recurringTransactions/{docId} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow write: if isAuthenticated() && isOwner(userId);
+        // Allow shared access if user is in sharedWith array
+        allow read: if isAuthenticated() &&
+                      exists(/databases/$(database)/documents/users/$(userId)) &&
+                      request.auth.uid in get(/databases/$(database)/documents/users/$(userId)).data.sharedWith;
+      }
+
+      // Budgets subcollection
+      match /budgets/{docId} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow write: if isAuthenticated() && isOwner(userId);
+        // Allow shared access if user is in sharedWith array
+        allow read: if isAuthenticated() &&
+                      exists(/databases/$(database)/documents/users/$(userId)) &&
+                      request.auth.uid in get(/databases/$(database)/documents/users/$(userId)).data.sharedWith;
+      }
+
+      // Cash flow projections subcollection
+      match /cashFlowProjections/{docId} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow create: if isAuthenticated() && isOwner(userId);
+        allow update: if isAuthenticated() && isOwner(userId);
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
+
+      // Task finance links subcollection
+      match /taskFinanceLinks/{docId} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow create: if isAuthenticated() && isOwner(userId);
+        allow update: if isAuthenticated() && isOwner(userId);
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
+
+      // Finance alerts subcollection
+      match /financeAlerts/{docId} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow create: if isAuthenticated() && isOwner(userId);
+        allow update: if isAuthenticated() && isOwner(userId);
         allow delete: if isAuthenticated() && isOwner(userId);
       }
     }

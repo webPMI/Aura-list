@@ -6,13 +6,14 @@ import '../services/auth_service.dart';
 import '../services/error_handler.dart';
 import 'navigation_provider.dart';
 import '../services/logger_service.dart';
+import '../services/task_finance_integration_service.dart';
 
 final tasksProvider = StateNotifierProvider.family
     .autoDispose<TaskNotifier, List<Task>, String>((ref, type) {
       final dbService = ref.read(databaseServiceProvider);
       final authService = ref.read(authServiceProvider);
       final errorHandler = ref.read(errorHandlerProvider);
-      return TaskNotifier(dbService, authService, errorHandler, type);
+      return TaskNotifier(dbService, authService, errorHandler, type, ref);
     });
 
 class TaskNotifier extends StateNotifier<List<Task>> {
@@ -20,10 +21,16 @@ class TaskNotifier extends StateNotifier<List<Task>> {
   final AuthService _auth;
   final ErrorHandler _errorHandler;
   final String _type;
+  final Ref _ref;
   StreamSubscription? _subscription;
 
-  TaskNotifier(this._db, this._auth, this._errorHandler, this._type)
-    : super([]) {
+  TaskNotifier(
+    this._db,
+    this._auth,
+    this._errorHandler,
+    this._type,
+    this._ref,
+  ) : super([]) {
     _init();
   }
 

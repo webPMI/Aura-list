@@ -12,6 +12,12 @@ import '../models/sync_metadata.dart';
 import '../models/guide_achievement_model.dart';
 import '../features/finance/models/finance_category.dart';
 import '../features/finance/models/transaction.dart';
+import '../features/finance/models/recurring_transaction.dart';
+import '../features/finance/models/budget.dart';
+import '../features/finance/models/cash_flow_projection.dart';
+import '../features/finance/models/finance_alert.dart';
+import '../features/finance/models/task_finance_link.dart';
+import '../features/finance/models/finance_enums.dart';
 import '../core/cache/cache_policy.dart';
 import 'error_handler.dart';
 import 'hive_integrity_checker.dart';
@@ -175,6 +181,42 @@ class DatabaseService {
       }
       if (!Hive.isAdapterRegistered(16)) {
         Hive.registerAdapter(TransactionAdapter());
+      }
+      if (!Hive.isAdapterRegistered(17)) {
+        Hive.registerAdapter(RecurringTransactionAdapter());
+      }
+      if (!Hive.isAdapterRegistered(18)) {
+        Hive.registerAdapter(BudgetAdapter());
+      }
+      if (!Hive.isAdapterRegistered(19)) {
+        Hive.registerAdapter(CashFlowProjectionAdapter());
+      }
+      if (!Hive.isAdapterRegistered(20)) {
+        Hive.registerAdapter(FinanceAlertAdapter());
+      }
+      if (!Hive.isAdapterRegistered(22)) {
+        Hive.registerAdapter(RecurrenceFrequencyAdapter());
+      }
+      if (!Hive.isAdapterRegistered(23)) {
+        Hive.registerAdapter(BudgetPeriodAdapter());
+      }
+      if (!Hive.isAdapterRegistered(24)) {
+        Hive.registerAdapter(TaskFinanceLinkTypeAdapter());
+      }
+      if (!Hive.isAdapterRegistered(25)) {
+        Hive.registerAdapter(AlertTypeAdapter());
+      }
+      if (!Hive.isAdapterRegistered(26)) {
+        Hive.registerAdapter(AlertSeverityAdapter());
+      }
+      if (!Hive.isAdapterRegistered(27)) {
+        Hive.registerAdapter(RiskLevelAdapter());
+      }
+      if (!Hive.isAdapterRegistered(28)) {
+        Hive.registerAdapter(FinancialImpactTypeAdapter());
+      }
+      if (!Hive.isAdapterRegistered(29)) {
+        Hive.registerAdapter(TaskFinanceLinkAdapter());
       }
 
       // Open boxes managed directly by DatabaseService

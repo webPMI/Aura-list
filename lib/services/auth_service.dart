@@ -68,6 +68,7 @@ class AuthService {
   FirebaseAuth? _auth;
   bool _firebaseAvailable = false;
   bool _initialized = false;
+  String? _lastInitError;
   bool _disposed = false;
 
   AuthService(
@@ -93,16 +94,34 @@ class AuthService {
       if (_firebaseAvailable) {
         _auth = FirebaseAuth.instance;
         _initialized = true;
+        _lastInitError = null;
         _logger.info('AuthService', 'Firebase Auth inicializado correctamente');
+      } else {
+        _lastInitError = 'No hay apps de Firebase inicializadas';
       }
     } catch (e) {
       _firebaseAvailable = false;
+      _lastInitError = e.toString();
       _logger.warning(
         'AuthService',
         'Firebase Auth no disponible',
         metadata: {'error': e.toString()},
       );
     }
+  }
+
+  /// Categoría de estado de inicialización
+  Map<String, dynamic> getInitializationStatus() {
+    _ensureFirebaseAvailable();
+    return {
+      'isInitialized': _initialized,
+      'firebaseAvailable': _firebaseAvailable,
+      'authAvailable': _auth != null,
+      'lastError': _lastInitError,
+      'activeApps': Firebase.apps.map((app) => app.name).toList(),
+      'projectId': _firebaseAvailable ? Firebase.app().options.projectId : null,
+      'isWeb': kIsWeb,
+    };
   }
 
   void refreshFirebaseAvailability() {

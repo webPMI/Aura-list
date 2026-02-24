@@ -78,11 +78,91 @@ UI (ConsumerWidget) ← watches ← Riverpod Providers ← streams ← Hive (loc
 - `id`, `text`, `isCompleted`, `order`
 - Used within Note.checklist field
 
+**Finance Models (typeIds: 14-27)**
+- **FinanceCategory (typeId: 14)** - Income/expense categories with icons and colors
+- **CategoryType (typeId: 15)** - Enum: 'expense' | 'income'
+- **Transaction (typeId: 16)** - Financial transactions
+- **RecurringTransaction (typeId: 17-21)** - Auto-repeating transactions with various frequencies
+- **Budget (typeId: 22)** - Category budgets with spending limits and alerts
+- **CashFlowProjection (typeId: 23-24)** - Future balance predictions based on patterns
+- **TaskFinanceLink (typeId: 25)** - Links tasks to transactions for ROI tracking
+- **FinanceAlert (typeId: 26-27)** - Budget overspend and anomaly detection alerts
+
 ### Services
 
 - **DatabaseService**: Hive CRUD + Firebase sync + sync queue management
 - **AuthService**: Firebase anonymous auth, auth state stream
 - **ErrorHandler**: Singleton for classified error handling (database/network/auth/validation)
+- **RecurringTransactionService**: Manages recurring financial transactions with pattern detection
+
+### Key Dependencies
+
+- **uuid (^4.5.1)**: Generates unique identifiers for transactions and entities
+- **hive (^2.2.3)**: Local NoSQL database for offline-first storage
+- **firebase_core/auth/firestore**: Optional cloud sync and authentication
+- **flutter_riverpod (^2.6.1)**: State management with reactive streams
+- **shared_preferences (^2.2.2)**: Persistent key-value storage for settings
+
+## Finance Features
+
+AuraList includes a comprehensive finance management system with:
+
+**Recurring Transactions**
+- Automatically repeat transactions on schedules (daily, weekly, monthly, yearly)
+- Configurable start/end dates and occurrence limits
+- Active/inactive toggle for temporary suspension
+- Syncs with Firebase for cross-device consistency
+
+**Budgets**
+- Set spending limits per category and time period (weekly, monthly, yearly)
+- Real-time tracking of budget utilization percentage
+- Automatic alerts when approaching or exceeding limits
+- Rollover options for unused budget amounts
+
+**Cash Flow Projections**
+- AI-powered predictions of future account balance
+- Based on recurring transactions and spending patterns
+- Configurable projection periods (1-12 months)
+- Confidence scores for reliability assessment
+
+**Task-Finance Integration**
+- Link tasks to transactions for ROI tracking
+- Visualize financial impact of completing tasks
+- Calculate cost-benefit ratios for decision support
+- Track rewards and investments tied to goals
+
+**Smart Alerts**
+- Budget overspend warnings with customizable thresholds
+- Anomaly detection for unusual spending patterns
+- Missed recurring transaction notifications
+- Low balance predictions based on projections
+
+**Usage Examples:**
+```dart
+// Create a recurring transaction
+final recurring = RecurringTransaction(
+  title: 'Monthly Rent',
+  amount: 1200.0,
+  categoryId: 'housing',
+  frequency: RecurrenceFrequency.monthly,
+  nextOccurrence: DateTime(2026, 3, 1),
+);
+
+// Set a budget
+final budget = Budget(
+  categoryId: 'food',
+  amount: 500.0,
+  period: BudgetPeriod.monthly,
+  alertThreshold: 0.8, // Alert at 80%
+);
+
+// Link task to transaction
+final link = TaskFinanceLink(
+  taskId: task.id,
+  transactionId: transaction.id,
+  relationship: 'reward', // or 'cost', 'investment'
+);
+```
 
 ## Code Conventions
 
@@ -136,6 +216,33 @@ Complete documentation is organized in `docs/`:
 - Dart config: `lib/firebase_options.dart`
 
 Firebase is optional - the app gracefully degrades to local-only mode if unavailable.
+
+### Deploying Firebase Security Rules and Indexes
+
+**Deploy Firestore Security Rules:**
+```bash
+# Deploy security rules to Firebase
+firebase deploy --only firestore:rules
+```
+
+**Deploy Firestore Indexes:**
+```bash
+# Deploy composite indexes to Firebase
+firebase deploy --only firestore:indexes
+```
+
+**Deploy Both at Once:**
+```bash
+# Deploy rules and indexes together
+firebase deploy --only firestore
+```
+
+**Important Notes:**
+- Security rules are defined in `firestore.rules`
+- Composite indexes are defined in `firestore.indexes.json`
+- Always test rules in the Firebase Console before deploying to production
+- Index creation can take several minutes after deployment
+- The app includes sharing features for budgets and recurring transactions via the `sharedWith` array in user documents
 
 ## Release Build Setup (Critical)
 

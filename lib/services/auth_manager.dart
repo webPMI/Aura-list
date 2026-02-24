@@ -57,6 +57,10 @@ class AuthManager {
   /// Si Firebase esta disponible
   bool get isFirebaseAvailable => _authService.isFirebaseAvailable;
 
+  /// Obtiene el estado detallado de inicializacion
+  Map<String, dynamic> getInitializationStatus() =>
+      _authService.getInitializationStatus();
+
   // ==================== Operaciones Unificadas ====================
 
   /// Login anonimo
@@ -84,6 +88,10 @@ class AuthManager {
         password,
       );
       if (result == null) {
+        // Diferenciar entre error de credenciales y error técnico
+        if (!_authService.isFirebaseAvailable) {
+          return AuthResult.error('Firebase no disponible ($linkedEmail)');
+        }
         return AuthResult.error('Credenciales incorrectas');
       }
 
@@ -245,7 +253,8 @@ class AuthManager {
           ErrorHandler().handle(
             Exception('Error al sincronizar datos'),
             type: ErrorType.network,
-            message: 'La sincronización se activó pero hubo problemas al sincronizar algunos datos',
+            message:
+                'La sincronización se activó pero hubo problemas al sincronizar algunos datos',
           );
         }
       }
@@ -277,7 +286,8 @@ class AuthManager {
             ErrorHandler().handle(
               Exception('Error al sincronizar datos'),
               type: ErrorType.network,
-              message: 'Sincronización activada pero algunos datos no se sincronizaron correctamente',
+              message:
+                  'Sincronización activada pero algunos datos no se sincronizaron correctamente',
             );
           }
         }

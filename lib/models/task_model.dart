@@ -53,6 +53,30 @@ class Task extends HiveObject {
   @HiveField(15)
   DateTime? lastUpdatedAt; // Para sync incremental
 
+  @HiveField(16)
+  double? financialCost; // Costo de realizar la tarea
+
+  @HiveField(17)
+  double? financialBenefit; // Beneficio de completar la tarea
+
+  @HiveField(18)
+  String? linkedTransactionId; // ID de transacción generada
+
+  @HiveField(19)
+  String? financialImpactType; // 'immediate', 'deferred', 'recurring'
+
+  @HiveField(20, defaultValue: false)
+  bool autoGenerateTransaction; // Si crear transacción automáticamente al completar
+
+  @HiveField(21)
+  String? financialCategoryId; // Categoría financiera a usar
+
+  @HiveField(22)
+  String? linkedRecurringTransactionId; // ID de transacción recurrente vinculada
+
+  @HiveField(23)
+  String? financialNote; // Nota sobre el impacto financiero
+
   Task({
     this.firestoreId = '',
     required this.title,
@@ -70,6 +94,14 @@ class Task extends HiveObject {
     this.deleted = false,
     this.deletedAt,
     this.lastUpdatedAt,
+    this.financialCost,
+    this.financialBenefit,
+    this.linkedTransactionId,
+    this.financialImpactType,
+    this.autoGenerateTransaction = false,
+    this.financialCategoryId,
+    this.linkedRecurringTransactionId,
+    this.financialNote,
   });
 
   // For compatibility with existing code
@@ -153,6 +185,14 @@ class Task extends HiveObject {
       'deleted': deleted,
       'deletedAt': deletedAt?.toIso8601String(),
       'lastUpdatedAt': lastUpdatedAt?.toIso8601String(),
+      'financialCost': financialCost,
+      'financialBenefit': financialBenefit,
+      'linkedTransactionId': linkedTransactionId,
+      'financialImpactType': financialImpactType,
+      'autoGenerateTransaction': autoGenerateTransaction,
+      'financialCategoryId': financialCategoryId,
+      'linkedRecurringTransactionId': linkedRecurringTransactionId,
+      'financialNote': financialNote,
     };
   }
 
@@ -176,6 +216,14 @@ class Task extends HiveObject {
       deleted: data['deleted'] ?? false,
       deletedAt: data['deletedAt'] != null ? DateTime.parse(data['deletedAt']) : null,
       lastUpdatedAt: data['lastUpdatedAt'] != null ? DateTime.parse(data['lastUpdatedAt']) : null,
+      financialCost: data['financialCost']?.toDouble(),
+      financialBenefit: data['financialBenefit']?.toDouble(),
+      linkedTransactionId: data['linkedTransactionId'],
+      financialImpactType: data['financialImpactType'],
+      autoGenerateTransaction: data['autoGenerateTransaction'] ?? false,
+      financialCategoryId: data['financialCategoryId'],
+      linkedRecurringTransactionId: data['linkedRecurringTransactionId'],
+      financialNote: data['financialNote'],
     );
   }
 
@@ -198,6 +246,14 @@ class Task extends HiveObject {
     bool? deleted,
     DateTime? deletedAt,
     DateTime? lastUpdatedAt,
+    double? financialCost,
+    double? financialBenefit,
+    String? linkedTransactionId,
+    String? financialImpactType,
+    bool? autoGenerateTransaction,
+    String? financialCategoryId,
+    String? linkedRecurringTransactionId,
+    String? financialNote,
   }) {
     return Task(
       firestoreId: firestoreId ?? this.firestoreId,
@@ -216,6 +272,14 @@ class Task extends HiveObject {
       deleted: deleted ?? this.deleted,
       deletedAt: deletedAt ?? this.deletedAt,
       lastUpdatedAt: lastUpdatedAt ?? this.lastUpdatedAt,
+      financialCost: financialCost ?? this.financialCost,
+      financialBenefit: financialBenefit ?? this.financialBenefit,
+      linkedTransactionId: linkedTransactionId ?? this.linkedTransactionId,
+      financialImpactType: financialImpactType ?? this.financialImpactType,
+      autoGenerateTransaction: autoGenerateTransaction ?? this.autoGenerateTransaction,
+      financialCategoryId: financialCategoryId ?? this.financialCategoryId,
+      linkedRecurringTransactionId: linkedRecurringTransactionId ?? this.linkedRecurringTransactionId,
+      financialNote: financialNote ?? this.financialNote,
     );
   }
 
@@ -244,6 +308,21 @@ class Task extends HiveObject {
     bool? deleted,
     DateTime? deletedAt,
     DateTime? lastUpdatedAt,
+    double? financialCost,
+    bool clearFinancialCost = false,
+    double? financialBenefit,
+    bool clearFinancialBenefit = false,
+    String? linkedTransactionId,
+    bool clearLinkedTransactionId = false,
+    String? financialImpactType,
+    bool clearFinancialImpactType = false,
+    bool? autoGenerateTransaction,
+    String? financialCategoryId,
+    bool clearFinancialCategoryId = false,
+    String? linkedRecurringTransactionId,
+    bool clearLinkedRecurringTransactionId = false,
+    String? financialNote,
+    bool clearFinancialNote = false,
   }) {
     if (firestoreId != null) this.firestoreId = firestoreId;
     if (title != null) this.title = title;
@@ -284,6 +363,42 @@ class Task extends HiveObject {
     if (deleted != null) this.deleted = deleted;
     if (deletedAt != null) this.deletedAt = deletedAt;
     if (lastUpdatedAt != null) this.lastUpdatedAt = lastUpdatedAt;
+    if (clearFinancialCost) {
+      this.financialCost = null;
+    } else if (financialCost != null) {
+      this.financialCost = financialCost;
+    }
+    if (clearFinancialBenefit) {
+      this.financialBenefit = null;
+    } else if (financialBenefit != null) {
+      this.financialBenefit = financialBenefit;
+    }
+    if (clearLinkedTransactionId) {
+      this.linkedTransactionId = null;
+    } else if (linkedTransactionId != null) {
+      this.linkedTransactionId = linkedTransactionId;
+    }
+    if (clearFinancialImpactType) {
+      this.financialImpactType = null;
+    } else if (financialImpactType != null) {
+      this.financialImpactType = financialImpactType;
+    }
+    if (autoGenerateTransaction != null) this.autoGenerateTransaction = autoGenerateTransaction;
+    if (clearFinancialCategoryId) {
+      this.financialCategoryId = null;
+    } else if (financialCategoryId != null) {
+      this.financialCategoryId = financialCategoryId;
+    }
+    if (clearLinkedRecurringTransactionId) {
+      this.linkedRecurringTransactionId = null;
+    } else if (linkedRecurringTransactionId != null) {
+      this.linkedRecurringTransactionId = linkedRecurringTransactionId;
+    }
+    if (clearFinancialNote) {
+      this.financialNote = null;
+    } else if (financialNote != null) {
+      this.financialNote = financialNote;
+    }
   }
 
   // Default motivational messages
@@ -313,4 +428,26 @@ class Task extends HiveObject {
     final diff = deadline!.difference(DateTime.now());
     return diff.inHours <= 24 && diff.inHours >= 0;
   }
+
+  // Check if task has financial impact
+  bool get hasFinancialImpact =>
+      financialCost != null || financialBenefit != null;
+
+  // Calculate ROI (Return on Investment) percentage
+  double? get financialROI {
+    if (financialCost == null || financialCost == 0) return null;
+    if (financialBenefit == null) return null;
+    return ((financialBenefit! - financialCost!) / financialCost!) * 100;
+  }
+
+  // Net financial impact (benefit - cost)
+  double? get netFinancialImpact {
+    if (financialCost == null && financialBenefit == null) return null;
+    final cost = financialCost ?? 0;
+    final benefit = financialBenefit ?? 0;
+    return benefit - cost;
+  }
+
+  // Alias for netFinancialImpact (requested name)
+  double get netFinancialValue => netFinancialImpact ?? 0;
 }

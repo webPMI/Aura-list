@@ -93,6 +93,17 @@ class MockAuthService implements AuthService {
   Future<Map<String, dynamic>> getCacheStats() async => {};
 
   @override
+  Map<String, dynamic> getInitializationStatus() => {
+    'isInitialized': true,
+    'firebaseAvailable': false,
+    'authAvailable': false,
+    'lastError': null,
+    'activeApps': [],
+    'projectId': null,
+    'isWeb': false,
+  };
+
+  @override
   Future<void> dispose() async {}
 
   @override

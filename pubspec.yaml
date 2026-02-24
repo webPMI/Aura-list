@@ -69,6 +69,9 @@ dependencies:
   # Rich Text Editor
   flutter_quill: ^11.5.0
 
+  # UUID Generation
+  uuid: ^4.5.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

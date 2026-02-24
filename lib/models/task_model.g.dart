@@ -33,13 +33,21 @@ class TaskAdapter extends TypeAdapter<Task> {
       deleted: fields[13] == null ? false : fields[13] as bool,
       deletedAt: fields[14] as DateTime?,
       lastUpdatedAt: fields[15] as DateTime?,
+      financialCost: fields[16] as double?,
+      financialBenefit: fields[17] as double?,
+      linkedTransactionId: fields[18] as String?,
+      financialImpactType: fields[19] as String?,
+      autoGenerateTransaction: fields[20] == null ? false : fields[20] as bool,
+      financialCategoryId: fields[21] as String?,
+      linkedRecurringTransactionId: fields[22] as String?,
+      financialNote: fields[23] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Task obj) {
     writer
-      ..writeByte(16)
+      ..writeByte(24)
       ..writeByte(0)
       ..write(obj.firestoreId)
       ..writeByte(1)
@@ -71,7 +79,23 @@ class TaskAdapter extends TypeAdapter<Task> {
       ..writeByte(14)
       ..write(obj.deletedAt)
       ..writeByte(15)
-      ..write(obj.lastUpdatedAt);
+      ..write(obj.lastUpdatedAt)
+      ..writeByte(16)
+      ..write(obj.financialCost)
+      ..writeByte(17)
+      ..write(obj.financialBenefit)
+      ..writeByte(18)
+      ..write(obj.linkedTransactionId)
+      ..writeByte(19)
+      ..write(obj.financialImpactType)
+      ..writeByte(20)
+      ..write(obj.autoGenerateTransaction)
+      ..writeByte(21)
+      ..write(obj.financialCategoryId)
+      ..writeByte(22)
+      ..write(obj.linkedRecurringTransactionId)
+      ..writeByte(23)
+      ..write(obj.financialNote);
   }
 
   @override

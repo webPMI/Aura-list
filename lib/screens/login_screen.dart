@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/auth_service.dart';
 import '../core/responsive/breakpoints.dart';
 import 'register_screen.dart';
 import '../widgets/dialogs/forgot_password_dialog.dart';
 import '../widgets/auth/unified_google_auth_button.dart';
+import '../features/diagnostics/screens/diagnostic_screen.dart';
 import 'main_scaffold.dart';
 
 /// Pantalla de inicio de sesion con email y contrasena
@@ -198,6 +200,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 fontSize: 13,
                               ),
                             ),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              Icons.info_outline,
+                              color: colorScheme.onErrorContainer,
+                              size: 20,
+                            ),
+                            tooltip: 'Ver detalles técnicos',
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const DiagnosticScreen(),
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
