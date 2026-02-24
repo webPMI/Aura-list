@@ -16,6 +16,20 @@ class CategoryStorage {
   Future<void> init() async {
     if (_initialized && _box != null && _box!.isOpen) return;
     try {
+      // Check if FinanceCategory adapter is registered (typeId: 14)
+      if (!Hive.isAdapterRegistered(14)) {
+        _logger.warning(
+          'Finance',
+          '[CategoryStorage] Hive adapter not registered yet',
+        );
+        _errorHandler.handle(
+          Exception('Hive adapter not registered for FinanceCategory'),
+          type: ErrorType.database,
+          message: 'FinanceCategory adapter not registered',
+        );
+        return;
+      }
+
       _box = Hive.isBoxOpen(boxName)
           ? Hive.box<FinanceCategory>(boxName)
           : await Hive.openBox<FinanceCategory>(boxName);
@@ -26,7 +40,14 @@ class CategoryStorage {
         _logger.debug('Finance', 'Seeded default finance categories');
       }
     } catch (e, stack) {
-      _errorHandler.handle(e, type: ErrorType.database, stackTrace: stack);
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al inicializar CategoryStorage',
+        stackTrace: stack,
+      );
+      _initialized = false;
+      _box = null;
     }
   }
 
@@ -53,22 +74,46 @@ class CategoryStorage {
   Future<void> save(FinanceCategory category) async {
     try {
       if (!_initialized) await init();
+      if (_box == null) {
+        _logger.warning(
+          'Finance',
+          '[CategoryStorage] Box not initialized, cannot save',
+        );
+        return;
+      }
       if (category.isInBox) {
         await category.save();
       } else {
-        await _box?.add(category);
+        await _box!.add(category);
       }
     } catch (e, stack) {
-      _errorHandler.handle(e, type: ErrorType.database, stackTrace: stack);
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al guardar categoría',
+        stackTrace: stack,
+      );
     }
   }
 
   Future<void> delete(dynamic key) async {
     try {
       if (!_initialized) await init();
-      await _box?.delete(key);
+      if (_box == null) {
+        _logger.warning(
+          'Finance',
+          '[CategoryStorage] Box not initialized, cannot delete',
+        );
+        return;
+      }
+      await _box!.delete(key);
     } catch (e, stack) {
-      _errorHandler.handle(e, type: ErrorType.database, stackTrace: stack);
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al eliminar categoría',
+        stackTrace: stack,
+      );
     }
   }
 }

@@ -16,13 +16,34 @@ class BudgetStorage {
   Future<void> init() async {
     if (_initialized && _box != null && _box!.isOpen) return;
     try {
+      // Check if Budget adapter is registered (typeId: 18)
+      if (!Hive.isAdapterRegistered(18)) {
+        _logger.warning(
+          'Finance',
+          '[BudgetStorage] Hive adapter not registered yet',
+        );
+        _errorHandler.handle(
+          Exception('Hive adapter not registered for Budget'),
+          type: ErrorType.database,
+          message: 'Budget adapter not registered',
+        );
+        return;
+      }
+
       _box = Hive.isBoxOpen(boxName)
           ? Hive.box<Budget>(boxName)
           : await Hive.openBox<Budget>(boxName);
       _initialized = true;
       _logger.debug('Finance', '[BudgetStorage] Initialized');
     } catch (e, stack) {
-      _errorHandler.handle(e, type: ErrorType.database, stackTrace: stack);
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al inicializar BudgetStorage',
+        stackTrace: stack,
+      );
+      _initialized = false;
+      _box = null;
     }
   }
 
@@ -109,27 +130,51 @@ class BudgetStorage {
   Future<void> save(Budget budget) async {
     try {
       if (!_initialized) await init();
+      if (_box == null) {
+        _logger.warning(
+          'Finance',
+          '[BudgetStorage] Box not initialized, cannot save',
+        );
+        return;
+      }
       if (budget.isInBox) {
         await budget.save();
       } else {
-        await _box?.add(budget);
+        await _box!.add(budget);
       }
     } catch (e, stack) {
-      _errorHandler.handle(e, type: ErrorType.database, stackTrace: stack);
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al guardar presupuesto',
+        stackTrace: stack,
+      );
     }
   }
 
   Future<void> delete(dynamic key) async {
     try {
       if (!_initialized) await init();
-      final budget = _box?.get(key);
+      if (_box == null) {
+        _logger.warning(
+          'Finance',
+          '[BudgetStorage] Box not initialized, cannot delete',
+        );
+        return;
+      }
+      final budget = _box!.get(key);
       if (budget != null) {
         budget.deleted = true;
         budget.deletedAt = DateTime.now();
         await budget.save();
       }
     } catch (e, stack) {
-      _errorHandler.handle(e, type: ErrorType.database, stackTrace: stack);
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al eliminar presupuesto',
+        stackTrace: stack,
+      );
     }
   }
 

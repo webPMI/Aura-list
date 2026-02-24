@@ -60,37 +60,48 @@ class FinanceNotifier extends StateNotifier<FinanceState> {
   }
 
   Future<void> _init() async {
-    await _repository.init();
+    try {
+      await _repository.init();
 
-    final categories = await _repository.getCategories();
+      final categories = await _repository.getCategories();
 
-    // Watch transactions
-    _transactionSubscription?.cancel();
-    _transactionSubscription = _repository.watchTransactions().listen(
-      (transactions) {
-        final sortedTransactions = [...transactions]
-          ..sort((a, b) => b.date.compareTo(a.date));
-        state = state.copyWith(
-          transactions: sortedTransactions,
-          categories: categories,
-          isLoading: false,
-        );
-      },
-      onError: (e, stack) {
-        ErrorHandler().handle(
-          e,
-          type: ErrorType.database,
-          message: 'Error al observar transacciones',
-          stackTrace: stack,
-        );
-      },
-    );
+      // Watch transactions
+      _transactionSubscription?.cancel();
+      _transactionSubscription = _repository.watchTransactions().listen(
+        (transactions) {
+          final sortedTransactions = [...transactions]
+            ..sort((a, b) => b.date.compareTo(a.date));
+          state = state.copyWith(
+            transactions: sortedTransactions,
+            categories: categories,
+            isLoading: false,
+          );
+        },
+        onError: (e, stack) {
+          ErrorHandler().handle(
+            e,
+            type: ErrorType.database,
+            message: 'Error al observar transacciones',
+            stackTrace: stack,
+          );
+          state = state.copyWith(isLoading: false);
+        },
+      );
 
-    // Initial sync if user is logged in
-    final authState = _ref.read(authStateProvider);
-    final user = authState.valueOrNull;
-    if (user != null) {
-      _repository.performFullSync(user.uid);
+      // Initial sync if user is logged in
+      final authState = _ref.read(authStateProvider);
+      final user = authState.valueOrNull;
+      if (user != null) {
+        _repository.performFullSync(user.uid);
+      }
+    } catch (e, stack) {
+      ErrorHandler().handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al inicializar FinanceProvider',
+        stackTrace: stack,
+      );
+      state = state.copyWith(isLoading: false);
     }
   }
 
@@ -144,55 +155,99 @@ class FinanceNotifier extends StateNotifier<FinanceState> {
 }
 
 final financeRepositoryProvider = Provider<FinanceRepository>((ref) {
-  final categoryStorage = ref.watch(categoryStorageProvider);
-  final transactionStorage = ref.watch(transactionStorageProvider);
-  final errorHandler = ref.watch(errorHandlerProvider);
+  try {
+    final categoryStorage = ref.watch(categoryStorageProvider);
+    final transactionStorage = ref.watch(transactionStorageProvider);
+    final errorHandler = ref.watch(errorHandlerProvider);
 
-  // Sync services
-  final categorySync = CategorySyncService(
-    localStorage: categoryStorage,
-    cloudStorage: FirestoreCategoryStorage(errorHandler),
-    errorHandler: errorHandler,
-    isCloudSyncEnabled: () async {
-      final db = ref.read(databaseServiceProvider);
-      final prefs = await db.getUserPreferences();
-      return prefs.cloudSyncEnabled;
-    },
-  );
+    // Sync services
+    final categorySync = CategorySyncService(
+      localStorage: categoryStorage,
+      cloudStorage: FirestoreCategoryStorage(errorHandler),
+      errorHandler: errorHandler,
+      isCloudSyncEnabled: () async {
+        final db = ref.read(databaseServiceProvider);
+        final prefs = await db.getUserPreferences();
+        return prefs.cloudSyncEnabled;
+      },
+    );
 
-  final transactionSync = TransactionSyncService(
-    localStorage: transactionStorage,
-    cloudStorage: FirestoreTransactionStorage(errorHandler),
-    errorHandler: errorHandler,
-    isCloudSyncEnabled: () async {
-      final db = ref.read(databaseServiceProvider);
-      final prefs = await db.getUserPreferences();
-      return prefs.cloudSyncEnabled;
-    },
-  );
+    final transactionSync = TransactionSyncService(
+      localStorage: transactionStorage,
+      cloudStorage: FirestoreTransactionStorage(errorHandler),
+      errorHandler: errorHandler,
+      isCloudSyncEnabled: () async {
+        final db = ref.read(databaseServiceProvider);
+        final prefs = await db.getUserPreferences();
+        return prefs.cloudSyncEnabled;
+      },
+    );
 
-  return FinanceRepository(
-    categoryStorage: categoryStorage,
-    transactionStorage: transactionStorage,
-    categorySync: categorySync,
-    transactionSync: transactionSync,
-    errorHandler: errorHandler,
-  );
+    return FinanceRepository(
+      categoryStorage: categoryStorage,
+      transactionStorage: transactionStorage,
+      categorySync: categorySync,
+      transactionSync: transactionSync,
+      errorHandler: errorHandler,
+    );
+  } catch (e, stack) {
+    final errorHandler = ref.watch(errorHandlerProvider);
+    errorHandler.handle(
+      e,
+      type: ErrorType.database,
+      message: 'Error al crear FinanceRepository',
+      stackTrace: stack,
+    );
+    rethrow;
+  }
 });
 
 final categoryStorageProvider = Provider<CategoryStorage>((ref) {
-  final errorHandler = ref.watch(errorHandlerProvider);
-  return CategoryStorage(errorHandler);
+  try {
+    final errorHandler = ref.watch(errorHandlerProvider);
+    return CategoryStorage(errorHandler);
+  } catch (e, stack) {
+    final errorHandler = ref.watch(errorHandlerProvider);
+    errorHandler.handle(
+      e,
+      type: ErrorType.database,
+      message: 'Error al crear CategoryStorage',
+      stackTrace: stack,
+    );
+    rethrow;
+  }
 });
 
 final transactionStorageProvider = Provider<TransactionStorage>((ref) {
-  final errorHandler = ref.watch(errorHandlerProvider);
-  return TransactionStorage(errorHandler);
+  try {
+    final errorHandler = ref.watch(errorHandlerProvider);
+    return TransactionStorage(errorHandler);
+  } catch (e, stack) {
+    final errorHandler = ref.watch(errorHandlerProvider);
+    errorHandler.handle(
+      e,
+      type: ErrorType.database,
+      message: 'Error al crear TransactionStorage',
+      stackTrace: stack,
+    );
+    rethrow;
+  }
 });
 
 final financeProvider = StateNotifierProvider<FinanceNotifier, FinanceState>((
   ref,
 ) {
-  final repository = ref.watch(financeRepositoryProvider);
-  return FinanceNotifier(repository: repository, ref: ref);
+  try {
+    final repository = ref.watch(financeRepositoryProvider);
+    return FinanceNotifier(repository: repository, ref: ref);
+  } catch (e, stack) {
+    final errorHandler = ref.watch(errorHandlerProvider);
+    errorHandler.handle(
+      e,
+      type: ErrorType.database,
+      message: 'Error al crear FinanceNotifier',
+      stackTrace: stack,
+    );
+    rethrow;
+  }
 });

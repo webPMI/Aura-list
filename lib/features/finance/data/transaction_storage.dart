@@ -16,13 +16,34 @@ class TransactionStorage {
   Future<void> init() async {
     if (_initialized && _box != null && _box!.isOpen) return;
     try {
+      // Check if Transaction adapter is registered (typeId: 16)
+      if (!Hive.isAdapterRegistered(16)) {
+        _logger.warning(
+          'Finance',
+          '[TransactionStorage] Hive adapter not registered yet',
+        );
+        _errorHandler.handle(
+          Exception('Hive adapter not registered for Transaction'),
+          type: ErrorType.database,
+          message: 'Transaction adapter not registered',
+        );
+        return;
+      }
+
       _box = Hive.isBoxOpen(boxName)
           ? Hive.box<Transaction>(boxName)
           : await Hive.openBox<Transaction>(boxName);
       _initialized = true;
       _logger.debug('Finance', '[TransactionStorage] Initialized');
     } catch (e, stack) {
-      _errorHandler.handle(e, type: ErrorType.database, stackTrace: stack);
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al inicializar TransactionStorage',
+        stackTrace: stack,
+      );
+      _initialized = false;
+      _box = null;
     }
   }
 
@@ -49,27 +70,51 @@ class TransactionStorage {
   Future<void> save(Transaction transaction) async {
     try {
       if (!_initialized) await init();
+      if (_box == null) {
+        _logger.warning(
+          'Finance',
+          '[TransactionStorage] Box not initialized, cannot save',
+        );
+        return;
+      }
       if (transaction.isInBox) {
         await transaction.save();
       } else {
-        await _box?.add(transaction);
+        await _box!.add(transaction);
       }
     } catch (e, stack) {
-      _errorHandler.handle(e, type: ErrorType.database, stackTrace: stack);
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al guardar transacción',
+        stackTrace: stack,
+      );
     }
   }
 
   Future<void> delete(dynamic key) async {
     try {
       if (!_initialized) await init();
-      final transaction = _box?.get(key);
+      if (_box == null) {
+        _logger.warning(
+          'Finance',
+          '[TransactionStorage] Box not initialized, cannot delete',
+        );
+        return;
+      }
+      final transaction = _box!.get(key);
       if (transaction != null) {
         transaction.deleted = true;
         transaction.deletedAt = DateTime.now();
         await transaction.save();
       }
     } catch (e, stack) {
-      _errorHandler.handle(e, type: ErrorType.database, stackTrace: stack);
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al eliminar transacción',
+        stackTrace: stack,
+      );
     }
   }
 

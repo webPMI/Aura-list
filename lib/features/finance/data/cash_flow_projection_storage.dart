@@ -16,13 +16,34 @@ class CashFlowProjectionStorage {
   Future<void> init() async {
     if (_initialized && _box != null && _box!.isOpen) return;
     try {
+      // Check if CashFlowProjection adapter is registered (typeId: 19)
+      if (!Hive.isAdapterRegistered(19)) {
+        _logger.warning(
+          'Finance',
+          '[CashFlowProjectionStorage] Hive adapter not registered yet',
+        );
+        _errorHandler.handle(
+          Exception('Hive adapter not registered for CashFlowProjection'),
+          type: ErrorType.database,
+          message: 'CashFlowProjection adapter not registered',
+        );
+        return;
+      }
+
       _box = Hive.isBoxOpen(boxName)
           ? Hive.box<CashFlowProjection>(boxName)
           : await Hive.openBox<CashFlowProjection>(boxName);
       _initialized = true;
       _logger.debug('Finance', '[CashFlowProjectionStorage] Initialized');
     } catch (e, stack) {
-      _errorHandler.handle(e, type: ErrorType.database, stackTrace: stack);
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al inicializar CashFlowProjectionStorage',
+        stackTrace: stack,
+      );
+      _initialized = false;
+      _box = null;
     }
   }
 
@@ -98,27 +119,51 @@ class CashFlowProjectionStorage {
   Future<void> save(CashFlowProjection projection) async {
     try {
       if (!_initialized) await init();
+      if (_box == null) {
+        _logger.warning(
+          'Finance',
+          '[CashFlowProjectionStorage] Box not initialized, cannot save',
+        );
+        return;
+      }
       if (projection.isInBox) {
         await projection.save();
       } else {
-        await _box?.add(projection);
+        await _box!.add(projection);
       }
     } catch (e, stack) {
-      _errorHandler.handle(e, type: ErrorType.database, stackTrace: stack);
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al guardar proyección de flujo de caja',
+        stackTrace: stack,
+      );
     }
   }
 
   Future<void> delete(dynamic key) async {
     try {
       if (!_initialized) await init();
-      final projection = _box?.get(key);
+      if (_box == null) {
+        _logger.warning(
+          'Finance',
+          '[CashFlowProjectionStorage] Box not initialized, cannot delete',
+        );
+        return;
+      }
+      final projection = _box!.get(key);
       if (projection != null) {
         projection.deleted = true;
         projection.deletedAt = DateTime.now();
         await projection.save();
       }
     } catch (e, stack) {
-      _errorHandler.handle(e, type: ErrorType.database, stackTrace: stack);
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al eliminar proyección de flujo de caja',
+        stackTrace: stack,
+      );
     }
   }
 

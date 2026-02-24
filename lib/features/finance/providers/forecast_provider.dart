@@ -106,6 +106,13 @@ class ForecastNotifier extends StateNotifier<ForecastState> {
 
   Future<void> _init() async {
     try {
+      // Initialize storages first to ensure boxes are ready
+      await _recurringStorage.init();
+      await _budgetStorage.init();
+      await _projectionStorage.init();
+      await _alertStorage.init();
+      await _linkStorage.init();
+
       // Watch recurring transactions
       _recurringSubscription?.cancel();
       _recurringSubscription = _recurringStorage.watch().listen(
@@ -163,6 +170,7 @@ class ForecastNotifier extends StateNotifier<ForecastState> {
       _errorHandler.handle(
         e,
         type: ErrorType.database,
+        severity: ErrorSeverity.error,
         message: 'Error al inicializar previsiones',
         stackTrace: stack,
       );
@@ -396,54 +404,131 @@ class ForecastNotifier extends StateNotifier<ForecastState> {
 /// Provider para RecurringTransactionStorage.
 final recurringTransactionStorageProvider =
     Provider<RecurringTransactionStorage>((ref) {
-      return RecurringTransactionStorage(ref.watch(errorHandlerProvider));
+      try {
+        return RecurringTransactionStorage(ref.watch(errorHandlerProvider));
+      } catch (e, stack) {
+        final errorHandler = ref.watch(errorHandlerProvider);
+        errorHandler.handle(
+          e,
+          type: ErrorType.database,
+          message: 'Error al crear RecurringTransactionStorage',
+          stackTrace: stack,
+        );
+        rethrow;
+      }
     });
 
 /// Provider para BudgetStorage.
 final budgetStorageProvider = Provider<BudgetStorage>((ref) {
-  return BudgetStorage(ref.watch(errorHandlerProvider));
+  try {
+    return BudgetStorage(ref.watch(errorHandlerProvider));
+  } catch (e, stack) {
+    final errorHandler = ref.watch(errorHandlerProvider);
+    errorHandler.handle(
+      e,
+      type: ErrorType.database,
+      message: 'Error al crear BudgetStorage',
+      stackTrace: stack,
+    );
+    rethrow;
+  }
 });
 
 /// Provider para CashFlowProjectionStorage.
 final cashFlowProjectionStorageProvider = Provider<CashFlowProjectionStorage>((
   ref,
 ) {
-  return CashFlowProjectionStorage(ref.watch(errorHandlerProvider));
+  try {
+    return CashFlowProjectionStorage(ref.watch(errorHandlerProvider));
+  } catch (e, stack) {
+    final errorHandler = ref.watch(errorHandlerProvider);
+    errorHandler.handle(
+      e,
+      type: ErrorType.database,
+      message: 'Error al crear CashFlowProjectionStorage',
+      stackTrace: stack,
+    );
+    rethrow;
+  }
 });
 
 /// Provider para FinanceAlertStorage.
 final financeAlertStorageProvider = Provider<FinanceAlertStorage>((ref) {
-  return FinanceAlertStorage(ref.watch(errorHandlerProvider));
+  try {
+    return FinanceAlertStorage(ref.watch(errorHandlerProvider));
+  } catch (e, stack) {
+    final errorHandler = ref.watch(errorHandlerProvider);
+    errorHandler.handle(
+      e,
+      type: ErrorType.database,
+      message: 'Error al crear FinanceAlertStorage',
+      stackTrace: stack,
+    );
+    rethrow;
+  }
 });
 
 /// Provider para TaskFinanceLinkStorage.
 final taskFinanceLinkStorageProvider = Provider<TaskFinanceLinkStorage>((ref) {
-  return TaskFinanceLinkStorage(ref.watch(errorHandlerProvider));
+  try {
+    return TaskFinanceLinkStorage(ref.watch(errorHandlerProvider));
+  } catch (e, stack) {
+    final errorHandler = ref.watch(errorHandlerProvider);
+    errorHandler.handle(
+      e,
+      type: ErrorType.database,
+      message: 'Error al crear TaskFinanceLinkStorage',
+      stackTrace: stack,
+    );
+    rethrow;
+  }
 });
 
 /// Provider para RecurringTransactionService.
 final recurringTransactionServiceProvider =
     Provider<RecurringTransactionService>((ref) {
-      return RecurringTransactionService(
-        storage: ref.watch(recurringTransactionStorageProvider),
-        transactionStorage: ref.watch(transactionStorageProvider),
-        errorHandler: ref.watch(errorHandlerProvider),
-      );
+      try {
+        return RecurringTransactionService(
+          storage: ref.watch(recurringTransactionStorageProvider),
+          transactionStorage: ref.watch(transactionStorageProvider),
+          errorHandler: ref.watch(errorHandlerProvider),
+        );
+      } catch (e, stack) {
+        final errorHandler = ref.watch(errorHandlerProvider);
+        errorHandler.handle(
+          e,
+          type: ErrorType.database,
+          message: 'Error al crear RecurringTransactionService',
+          stackTrace: stack,
+        );
+        rethrow;
+      }
     });
 
 /// Provider principal de previsiones financieras.
 final forecastProvider = StateNotifierProvider<ForecastNotifier, ForecastState>(
   (ref) {
-    return ForecastNotifier(
-      recurringStorage: ref.watch(recurringTransactionStorageProvider),
-      budgetStorage: ref.watch(budgetStorageProvider),
-      projectionStorage: ref.watch(cashFlowProjectionStorageProvider),
-      alertStorage: ref.watch(financeAlertStorageProvider),
-      linkStorage: ref.watch(taskFinanceLinkStorageProvider),
-      recurringService: ref.watch(recurringTransactionServiceProvider),
-      errorHandler: ref.watch(errorHandlerProvider),
-      ref: ref,
-    );
+    try {
+      return ForecastNotifier(
+        recurringStorage: ref.watch(recurringTransactionStorageProvider),
+        budgetStorage: ref.watch(budgetStorageProvider),
+        projectionStorage: ref.watch(cashFlowProjectionStorageProvider),
+        alertStorage: ref.watch(financeAlertStorageProvider),
+        linkStorage: ref.watch(taskFinanceLinkStorageProvider),
+        recurringService: ref.watch(recurringTransactionServiceProvider),
+        errorHandler: ref.watch(errorHandlerProvider),
+        ref: ref,
+      );
+    } catch (e, stack) {
+      final errorHandler = ref.watch(errorHandlerProvider);
+      errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al crear ForecastNotifier',
+        stackTrace: stack,
+      );
+      rethrow;
+    }
   },
 );
 

@@ -16,13 +16,34 @@ class RecurringTransactionStorage {
   Future<void> init() async {
     if (_initialized && _box != null && _box!.isOpen) return;
     try {
+      // Check if RecurringTransaction adapter is registered (typeId: 17)
+      if (!Hive.isAdapterRegistered(17)) {
+        _logger.warning(
+          'Finance',
+          '[RecurringTransactionStorage] Hive adapter not registered yet',
+        );
+        _errorHandler.handle(
+          Exception('Hive adapter not registered for RecurringTransaction'),
+          type: ErrorType.database,
+          message: 'RecurringTransaction adapter not registered',
+        );
+        return;
+      }
+
       _box = Hive.isBoxOpen(boxName)
           ? Hive.box<RecurringTransaction>(boxName)
           : await Hive.openBox<RecurringTransaction>(boxName);
       _initialized = true;
       _logger.debug('Finance', '[RecurringTransactionStorage] Initialized');
     } catch (e, stack) {
-      _errorHandler.handle(e, type: ErrorType.database, stackTrace: stack);
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al inicializar RecurringTransactionStorage',
+        stackTrace: stack,
+      );
+      _initialized = false;
+      _box = null;
     }
   }
 
@@ -101,27 +122,51 @@ class RecurringTransactionStorage {
   Future<void> save(RecurringTransaction transaction) async {
     try {
       if (!_initialized) await init();
+      if (_box == null) {
+        _logger.warning(
+          'Finance',
+          '[RecurringTransactionStorage] Box not initialized, cannot save',
+        );
+        return;
+      }
       if (transaction.isInBox) {
         await transaction.save();
       } else {
-        await _box?.add(transaction);
+        await _box!.add(transaction);
       }
     } catch (e, stack) {
-      _errorHandler.handle(e, type: ErrorType.database, stackTrace: stack);
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al guardar transacción recurrente',
+        stackTrace: stack,
+      );
     }
   }
 
   Future<void> delete(dynamic key) async {
     try {
       if (!_initialized) await init();
-      final transaction = _box?.get(key);
+      if (_box == null) {
+        _logger.warning(
+          'Finance',
+          '[RecurringTransactionStorage] Box not initialized, cannot delete',
+        );
+        return;
+      }
+      final transaction = _box!.get(key);
       if (transaction != null) {
         transaction.deleted = true;
         transaction.deletedAt = DateTime.now();
         await transaction.save();
       }
     } catch (e, stack) {
-      _errorHandler.handle(e, type: ErrorType.database, stackTrace: stack);
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al eliminar transacción recurrente',
+        stackTrace: stack,
+      );
     }
   }
 

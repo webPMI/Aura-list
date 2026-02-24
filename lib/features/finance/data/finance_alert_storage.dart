@@ -17,13 +17,34 @@ class FinanceAlertStorage {
   Future<void> init() async {
     if (_initialized && _box != null && _box!.isOpen) return;
     try {
+      // Check if FinanceAlert adapter is registered (typeId: 20)
+      if (!Hive.isAdapterRegistered(20)) {
+        _logger.warning(
+          'Finance',
+          '[FinanceAlertStorage] Hive adapter not registered yet',
+        );
+        _errorHandler.handle(
+          Exception('Hive adapter not registered for FinanceAlert'),
+          type: ErrorType.database,
+          message: 'FinanceAlert adapter not registered',
+        );
+        return;
+      }
+
       _box = Hive.isBoxOpen(boxName)
           ? Hive.box<FinanceAlert>(boxName)
           : await Hive.openBox<FinanceAlert>(boxName);
       _initialized = true;
       _logger.debug('Finance', '[FinanceAlertStorage] Initialized');
     } catch (e, stack) {
-      _errorHandler.handle(e, type: ErrorType.database, stackTrace: stack);
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al inicializar FinanceAlertStorage',
+        stackTrace: stack,
+      );
+      _initialized = false;
+      _box = null;
     }
   }
 
@@ -102,27 +123,51 @@ class FinanceAlertStorage {
   Future<void> save(FinanceAlert alert) async {
     try {
       if (!_initialized) await init();
+      if (_box == null) {
+        _logger.warning(
+          'Finance',
+          '[FinanceAlertStorage] Box not initialized, cannot save',
+        );
+        return;
+      }
       if (alert.isInBox) {
         await alert.save();
       } else {
-        await _box?.add(alert);
+        await _box!.add(alert);
       }
     } catch (e, stack) {
-      _errorHandler.handle(e, type: ErrorType.database, stackTrace: stack);
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al guardar alerta financiera',
+        stackTrace: stack,
+      );
     }
   }
 
   Future<void> delete(dynamic key) async {
     try {
       if (!_initialized) await init();
-      final alert = _box?.get(key);
+      if (_box == null) {
+        _logger.warning(
+          'Finance',
+          '[FinanceAlertStorage] Box not initialized, cannot delete',
+        );
+        return;
+      }
+      final alert = _box!.get(key);
       if (alert != null) {
         alert.deleted = true;
         alert.deletedAt = DateTime.now();
         await alert.save();
       }
     } catch (e, stack) {
-      _errorHandler.handle(e, type: ErrorType.database, stackTrace: stack);
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al eliminar alerta financiera',
+        stackTrace: stack,
+      );
     }
   }
 

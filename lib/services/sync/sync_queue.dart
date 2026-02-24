@@ -36,13 +36,46 @@ class GenericSyncQueue<T> {
 
   /// Initialize the queue boxes
   Future<void> init() async {
-    _queueBox = Hive.isBoxOpen(queueBoxName)
-        ? Hive.box<Map>(queueBoxName)
-        : await Hive.openBox<Map>(queueBoxName);
+    try {
+      _queueBox = Hive.isBoxOpen(queueBoxName)
+          ? Hive.box<Map>(queueBoxName)
+          : await Hive.openBox<Map>(queueBoxName);
+    } catch (e, stack) {
+      errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        severity: ErrorSeverity.error,
+        message: 'Error opening sync queue box: $queueBoxName',
+        stackTrace: stack,
+      );
+      _logger.error(
+        'SyncQueue',
+        'Failed to open queue box: $queueBoxName',
+        error: e,
+      );
+      // Create in-memory fallback (won't persist but won't crash)
+      _queueBox = null;
+    }
 
-    _deadLetterBox = Hive.isBoxOpen(deadLetterBoxName)
-        ? Hive.box<Map>(deadLetterBoxName)
-        : await Hive.openBox<Map>(deadLetterBoxName);
+    try {
+      _deadLetterBox = Hive.isBoxOpen(deadLetterBoxName)
+          ? Hive.box<Map>(deadLetterBoxName)
+          : await Hive.openBox<Map>(deadLetterBoxName);
+    } catch (e, stack) {
+      errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        severity: ErrorSeverity.warning,
+        message: 'Error opening dead letter box: $deadLetterBoxName',
+        stackTrace: stack,
+      );
+      _logger.error(
+        'SyncQueue',
+        'Failed to open dead letter box: $deadLetterBoxName',
+        error: e,
+      );
+      _deadLetterBox = null;
+    }
   }
 
   /// Add an item to the sync queue
@@ -52,6 +85,13 @@ class GenericSyncQueue<T> {
     required String userId,
   }) async {
     if (_queueBox == null) await init();
+    if (_queueBox == null) {
+      _logger.warning(
+        'SyncQueue',
+        'Queue box unavailable, cannot enqueue item',
+      );
+      return;
+    }
 
     await _queueBox!.add({
       'localKey': localKey,
@@ -79,6 +119,13 @@ class GenericSyncQueue<T> {
     }
 
     if (_queueBox == null) await init();
+    if (_queueBox == null) {
+      _logger.warning(
+        'SyncQueue',
+        'Queue box unavailable, cannot process queue',
+      );
+      return SyncOperationResult.skipped('Queue unavailable');
+    }
     if (_queueBox!.isEmpty) {
       return SyncOperationResult.success(itemsSynced: 0);
     }
@@ -248,6 +295,13 @@ class GenericSyncQueue<T> {
   /// Move an item to the dead letter queue
   Future<void> _moveToDeadLetter(Map<dynamic, dynamic> data) async {
     if (_deadLetterBox == null) await init();
+    if (_deadLetterBox == null) {
+      _logger.warning(
+        'SyncQueue',
+        'Dead letter box unavailable, cannot move item',
+      );
+      return;
+    }
 
     await _deadLetterBox!.add({
       ...Map<String, dynamic>.from(data),
@@ -263,31 +317,32 @@ class GenericSyncQueue<T> {
   /// Get count of pending items
   Future<int> getPendingCount() async {
     if (_queueBox == null) await init();
-    return _queueBox!.length;
+    return _queueBox?.length ?? 0;
   }
 
   /// Get count of dead letter items
   Future<int> getDeadLetterCount() async {
     if (_deadLetterBox == null) await init();
-    return _deadLetterBox!.length;
+    return _deadLetterBox?.length ?? 0;
   }
 
   /// Clear the queue
   Future<void> clear() async {
     if (_queueBox == null) await init();
-    await _queueBox!.clear();
+    await _queueBox?.clear();
   }
 
   /// Clear the dead letter queue
   Future<void> clearDeadLetter() async {
     if (_deadLetterBox == null) await init();
-    await _deadLetterBox!.clear();
+    await _deadLetterBox?.clear();
   }
 
   /// Retry all items in dead letter queue
   Future<int> retryDeadLetterItems() async {
     if (_deadLetterBox == null) await init();
-    if (_deadLetterBox!.isEmpty) return 0;
+    if (_deadLetterBox == null || _deadLetterBox!.isEmpty) return 0;
+    if (_queueBox == null) return 0;
 
     int movedCount = 0;
     final keys = _deadLetterBox!.keys.toList();

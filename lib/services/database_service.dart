@@ -227,6 +227,10 @@ class DatabaseService {
           ? Hive.box<UserPreferences>(_userPrefsBoxName)
           : await Hive.openBox<UserPreferences>(_userPrefsBoxName);
 
+      // Open all finance boxes to prevent race conditions
+      // These must be opened AFTER TypeAdapters are registered
+      await _initializeFinanceBoxes();
+
       // Check if Firebase is available
       try {
         _firebaseAvailable = Firebase.apps.isNotEmpty;
@@ -267,6 +271,50 @@ class DatabaseService {
       _initCompleter!.completeError(e);
       _initCompleter = null;
       rethrow;
+    }
+  }
+
+  /// Initialize all finance boxes in the correct order
+  /// This prevents race conditions when multiple storage classes try to open boxes simultaneously
+  Future<void> _initializeFinanceBoxes() async {
+    try {
+      _logger.debug('Service', '[DatabaseService] Initializing finance boxes...');
+
+      // Open all finance boxes in order
+      final financeBoxes = [
+        'finance_categories',
+        'finance_transactions',
+        'finance_recurring_transactions',
+        'finance_budgets',
+        'finance_cash_flow_projections',
+        'finance_alerts',
+        'finance_task_links',
+      ];
+
+      for (final boxName in financeBoxes) {
+        if (!Hive.isBoxOpen(boxName)) {
+          try {
+            await Hive.openBox(boxName);
+            _logger.debug('Service', '[DatabaseService] Opened finance box: $boxName');
+          } catch (e) {
+            _logger.warning(
+              'DatabaseService',
+              'Error opening finance box $boxName: $e',
+            );
+            // Continue with other boxes even if one fails
+          }
+        }
+      }
+
+      _logger.debug('Service', '[DatabaseService] Finance boxes initialized');
+    } catch (e, stack) {
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        severity: ErrorSeverity.warning,
+        message: 'Error initializing finance boxes',
+        stackTrace: stack,
+      );
     }
   }
 

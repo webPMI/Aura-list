@@ -16,13 +16,34 @@ class TaskFinanceLinkStorage {
   Future<void> init() async {
     if (_initialized && _box != null && _box!.isOpen) return;
     try {
+      // Check if TaskFinanceLink adapter is registered (typeId: 28)
+      if (!Hive.isAdapterRegistered(28)) {
+        _logger.warning(
+          'Finance',
+          '[TaskFinanceLinkStorage] Hive adapter not registered yet',
+        );
+        _errorHandler.handle(
+          Exception('Hive adapter not registered for TaskFinanceLink'),
+          type: ErrorType.database,
+          message: 'TaskFinanceLink adapter not registered',
+        );
+        return;
+      }
+
       _box = Hive.isBoxOpen(boxName)
           ? Hive.box<TaskFinanceLink>(boxName)
           : await Hive.openBox<TaskFinanceLink>(boxName);
       _initialized = true;
       _logger.debug('Finance', '[TaskFinanceLinkStorage] Initialized');
     } catch (e, stack) {
-      _errorHandler.handle(e, type: ErrorType.database, stackTrace: stack);
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al inicializar TaskFinanceLinkStorage',
+        stackTrace: stack,
+      );
+      _initialized = false;
+      _box = null;
     }
   }
 
@@ -101,27 +122,51 @@ class TaskFinanceLinkStorage {
   Future<void> save(TaskFinanceLink link) async {
     try {
       if (!_initialized) await init();
+      if (_box == null) {
+        _logger.warning(
+          'Finance',
+          '[TaskFinanceLinkStorage] Box not initialized, cannot save',
+        );
+        return;
+      }
       if (link.isInBox) {
         await link.save();
       } else {
-        await _box?.add(link);
+        await _box!.add(link);
       }
     } catch (e, stack) {
-      _errorHandler.handle(e, type: ErrorType.database, stackTrace: stack);
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al guardar enlace tarea-finanzas',
+        stackTrace: stack,
+      );
     }
   }
 
   Future<void> delete(dynamic key) async {
     try {
       if (!_initialized) await init();
-      final link = _box?.get(key);
+      if (_box == null) {
+        _logger.warning(
+          'Finance',
+          '[TaskFinanceLinkStorage] Box not initialized, cannot delete',
+        );
+        return;
+      }
+      final link = _box!.get(key);
       if (link != null) {
         link.deleted = true;
         link.deletedAt = DateTime.now();
         await link.save();
       }
     } catch (e, stack) {
-      _errorHandler.handle(e, type: ErrorType.database, stackTrace: stack);
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al eliminar enlace tarea-finanzas',
+        stackTrace: stack,
+      );
     }
   }
 

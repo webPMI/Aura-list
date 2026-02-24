@@ -2,24 +2,37 @@ import '../data/transaction_storage.dart';
 import '../data/firestore_transaction_storage.dart';
 import '../../../services/error_handler.dart';
 import '../models/transaction.dart';
-import '../../../services/sync/sync_utils.dart';
 import '../../../services/contracts/i_sync_service.dart';
 import 'base_sync_service.dart';
 
 /// Adapter to make TransactionStorage compatible with BaseSyncStorage
 class _TransactionStorageAdapter implements BaseSyncStorage<Transaction> {
   final TransactionStorage _storage;
+  final Map<dynamic, Transaction?> _cache = {};
 
   _TransactionStorageAdapter(this._storage);
 
   @override
   Transaction? getByKey(dynamic key) {
-    // Make synchronous by running async method (safe since Hive is synchronous)
-    return _storage.getByKey(key) as Transaction?;
+    // Hive's get is synchronous, but getByKey is async for consistency
+    // Use a cache to avoid async/sync mismatch
+    if (_cache.containsKey(key)) {
+      return _cache[key];
+    }
+    // Schedule async load and return cached value
+    _storage.getByKey(key).then((value) {
+      _cache[key] = value;
+    });
+    return _cache[key];
   }
 
   @override
-  Future<void> save(Transaction item) => _storage.save(item);
+  Future<void> save(Transaction item) async {
+    await _storage.save(item);
+    if (item.key != null) {
+      _cache[item.key] = item;
+    }
+  }
 
   @override
   bool get isAvailable => true;
