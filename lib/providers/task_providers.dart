@@ -163,3 +163,27 @@ final isTaskSyncingProvider = Provider<bool>((ref) {
   final syncService = ref.watch(taskSyncServiceProvider);
   return syncService.isSyncing;
 });
+
+// ==================== OVERDUE TASKS PROVIDER ====================
+
+/// Provider for overdue tasks (tasks with deadline < now and not completed)
+final overdueTasksStreamProvider = StreamProvider.autoDispose<List<Task>>((ref) async* {
+  final localStorage = ref.watch(hiveTaskStorageProvider);
+  await localStorage.init();
+
+  // Watch all tasks and filter for overdue ones
+  await for (final tasks in localStorage.watch()) {
+    final now = DateTime.now();
+    final overdueTasks = tasks.where((task) {
+      return !task.isCompleted &&
+             !task.deleted &&
+             task.deadline != null &&
+             task.deadline!.isBefore(now);
+    }).toList();
+
+    // Sort by deadline (most overdue first)
+    overdueTasks.sort((a, b) => a.deadline!.compareTo(b.deadline!));
+
+    yield overdueTasks;
+  }
+});

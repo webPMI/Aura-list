@@ -1,0 +1,64 @@
+Anubis-Vínculo - Image Generation Prompts
+============================================================
+
+ID: anubis-vinculo
+Color: #212121
+Archetype: Guardián
+
+============================================================
+
+VARIATION 1: Threshold Guardian
+------------------------------------------------------------
+
+PROMPT:
+egyptian jackal guardian deity at threshold gate, black and gold colors (#212121, #FFD54F), anubis god of transitions, weighing scale of privacy, protective stance, golden ankh symbol, guardian of sacred data, threshold guardian aesthetic, digital-ancient fusion, secure passage energy, fantasy art, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 2: Anime Anubis
+------------------------------------------------------------
+
+PROMPT:
+anime style black and gold jackal guardian, vibrant threshold gate (#212121, #FFD54F), powerful protective pose, bold contrasting colors, dynamic anubis aesthetic, sacred energy, centered guardian composition, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 3: Geometric Guardian
+------------------------------------------------------------
+
+PROMPT:
+minimalist geometric jackal figure with ankh symbol, black and gold (#212121, #FFD54F) angular protection pattern, clean threshold lines, modern anubis aesthetic, symbolic security, elegant guardian composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 4: Watercolor Threshold
+------------------------------------------------------------
+
+PROMPT:
+watercolor painting of black and gold guardian, flowing brushstrokes of protective energy (#212121, #FFD54F), dreamy sacred atmosphere, contrasting washes, artistic guardian aesthetic, dignified gentle patterns, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 5: Art Nouveau Anubis
+------------------------------------------------------------
+
+PROMPT:
+art nouveau style jackal guardian with ornate black and gold patterns (#212121, #FFD54F), decorative threshold gate, elegant flowing protection design, intricate border of security, sophisticated contrasting palette, mythical guardian aesthetic, centered ornamental composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+

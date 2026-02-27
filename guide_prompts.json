@@ -1,0 +1,108 @@
+{
+  "config": {
+    "base_style": "mystical celestial character portrait, fantasy art, ethereal glow, centered composition, dramatic lighting, 1:1 square format",
+    "negative_prompt": "ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric",
+    "steps": 30,
+    "cfg_scale": 7.5,
+    "width": 512,
+    "height": 512,
+    "sampler": "DPM++ 2M Karras"
+  },
+  "guides": [
+    {
+      "id": "luna-vacia",
+      "name": "Luna-Vacía",
+      "prompt": "Purple ethereal samurai warrior in meditation pose, lunar energy emanating from armor, crescent moon symbol on forehead, serene peaceful expression, flowing silver-purple robes, void and emptiness aesthetic, deep purple (#4A148C) and silver tones, japanese zen warrior, mystical aura, starlit night background, tranquil energy"
+    },
+    {
+      "id": "helioforja",
+      "name": "Helioforja",
+      "prompt": "Powerful blacksmith deity forging in cosmic flames, red-hot molten metal (#8B2500), muscular silhouette against burning sun, hammer raised high, sparks of creation, intense fiery aura, dark crimson and orange tones, forge of the sun, divine craftsman, raw physical power, flames dancing around figure"
+    },
+    {
+      "id": "leona-nova",
+      "name": "Leona-Nova",
+      "prompt": "Regal golden lioness sovereign wearing solar crown, majestic and noble posture, golden mane flowing like sunlight (#B8860B), leo constellation visible in background, queenly authority, warm golden amber tones, celestial royalty, disciplined grace, solar rhythms, radiant dignified presence"
+    },
+    {
+      "id": "chispa-azul",
+      "name": "Chispa-Azul",
+      "prompt": "Lightning messenger deity in motion blur, electric blue energy (#1E88E5) crackling around body, quicksilver speed, dynamic action pose, winged sandals, mercury-like fluidity, bright blue and white lightning bolts, messenger of gods, rapid movement trails, vibrant electric atmosphere"
+    },
+    {
+      "id": "gloria-sincro",
+      "name": "Gloria-Sincro",
+      "prompt": "Victorious weaver goddess holding golden laurel crown (#FFD700), triumphant pose, threads of achievement flowing from hands, nike-inspired victory figure, radiant golden light, proud dignified expression, tapestry of success behind, brilliant gold and amber tones, achievement and glory personified"
+    },
+    {
+      "id": "pacha-nexo",
+      "name": "Pacha-Nexo",
+      "prompt": "Earth mother deity weaving ecosystem web, green life energy (#2E7D32) connecting all living things, gaia-inspired figure, hands creating interconnected network, nature and technology merged, verdant forest green tones, web of life visualization, harmonious balance, holistic ecosystem guardian"
+    },
+    {
+      "id": "gea-metrica",
+      "name": "Gea-Métrica",
+      "prompt": "Earth goddess nurturing growing seedlings, gentle maternal presence, hands in fertile soil, plants sprouting with geometric patterns (#388E3C), gaia earth mother, natural growth cycles, rich green and brown earth tones, garden of habits, patient cultivation, seasonal rhythms visible"
+    },
+    {
+      "id": "selene-fase",
+      "name": "Selene-Fase",
+      "prompt": "Lunar phase weaver goddess under crescent moon, silver-gray robes (#B0BEC5) flowing like moonlight, all moon phases orbiting around figure, selene moon deity, gentle progressive energy, pearl and silver tones, waxing and waning cycles, patient transformation, soft ethereal glow"
+    },
+    {
+      "id": "viento-estacion",
+      "name": "Viento-Estación",
+      "prompt": "Wind navigator deity with seasonal elements swirling, sky blue robes (#0288D1) billowing in mystical winds, compass rose symbol, four seasons represented in background, zephyr wind god, sailing vessel motif, azure and cyan tones, adaptive flow, seasonal transitions visible"
+    },
+    {
+      "id": "atlas-orbital",
+      "name": "Atlas-Orbital",
+      "prompt": "Titan sustaining orbital spheres on shoulders, strong dignified posture, cosmic orbs floating in synchronized paths (#37474F), atlas mythology, burden and strength, dark steel gray tones, celestial mechanics visible, reliable foundation, gravity and orbit visualized, eternal support"
+    },
+    {
+      "id": "erebo-logica",
+      "name": "Érebo-Lógica",
+      "prompt": "Calm oracle figure in twilight shadows, soothing presence amid darkness, soft gray-blue tones (#455A64), erebus penumbra deity, gentle wisdom, ordered mind visualization, first step glowing in shadow, tranquil meditation, anxiety dissolving into clarity, structured calm"
+    },
+    {
+      "id": "anima-suave",
+      "name": "Ánima-Suave",
+      "prompt": "Gentle messenger with butterfly wings, soft pink aura (#F8BBD9), psyche-inspired figure, whispering presence, delicate and compassionate, pastel rose tones, tender notification, floating ethereal being, butterfly symbolism, non-judgmental companion, soft glow of awareness"
+    },
+    {
+      "id": "morfeo-astral",
+      "name": "Morfeo-Astral",
+      "prompt": "Dream weaver deity spinning cosmic threads, purple mystical energy (#7E57C2), morpheus god of dreams, floating notes and ideas materialized, loom of consciousness, deep violet and lavender tones, astral plane aesthetic, dreamcatcher motif, thoughts becoming reality"
+    },
+    {
+      "id": "shiva-fluido",
+      "name": "Shiva-Fluido",
+      "prompt": "Dancing deity in cosmic dance pose, fluid transformation energy (#5E35B1), shiva nataraja inspired, circle of change around figure, graceful dynamic movement, deep purple and indigo tones, creation and destruction balanced, adaptable flow, plans shifting like water"
+    },
+    {
+      "id": "loki-error",
+      "name": "Loki-Error",
+      "prompt": "Trickster deity with mischievous knowing smile, orange chaos energy (#FF8F00) swirling playfully, loki norse god, unexpected paths visible, dice and chance symbols, amber and gold tones, theatrical masks, clever improvisation, hidden order in chaos, friendly chaos agent"
+    },
+    {
+      "id": "eris-nucleo",
+      "name": "Eris-Núcleo",
+      "prompt": "Creative spark goddess holding golden apple, magenta creative energy (#C2185B) radiating outward, eris goddess of discord and creativity, breakthrough moment visualization, fuchsia and pink tones, idea explosion, divine inspiration spark, catalyst of change, innovative fire"
+    },
+    {
+      "id": "anubis-vinculo",
+      "name": "Anubis-Vínculo",
+      "prompt": "Egyptian jackal guardian deity at threshold gate, black and gold colors (#212121, #FFD54F), anubis god of transitions, weighing scale of privacy, protective stance, golden ankh symbol, guardian of sacred data, threshold guardian, digital-ancient fusion, secure passage"
+    },
+    {
+      "id": "zenit-cero",
+      "name": "Zenit-Cero",
+      "prompt": "Celestial cartographer reading star maps, bright blue navigation tools (#0277BD), astrolabe and compass symbols, zenith point above, constellation charts visible, cyan and azure tones, data as stars, objective observer, cosmic measurement, non-judgmental mapping"
+    },
+    {
+      "id": "oceano-bit",
+      "name": "Océano-Bit",
+      "prompt": "Ocean deity in flowing water form, turquoise digital waves (#00838F), poseidon-inspired figure, flowing effortless movement, water and code merged, cyan and teal tones, river of consciousness, mental flow state, fluid adaptation, currents of thought visible, peaceful momentum"
+    }
+  ]
+}

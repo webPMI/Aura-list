@@ -1,0 +1,64 @@
+Gea-Métrica - Image Generation Prompts
+============================================================
+
+ID: gea-metrica
+Color: #388E3C
+Archetype: Guardiana de Hábitos
+
+============================================================
+
+VARIATION 1: Earth Nurturer
+------------------------------------------------------------
+
+PROMPT:
+earth goddess nurturing growing seedlings, gentle maternal presence, hands in fertile soil, plants sprouting with geometric patterns (#388E3C), gaia earth mother, natural growth cycles, rich green and brown earth tones, garden of habits, patient cultivation aesthetic, fantasy art, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 2: Anime Growth
+------------------------------------------------------------
+
+PROMPT:
+anime style earth goddess with growing plants, vibrant green (#388E3C) sprouting energy, nurturing pose, bright natural colors, bold garden aesthetic, gaia cultivation, centered growth composition, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 3: Geometric Growth
+------------------------------------------------------------
+
+PROMPT:
+minimalist geometric earth figure with seedling symbols, green (#388E3C) angular growth pattern, clean cultivation lines, modern gaia aesthetic, symbolic habits, elegant growth composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 4: Watercolor Garden
+------------------------------------------------------------
+
+PROMPT:
+watercolor painting of green earth nurturer, flowing brushstrokes of sprouting plants (#388E3C), dreamy growth atmosphere, soft earth washes, artistic cultivation aesthetic, organic gentle patterns, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 5: Art Nouveau Earth
+------------------------------------------------------------
+
+PROMPT:
+art nouveau style earth goddess with ornate green patterns (#388E3C), decorative growing vines, elegant flowing plant design, intricate border of nature, sophisticated verdant palette, mythical nurturing aesthetic, centered ornamental composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+

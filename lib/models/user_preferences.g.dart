@@ -32,13 +32,22 @@ class UserPreferencesAdapter extends TypeAdapter<UserPreferences> {
       firestoreId: fields[12] as String?,
       lastUpdatedAt: fields[13] as DateTime?,
       restDayOfWeek: fields[14] as int?,
+      notificationDeadlineReminders:
+          fields[15] == null ? true : fields[15] as bool,
+      notificationQuietHourStart: fields[16] == null ? 22 : fields[16] as int,
+      notificationQuietHourEnd: fields[17] == null ? 8 : fields[17] as int,
+      notificationHighPriorityOnly:
+          fields[18] == null ? false : fields[18] as bool,
+      notificationSound: fields[19] == null ? true : fields[19] as bool,
+      notificationVibration: fields[20] == null ? true : fields[20] as bool,
+      notificationEscalationDays: (fields[21] as List?)?.cast<int>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, UserPreferences obj) {
     writer
-      ..writeByte(15)
+      ..writeByte(22)
       ..writeByte(0)
       ..write(obj.odId)
       ..writeByte(1)
@@ -68,7 +77,21 @@ class UserPreferencesAdapter extends TypeAdapter<UserPreferences> {
       ..writeByte(13)
       ..write(obj.lastUpdatedAt)
       ..writeByte(14)
-      ..write(obj.restDayOfWeek);
+      ..write(obj.restDayOfWeek)
+      ..writeByte(15)
+      ..write(obj.notificationDeadlineReminders)
+      ..writeByte(16)
+      ..write(obj.notificationQuietHourStart)
+      ..writeByte(17)
+      ..write(obj.notificationQuietHourEnd)
+      ..writeByte(18)
+      ..write(obj.notificationHighPriorityOnly)
+      ..writeByte(19)
+      ..write(obj.notificationSound)
+      ..writeByte(20)
+      ..write(obj.notificationVibration)
+      ..writeByte(21)
+      ..write(obj.notificationEscalationDays);
   }
 
   @override

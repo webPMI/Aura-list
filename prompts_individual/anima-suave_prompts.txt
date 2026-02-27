@@ -1,0 +1,64 @@
+Ánima-Suave - Image Generation Prompts
+============================================================
+
+ID: anima-suave
+Color: #F8BBD9
+Archetype: Mensajera Suave
+
+============================================================
+
+VARIATION 1: Butterfly Messenger
+------------------------------------------------------------
+
+PROMPT:
+gentle messenger with butterfly wings, soft pink aura (#F8BBD9), psyche-inspired figure, whispering presence, delicate and compassionate energy, pastel rose tones, tender notification aesthetic, floating ethereal being, butterfly symbolism, non-judgmental companion, soft glow of awareness, fantasy art, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 2: Anime Whisper
+------------------------------------------------------------
+
+PROMPT:
+anime style pink butterfly messenger, vibrant soft aura (#F8BBD9), gentle floating pose, bright pastel colors, delicate psyche aesthetic, tender energy, centered compassionate composition, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 3: Geometric Softness
+------------------------------------------------------------
+
+PROMPT:
+minimalist geometric butterfly figure, pink (#F8BBD9) angular gentle pattern, clean whisper lines, modern psyche aesthetic, symbolic tenderness, elegant soft composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 4: Watercolor Flutter
+------------------------------------------------------------
+
+PROMPT:
+watercolor painting of pink butterfly messenger, flowing brushstrokes of gentle wings (#F8BBD9), dreamy soft atmosphere, pastel washes, artistic compassion aesthetic, delicate ethereal patterns, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 5: Art Nouveau Psyche
+------------------------------------------------------------
+
+PROMPT:
+art nouveau style messenger with ornate pink patterns (#F8BBD9), decorative butterfly wings, elegant flowing gentle design, intricate border of tenderness, sophisticated pastel palette, mythical soft aesthetic, centered ornamental composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+

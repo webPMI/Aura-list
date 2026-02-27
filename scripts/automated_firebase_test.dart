@@ -4,6 +4,8 @@
 /// It uses Firebase REST APIs to create test users and verify sync operations.
 ///
 /// Usage: dart run scripts/automated_firebase_test.dart
+// ignore_for_file: avoid_print
+
 library;
 
 import 'dart:convert';
@@ -70,11 +72,7 @@ Future<void> testCreateUser() async {
 
   final response = await httpPost(
     'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=$apiKey',
-    {
-      'email': testEmail,
-      'password': testPassword,
-      'returnSecureToken': true,
-    },
+    {'email': testEmail, 'password': testPassword, 'returnSecureToken': true},
   );
 
   if (response['error'] != null) {
@@ -94,11 +92,7 @@ Future<void> testSignIn() async {
 
   final response = await httpPost(
     'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=$apiKey',
-    {
-      'email': testEmail,
-      'password': testPassword,
-      'returnSecureToken': true,
-    },
+    {'email': testEmail, 'password': testPassword, 'returnSecureToken': true},
   );
 
   if (response['error'] != null) {
@@ -117,17 +111,13 @@ Future<void> testFirestoreWrite() async {
 
   final docPath = 'users/$localId';
 
-  final response = await firestoreRequest(
-    'PATCH',
-    docPath,
-    {
-      'fields': {
-        'createdAt': {'timestampValue': DateTime.now().toUtc().toIso8601String()},
-        'email': {'stringValue': testEmail},
-        'testField': {'stringValue': 'test_value'},
-      },
+  final response = await firestoreRequest('PATCH', docPath, {
+    'fields': {
+      'createdAt': {'timestampValue': DateTime.now().toUtc().toIso8601String()},
+      'email': {'stringValue': testEmail},
+      'testField': {'stringValue': 'test_value'},
     },
-  );
+  });
 
   if (response['error'] != null) {
     throw Exception('Firestore write failed: ${response['error']['message']}');
@@ -173,10 +163,17 @@ Future<void> testTaskSync() async {
       'isCompleted': {'booleanValue': false},
       'createdAt': {'timestampValue': DateTime.now().toUtc().toIso8601String()},
       'updatedAt': {'timestampValue': DateTime.now().toUtc().toIso8601String()},
-      'dueDate': {'timestampValue': DateTime.now().add(Duration(days: 1)).toUtc().toIso8601String()},
+      'dueDate': {
+        'timestampValue': DateTime.now()
+            .add(Duration(days: 1))
+            .toUtc()
+            .toIso8601String(),
+      },
       'motivation': {'stringValue': 'Test motivation'},
       'reward': {'stringValue': 'Test reward'},
-      'subtasks': {'arrayValue': {'values': []}},
+      'subtasks': {
+        'arrayValue': {'values': []},
+      },
     },
   };
 
@@ -203,10 +200,14 @@ Future<void> testNoteSync() async {
       'content': {'stringValue': 'Test content'},
       'color': {'stringValue': '#FF5722'},
       'isPinned': {'booleanValue': false},
-      'tags': {'arrayValue': {'values': [
-        {'stringValue': 'test'},
-        {'stringValue': 'automated'},
-      ]}},
+      'tags': {
+        'arrayValue': {
+          'values': [
+            {'stringValue': 'test'},
+            {'stringValue': 'automated'},
+          ],
+        },
+      },
       'createdAt': {'timestampValue': DateTime.now().toUtc().toIso8601String()},
       'updatedAt': {'timestampValue': DateTime.now().toUtc().toIso8601String()},
       'deleted': {'booleanValue': false},
@@ -214,17 +215,31 @@ Future<void> testNoteSync() async {
       'notebookId': {'stringValue': 'test_notebook'},
       'status': {'stringValue': 'active'},
       'contentType': {'stringValue': 'rich'},
-      'richContent': {'stringValue': '{"ops":[{"insert":"Rich text content\\n"}]}'},
-      'checklist': {'arrayValue': {'values': [
-        {'mapValue': {'fields': {
-          'text': {'stringValue': 'Checklist item 1'},
-          'isCompleted': {'booleanValue': false},
-        }}},
-        {'mapValue': {'fields': {
-          'text': {'stringValue': 'Checklist item 2'},
-          'isCompleted': {'booleanValue': true},
-        }}},
-      ]}},
+      'richContent': {
+        'stringValue': '{"ops":[{"insert":"Rich text content\\n"}]}',
+      },
+      'checklist': {
+        'arrayValue': {
+          'values': [
+            {
+              'mapValue': {
+                'fields': {
+                  'text': {'stringValue': 'Checklist item 1'},
+                  'isCompleted': {'booleanValue': false},
+                },
+              },
+            },
+            {
+              'mapValue': {
+                'fields': {
+                  'text': {'stringValue': 'Checklist item 2'},
+                  'isCompleted': {'booleanValue': true},
+                },
+              },
+            },
+          ],
+        },
+      },
     },
   };
 
@@ -239,7 +254,13 @@ Future<void> testNoteSync() async {
   final fields = readResponse['fields'];
 
   // Check all critical fields exist
-  final criticalFields = ['notebookId', 'status', 'contentType', 'richContent', 'checklist'];
+  final criticalFields = [
+    'notebookId',
+    'status',
+    'contentType',
+    'richContent',
+    'checklist',
+  ];
   for (final field in criticalFields) {
     if (fields[field] == null) {
       throw Exception('Missing critical field: $field');
@@ -309,9 +330,7 @@ Future<void> cleanup() async {
       // Delete the test user account
       final response = await httpPost(
         'https://identitytoolkit.googleapis.com/v1/accounts:delete?key=$apiKey',
-        {
-          'idToken': idToken,
-        },
+        {'idToken': idToken},
       );
 
       if (response['error'] == null) {
@@ -330,7 +349,10 @@ void printTest(String name) {
   print('-' * 40);
 }
 
-Future<Map<String, dynamic>> httpPost(String url, Map<String, dynamic> body) async {
+Future<Map<String, dynamic>> httpPost(
+  String url,
+  Map<String, dynamic> body,
+) async {
   final client = HttpClient();
   try {
     final request = await client.postUrl(Uri.parse(url));
@@ -350,7 +372,8 @@ Future<Map<String, dynamic>> firestoreRequest(
   String docPath,
   Map<String, dynamic>? body,
 ) async {
-  final baseUrl = 'https://firestore.googleapis.com/v1/projects/$projectId/databases/(default)/documents';
+  final baseUrl =
+      'https://firestore.googleapis.com/v1/projects/$projectId/databases/(default)/documents';
   final url = '$baseUrl/$docPath';
 
   final client = HttpClient();

@@ -8,10 +8,7 @@ import '../../../models/recurrence_rule.dart';
 class AddRecurringTransactionDialog extends ConsumerStatefulWidget {
   final Map<String, dynamic>? existingTransaction;
 
-  const AddRecurringTransactionDialog({
-    super.key,
-    this.existingTransaction,
-  });
+  const AddRecurringTransactionDialog({super.key, this.existingTransaction});
 
   @override
   ConsumerState<AddRecurringTransactionDialog> createState() =>
@@ -132,10 +129,13 @@ class _AddRecurringTransactionDialogState
                     prefixText: '€ ',
                     prefixIcon: Icon(Icons.euro),
                   ),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   validator: (value) {
                     if (value == null || value.isEmpty) return 'Requerido';
-                    if (double.tryParse(value) == null) return 'Número inválido';
+                    if (double.tryParse(value) == null)
+                      return 'Número inválido';
                     return null;
                   },
                 ),
@@ -143,17 +143,14 @@ class _AddRecurringTransactionDialogState
 
                 // Categoría
                 DropdownButtonFormField<FinanceCategory>(
-                  value: _selectedCategory,
+                  initialValue: _selectedCategory,
                   decoration: const InputDecoration(
                     labelText: 'Categoría',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.category),
                   ),
                   items: categories.map((c) {
-                    return DropdownMenuItem(
-                      value: c,
-                      child: Text(c.name),
-                    );
+                    return DropdownMenuItem(value: c, child: Text(c.name));
                   }).toList(),
                   onChanged: (value) {
                     setState(() => _selectedCategory = value);
@@ -166,14 +163,14 @@ class _AddRecurringTransactionDialogState
                 Text(
                   'Recurrencia',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 12),
 
                 // Frecuencia
                 DropdownButtonFormField<RecurrenceFrequency>(
-                  value: _frequency,
+                  initialValue: _frequency,
                   decoration: const InputDecoration(
                     labelText: 'Frecuencia',
                     border: OutlineInputBorder(),
@@ -391,10 +388,7 @@ class _AddRecurringTransactionDialogState
               child: Text('Mismo día que inicio'),
             ),
             ...List.generate(31, (i) => i + 1).map((day) {
-              return DropdownMenuItem(
-                value: day,
-                child: Text('Día $day'),
-              );
+              return DropdownMenuItem(value: day, child: Text('Día $day'));
             }),
             const DropdownMenuItem(
               value: -1,
@@ -428,9 +422,7 @@ class _AddRecurringTransactionDialogState
       // TODO: Guardar transacción recurrente
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Transacción recurrente guardada'),
-        ),
+        const SnackBar(content: Text('Transacción recurrente guardada')),
       );
     }
   }

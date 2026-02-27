@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # Stable Diffusion WebUI con API habilitada
+  stable-diffusion:
+    image: ghcr.io/abhimanyu003/stablestudio:latest
+    container_name: auralist-sd-webui
+    ports:
+      - "7860:7860"  # WebUI
+      - "7861:7861"  # API
+    volumes:
+      - ./ai-models:/models
+      - ./generated-avatars:/outputs
+      - ./prompts:/prompts
+    environment:
+      - CLI_ARGS=--api --listen --enable-insecure-extension-access
+      - COMMANDLINE_ARGS=--xformers --medvram
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  # Servicio Python para generación automatizada
+  avatar-generator:
+    build:
+      context: .
+      dockerfile: Dockerfile.avatar-gen
+    container_name: auralist-avatar-gen
+    depends_on:
+      - stable-diffusion
+    volumes:
+      - ./lib/features/guides/data:/app/guides-data:ro
+      - ./generated-avatars:/app/output
+      - ./prompts:/app/prompts
+    environment:
+      - SD_API_URL=http://stable-diffusion:7860
+      - OUTPUT_DIR=/app/output
+      - GUIDES_DATA_PATH=/app/guides-data/guide_catalog.dart
+    command: python generate_all_avatars.py
+    restart: "no"
+
+volumes:
+  ai-models:
+  generated-avatars:
+  prompts:

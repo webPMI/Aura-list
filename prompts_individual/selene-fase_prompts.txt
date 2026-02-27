@@ -1,0 +1,64 @@
+Selene-Fase - Image Generation Prompts
+============================================================
+
+ID: selene-fase
+Color: #B0BEC5
+Archetype: Tejedora de Fases
+
+============================================================
+
+VARIATION 1: Lunar Phases
+------------------------------------------------------------
+
+PROMPT:
+lunar phase weaver goddess under crescent moon, silver-gray robes (#B0BEC5) flowing like moonlight, all moon phases orbiting around figure, selene moon deity, gentle progressive energy, pearl and silver tones, waxing and waning cycles visible, patient transformation aesthetic, fantasy art, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 2: Anime Moon Cycles
+------------------------------------------------------------
+
+PROMPT:
+anime style silver moon weaver, vibrant lunar phases (#B0BEC5) orbiting, dynamic gentle pose, bright pearl and silver colors, bold moon aesthetic, selene energy, centered phase composition, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 3: Geometric Phases
+------------------------------------------------------------
+
+PROMPT:
+minimalist geometric moon figure with phase symbols, silver (#B0BEC5) angular moon pattern, clean cycle lines, modern selene aesthetic, symbolic transformation, elegant progressive composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 4: Watercolor Moonlight
+------------------------------------------------------------
+
+PROMPT:
+watercolor painting of silver moon weaver, flowing brushstrokes of lunar phases (#B0BEC5), dreamy cycle atmosphere, soft moonlight washes, artistic transformation aesthetic, gentle ethereal patterns, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 5: Art Nouveau Luna
+------------------------------------------------------------
+
+PROMPT:
+art nouveau style moon goddess with ornate silver patterns (#B0BEC5), decorative lunar phases, elegant flowing moonlight design, intricate border of cycles, sophisticated pearl palette, mythical progressive aesthetic, centered ornamental composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+

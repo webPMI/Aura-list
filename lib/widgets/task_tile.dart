@@ -15,6 +15,7 @@ import 'shared/blessing_feedback.dart';
 import 'shared/celebration_overlay.dart';
 import 'streak_celebration_widget.dart';
 import 'task_stats.dart';
+import 'dialogs/save_as_template_dialog.dart';
 
 class TaskTile extends ConsumerWidget {
   final Task task;
@@ -176,6 +177,34 @@ class TaskTile extends ConsumerWidget {
     }
   }
 
+  /// Prompts the user to save the completed task as a template
+  void _promptSaveAsTemplate(BuildContext context, WidgetRef ref) async {
+    try {
+      // Only prompt for tasks that might be useful as templates
+      // Skip if task has no useful metadata
+      final hasUsefulData = task.motivation != null ||
+          task.reward != null ||
+          task.dueTimeMinutes != null ||
+          task.financialCost != null ||
+          task.financialBenefit != null;
+
+      if (!hasUsefulData) return;
+
+      // Don't show dialog too frequently - only occasionally
+      // This prevents annoying the user with too many prompts
+      final random = DateTime.now().millisecond % 3;
+      if (random != 0) return; // Show only 1 out of 3 times
+
+      await showSaveAsTemplateDialog(
+        context: context,
+        ref: ref,
+        task: task,
+      );
+    } catch (e, stack) {
+      LoggerService().error('TaskTile', 'Error al mostrar diálogo de guardar plantilla', error: e, stack: stack);
+    }
+  }
+
   /// Toggles the task completion state and shows a 5-second undo SnackBar.
   ///
   /// Handles celebrations (only on completion), history recording for daily
@@ -204,6 +233,14 @@ class TaskTile extends ConsumerWidget {
         _checkAndShowStreakCelebration(context, ref);
         _incrementGuideAffinity(context, ref);
         _checkAndShowAchievements(context, ref);
+
+        // After celebrations, ask if user wants to save as template
+        // Delay to avoid overlapping with other dialogs
+        Future.delayed(const Duration(milliseconds: 2000), () {
+          if (context.mounted) {
+            _promptSaveAsTemplate(context, ref);
+          }
+        });
       }
 
       // Show undo SnackBar
@@ -246,6 +283,185 @@ class TaskTile extends ConsumerWidget {
     } catch (e) {
       onFeedback?.call('Error al actualizar');
     }
+  }
+
+  /// Muestra un menu para seleccionar cuándo posponer la tarea.
+  void _showSnoozeMenu(BuildContext context, WidgetRef ref) async {
+    final now = DateTime.now();
+
+    // Calcular las opciones de posposición
+    final laterToday = now.add(const Duration(hours: 4));
+    final tonight = DateTime(now.year, now.month, now.day, 20, 0); // 8 PM
+    final tomorrow = DateTime(now.year, now.month, now.day + 1, 9, 0); // 9 AM mañana
+
+    // Próximo lunes a las 9 AM
+    var nextMonday = now.add(Duration(days: (8 - now.weekday) % 7));
+    if (nextMonday.difference(now).inDays < 1) {
+      nextMonday = nextMonday.add(const Duration(days: 7));
+    }
+    nextMonday = DateTime(nextMonday.year, nextMonday.month, nextMonday.day, 9, 0);
+
+    final nextWeek = now.add(const Duration(days: 7));
+
+    await showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Text(
+                  'Posponer tarea',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(ctx).colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.access_time),
+                title: const Text('Más tarde hoy'),
+                subtitle: Text(DateFormat('HH:mm').format(laterToday)),
+                onTap: () async {
+                  Navigator.of(ctx).pop();
+                  try {
+                    await ref.read(tasksProvider(task.type).notifier).snoozeTask(task, laterToday);
+                    if (context.mounted) {
+                      onFeedback?.call('Tarea pospuesta');
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      onFeedback?.call('Error al posponer');
+                    }
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.nightlight),
+                title: const Text('Esta noche'),
+                subtitle: Text(DateFormat('HH:mm').format(tonight)),
+                onTap: () async {
+                  Navigator.of(ctx).pop();
+                  try {
+                    await ref.read(tasksProvider(task.type).notifier).snoozeTask(task, tonight);
+                    if (context.mounted) {
+                      onFeedback?.call('Tarea pospuesta');
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      onFeedback?.call('Error al posponer');
+                    }
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.wb_sunny),
+                title: const Text('Mañana'),
+                subtitle: Text(DateFormat('dd/MM HH:mm').format(tomorrow)),
+                onTap: () async {
+                  Navigator.of(ctx).pop();
+                  try {
+                    await ref.read(tasksProvider(task.type).notifier).snoozeTask(task, tomorrow);
+                    if (context.mounted) {
+                      onFeedback?.call('Tarea pospuesta');
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      onFeedback?.call('Error al posponer');
+                    }
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.calendar_today),
+                title: const Text('Próximo lunes'),
+                subtitle: Text(DateFormat('dd/MM HH:mm').format(nextMonday)),
+                onTap: () async {
+                  Navigator.of(ctx).pop();
+                  try {
+                    await ref.read(tasksProvider(task.type).notifier).snoozeTask(task, nextMonday);
+                    if (context.mounted) {
+                      onFeedback?.call('Tarea pospuesta');
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      onFeedback?.call('Error al posponer');
+                    }
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.event),
+                title: const Text('Próxima semana'),
+                subtitle: Text(DateFormat('dd/MM HH:mm').format(nextWeek)),
+                onTap: () async {
+                  Navigator.of(ctx).pop();
+                  try {
+                    await ref.read(tasksProvider(task.type).notifier).snoozeTask(task, nextWeek);
+                    if (context.mounted) {
+                      onFeedback?.call('Tarea pospuesta');
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      onFeedback?.call('Error al posponer');
+                    }
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.edit_calendar),
+                title: const Text('Elegir fecha...'),
+                onTap: () async {
+                  Navigator.of(ctx).pop();
+                  final selectedDate = await showDatePicker(
+                    context: context,
+                    initialDate: now,
+                    firstDate: now,
+                    lastDate: now.add(const Duration(days: 365)),
+                  );
+
+                  if (selectedDate != null && context.mounted) {
+                    final selectedTime = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.fromDateTime(now.add(const Duration(hours: 1))),
+                    );
+
+                    if (selectedTime != null) {
+                      final deferredUntil = DateTime(
+                        selectedDate.year,
+                        selectedDate.month,
+                        selectedDate.day,
+                        selectedTime.hour,
+                        selectedTime.minute,
+                      );
+
+                      try {
+                        await ref.read(tasksProvider(task.type).notifier).snoozeTask(task, deferredUntil);
+                        if (context.mounted) {
+                          onFeedback?.call('Tarea pospuesta');
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          onFeedback?.call('Error al posponer');
+                        }
+                      }
+                    }
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   /// Shows a quick-edit bottom sheet on long-press.
@@ -376,6 +592,51 @@ class TaskTile extends ConsumerWidget {
                   }).toList(),
                 ),
                 const SizedBox(height: 20),
+
+                // ── Snooze/Unsnooze ───────────────────────────────
+                if (task.isDeferred)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.alarm_off),
+                        label: const Text('Quitar posposición'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: colorScheme.primary,
+                        ),
+                        onPressed: () async {
+                          Navigator.of(ctx).pop();
+                          try {
+                            await ref
+                                .read(tasksProvider(task.type).notifier)
+                                .unsnoozeTask(task);
+                            onFeedback?.call('Posposición quitada');
+                          } catch (_) {
+                            onFeedback?.call('Error al quitar posposición');
+                          }
+                        },
+                      ),
+                    ),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.schedule),
+                        label: const Text('Posponer tarea'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: colorScheme.primary,
+                        ),
+                        onPressed: () {
+                          Navigator.of(ctx).pop();
+                          _showSnoozeMenu(context, ref);
+                        },
+                      ),
+                    ),
+                  ),
 
                 // ── Toggle completion ─────────────────────────────
                 SizedBox(
@@ -743,6 +1004,43 @@ class TaskTile extends ConsumerWidget {
                   ],
                 ),
               ),
+              // Indicador de posposición (si está pospuesta)
+              if (task.isDeferred) ...[
+                const SizedBox(height: 6),
+                Semantics(
+                  label: 'Tarea pospuesta: ${task.deferralStatusText}',
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.orange.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.schedule, size: 14, color: Colors.orange),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            task.deferralStatusText,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.orange,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
               // Mensaje motivacional (solo si no está completada)
               if (!task.isCompleted) ...[
                 const SizedBox(height: 6),

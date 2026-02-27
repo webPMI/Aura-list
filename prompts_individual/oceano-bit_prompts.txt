@@ -1,0 +1,64 @@
+Océano-Bit - Image Generation Prompts
+============================================================
+
+ID: oceano-bit
+Color: #00838F
+Archetype: Flujo
+
+============================================================
+
+VARIATION 1: Digital Ocean
+------------------------------------------------------------
+
+PROMPT:
+ocean deity in flowing water form, turquoise digital waves (#00838F), poseidon-inspired figure, flowing effortless movement, water and code merged, cyan and teal tones, river of consciousness, mental flow state aesthetic, fluid adaptation, currents of thought visible, peaceful momentum, fantasy art, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 2: Anime Flow
+------------------------------------------------------------
+
+PROMPT:
+anime style turquoise ocean deity, vibrant digital waves (#00838F), dynamic flowing pose, bright cyan colors, bold water aesthetic, flow energy, centered fluid composition, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 3: Geometric Waves
+------------------------------------------------------------
+
+PROMPT:
+minimalist geometric ocean figure with wave symbol, turquoise (#00838F) angular flow pattern, clean current lines, modern aquatic aesthetic, symbolic fluidity, elegant flowing composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 4: Watercolor Current
+------------------------------------------------------------
+
+PROMPT:
+watercolor painting of turquoise ocean deity, flowing brushstrokes of digital waves (#00838F), dreamy fluid atmosphere, soft cyan washes, artistic flow aesthetic, peaceful gentle patterns, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 5: Art Nouveau Ocean
+------------------------------------------------------------
+
+PROMPT:
+art nouveau style ocean deity with ornate turquoise patterns (#00838F), decorative digital waves, elegant flowing water design, intricate border of currents, sophisticated cyan palette, mythical flow aesthetic, centered ornamental composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+

@@ -1,0 +1,64 @@
+Érebo-Lógica - Image Generation Prompts
+============================================================
+
+ID: erebo-logica
+Color: #455A64
+Archetype: Oráculo de la Calma
+
+============================================================
+
+VARIATION 1: Twilight Oracle
+------------------------------------------------------------
+
+PROMPT:
+calm oracle figure in twilight shadows, soothing presence amid darkness, soft gray-blue tones (#455A64), erebus penumbra deity, gentle wisdom emanating, ordered mind visualization, first step glowing in shadow, tranquil meditation pose, anxiety dissolving into clarity aesthetic, fantasy art, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 2: Anime Calm
+------------------------------------------------------------
+
+PROMPT:
+anime style gray-blue oracle in shadows, vibrant calm energy (#455A64), serene pose, soft penumbra colors, bold wisdom aesthetic, erebus tranquility, centered peaceful composition, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 3: Geometric Order
+------------------------------------------------------------
+
+PROMPT:
+minimalist geometric oracle figure in twilight, gray-blue (#455A64) angular calm pattern, clean shadow lines, modern erebus aesthetic, symbolic order, elegant peaceful composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 4: Watercolor Twilight
+------------------------------------------------------------
+
+PROMPT:
+watercolor painting of gray-blue oracle, flowing brushstrokes of calming shadows (#455A64), dreamy peaceful atmosphere, soft penumbra washes, artistic wisdom aesthetic, gentle ordered patterns, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 5: Art Nouveau Erebus
+------------------------------------------------------------
+
+PROMPT:
+art nouveau style oracle with ornate gray-blue patterns (#455A64), decorative twilight swirls, elegant flowing calm design, intricate border of order, sophisticated penumbra palette, mythical peaceful aesthetic, centered ornamental composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+

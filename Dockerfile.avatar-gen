@@ -1,0 +1,18 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Instalar dependencias
+RUN pip install --no-cache-dir \
+    requests \
+    pillow \
+    python-dotenv \
+    tqdm
+
+# Copiar scripts de generación
+COPY scripts/avatar-generation/ /app/
+
+# Crear directorio de salida
+RUN mkdir -p /app/output /app/prompts
+
+CMD ["python", "generate_all_avatars.py"]

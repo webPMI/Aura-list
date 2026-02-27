@@ -1,0 +1,64 @@
+Chispa-Azul - Image Generation Prompts
+============================================================
+
+ID: chispa-azul
+Color: #1E88E5
+Archetype: Mensajero del Relámpago
+
+============================================================
+
+VARIATION 1: Lightning Messenger
+------------------------------------------------------------
+
+PROMPT:
+lightning messenger deity in motion blur, electric blue energy (#1E88E5) crackling around body, quicksilver speed, dynamic action pose, winged sandals glowing, mercury-like fluidity, bright blue and white lightning bolts, fantasy messenger aesthetic, rapid movement trails, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 2: Anime Thunder
+------------------------------------------------------------
+
+PROMPT:
+anime style blue lightning messenger, vibrant electric energy (#1E88E5), dynamic speed lines, bright crackling bolts, energetic pose, bold blue and white colors, mercury wings, fast action aesthetic, centered dynamic composition, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 3: Geometric Speed
+------------------------------------------------------------
+
+PROMPT:
+minimalist geometric messenger figure with lightning bolt symbol, electric blue (#1E88E5) angular design, clean speed lines, modern mythical aesthetic, geometric wings, symbolic swiftness, simple dynamic composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 4: Watercolor Lightning
+------------------------------------------------------------
+
+PROMPT:
+watercolor painting of blue lightning messenger, flowing electric brushstrokes (#1E88E5), dreamy speed trails, soft yet energetic atmosphere, mercury wing washes, artistic lightning aesthetic, dynamic fluid movement, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 5: Art Nouveau Mercury
+------------------------------------------------------------
+
+PROMPT:
+art nouveau style messenger with ornate lightning patterns (#1E88E5), decorative electric swirls, elegant winged design, intricate border of speed, sophisticated blue palette, mythical swift messenger aesthetic, centered ornamental composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+

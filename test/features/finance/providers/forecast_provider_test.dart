@@ -5,10 +5,9 @@ import 'package:checklist_app/features/finance/providers/forecast_provider.dart'
 import 'package:checklist_app/features/finance/models/recurring_transaction.dart';
 import 'package:checklist_app/features/finance/models/budget.dart';
 import 'package:checklist_app/features/finance/models/finance_alert.dart';
-import 'package:checklist_app/features/finance/models/task_finance_link.dart';
 import 'package:checklist_app/features/finance/models/finance_category.dart';
 import 'package:checklist_app/features/finance/models/finance_enums.dart'
-    as finance;
+    hide RecurrenceFrequency;
 import 'package:checklist_app/features/finance/data/recurring_transaction_storage.dart';
 import 'package:checklist_app/features/finance/data/budget_storage.dart';
 import 'package:checklist_app/features/finance/data/cash_flow_projection_storage.dart';
@@ -46,6 +45,44 @@ void main() {
   late MockRecurringTransactionService mockRecurringService;
   late MockErrorHandler mockErrorHandler;
 
+  setUpAll(() {
+    // Register fallback values for mocktail
+    registerFallbackValue(ErrorType.database);
+    registerFallbackValue(ErrorSeverity.error);
+    registerFallbackValue(StackTrace.empty);
+
+    // Register fallback values for RecurringTransaction
+    final now = DateTime.now();
+    registerFallbackValue(
+      RecurringTransaction(
+        id: 'fallback',
+        title: 'Fallback',
+        amount: 0,
+        categoryId: 'fallback',
+        type: FinanceCategoryType.expense,
+        recurrence: RecurrenceRule(
+          frequency: RecurrenceFrequency.monthly,
+          interval: 1,
+          startDate: now,
+        ),
+        createdAt: now,
+      ),
+    );
+
+    // Register fallback values for Budget
+    registerFallbackValue(
+      Budget(
+        id: 'fallback',
+        name: 'Fallback',
+        categoryId: 'fallback',
+        limit: 0,
+        period: BudgetPeriod.monthly,
+        startDate: now,
+        createdAt: now,
+      ),
+    );
+  });
+
   setUp(() {
     mockRecurringStorage = MockRecurringTransactionStorage();
     mockBudgetStorage = MockBudgetStorage();
@@ -55,9 +92,43 @@ void main() {
     mockRecurringService = MockRecurringTransactionService();
     mockErrorHandler = MockErrorHandler();
 
-    // Register fallback values
-    registerFallbackValue(ErrorType.database);
-    registerFallbackValue(StackTrace.empty);
+    // Set up default stubs for storage initialization
+    when(() => mockRecurringStorage.init()).thenAnswer((_) async {});
+    when(() => mockBudgetStorage.init()).thenAnswer((_) async {});
+    when(() => mockProjectionStorage.init()).thenAnswer((_) async {});
+    when(() => mockAlertStorage.init()).thenAnswer((_) async {});
+    when(() => mockLinkStorage.init()).thenAnswer((_) async {});
+
+    // Set up default stubs for watch/getAll
+    when(
+      () => mockRecurringStorage.watch(),
+    ).thenAnswer((_) => Stream.value([]));
+    when(() => mockBudgetStorage.watch()).thenAnswer((_) => Stream.value([]));
+    when(() => mockAlertStorage.watch()).thenAnswer((_) => Stream.value([]));
+    when(() => mockProjectionStorage.getAll()).thenAnswer((_) async => []);
+    when(() => mockLinkStorage.getAll()).thenAnswer((_) async => []);
+
+    // Set up default stub for error handler
+    when(
+      () => mockErrorHandler.handle(
+        any(),
+        type: any(named: 'type'),
+        severity: any(named: 'severity'),
+        message: any(named: 'message'),
+        userMessage: any(named: 'userMessage'),
+        stackTrace: any(named: 'stackTrace'),
+        shouldLog: any(named: 'shouldLog'),
+        actionLabel: any(named: 'actionLabel'),
+        onAction: any(named: 'onAction'),
+      ),
+    ).thenAnswer((invocation) {
+      final message = invocation.namedArguments[#message];
+      return AppError(
+        type: ErrorType.database,
+        severity: ErrorSeverity.error,
+        message: message ?? 'Test error',
+      );
+    });
   });
 
   group('ForecastState', () {
@@ -87,8 +158,8 @@ void main() {
       final alerts = [
         FinanceAlert(
           id: '1',
-          type: finance.AlertType.budgetWarning,
-          severity: finance.AlertSeverity.warning,
+          type: AlertType.budgetWarning,
+          severity: AlertSeverity.warning,
           title: 'Active Alert',
           message: 'Test',
           createdAt: now,
@@ -96,8 +167,8 @@ void main() {
         ),
         FinanceAlert(
           id: '2',
-          type: finance.AlertType.budgetExceeded,
-          severity: finance.AlertSeverity.critical,
+          type: AlertType.budgetExceeded,
+          severity: AlertSeverity.critical,
           title: 'Read Alert',
           message: 'Test',
           createdAt: now,
@@ -105,8 +176,8 @@ void main() {
         ),
         FinanceAlert(
           id: '3',
-          type: finance.AlertType.lowBalance,
-          severity: finance.AlertSeverity.info,
+          type: AlertType.lowBalance,
+          severity: AlertSeverity.info,
           title: 'Inactive Alert',
           message: 'Test',
           createdAt: now,
@@ -163,7 +234,7 @@ void main() {
           categoryId: 'cat-1',
           type: FinanceCategoryType.expense,
           recurrence: RecurrenceRule(
-            frequency: finance.RecurrenceFrequency.monthly,
+            frequency: RecurrenceFrequency.monthly,
             interval: 1,
             startDate: now,
           ),
@@ -188,7 +259,7 @@ void main() {
           name: 'Active Budget',
           categoryId: 'cat-1',
           limit: 500.0,
-          period: finance.BudgetPeriod.monthly,
+          period: BudgetPeriod.monthly,
           startDate: now,
           active: true,
           deleted: false,
@@ -199,7 +270,7 @@ void main() {
           name: 'Inactive Budget',
           categoryId: 'cat-2',
           limit: 300.0,
-          period: finance.BudgetPeriod.monthly,
+          period: BudgetPeriod.monthly,
           startDate: now,
           active: false,
           deleted: false,
@@ -210,7 +281,7 @@ void main() {
           name: 'Deleted Budget',
           categoryId: 'cat-3',
           limit: 200.0,
-          period: finance.BudgetPeriod.monthly,
+          period: BudgetPeriod.monthly,
           startDate: now,
           active: true,
           deleted: true,
@@ -227,7 +298,7 @@ void main() {
   });
 
   group('ForecastNotifier - Basic Operations', () {
-    test('should initialize with loading state', () {
+    test('should initialize with loading state', () async {
       when(
         () => mockRecurringStorage.watch(),
       ).thenAnswer((_) => Stream.value([]));
@@ -256,7 +327,12 @@ void main() {
 
       final state = container.read(forecastProvider);
 
+      // Initially it should be loading because super(ForecastState(isLoading: true)) is called
+      // and _init (which is async) hasn't completed yet.
       expect(state.isLoading, true);
+
+      // Wait for async init to complete
+      await Future.delayed(Duration(milliseconds: 100));
 
       container.dispose();
     });
@@ -288,8 +364,12 @@ void main() {
         ],
       );
 
-      // Wait for initialization
-      await Future.delayed(const Duration(milliseconds: 100));
+      // Read the provider to start initialization
+      final state1 = container.read(forecastProvider);
+      expect(state1.isLoading, true);
+
+      // Wait for initialization to complete
+      await Future.delayed(const Duration(milliseconds: 200));
 
       final state = container.read(forecastProvider);
 
@@ -297,6 +377,7 @@ void main() {
       expect(state.budgets, isEmpty);
       expect(state.alerts, isEmpty);
 
+      await Future.delayed(const Duration(milliseconds: 100));
       container.dispose();
     });
   });
@@ -318,16 +399,7 @@ void main() {
         createdAt: now,
       );
 
-      when(
-        () => mockRecurringStorage.watch(),
-      ).thenAnswer((_) => Stream.value([]));
-      when(() => mockBudgetStorage.watch()).thenAnswer((_) => Stream.value([]));
-      when(() => mockAlertStorage.watch()).thenAnswer((_) => Stream.value([]));
-      when(() => mockProjectionStorage.getAll()).thenAnswer((_) async => []);
-      when(() => mockLinkStorage.getAll()).thenAnswer((_) async => []);
-      when(
-        () => mockRecurringStorage.save(any()),
-      ).thenAnswer((_) async => null);
+      when(() => mockRecurringStorage.save(any())).thenAnswer((_) async {});
 
       final container = ProviderContainer(
         overrides: [
@@ -347,12 +419,19 @@ void main() {
         ],
       );
 
+      // Trigger provider initialization
+      container.read(forecastProvider);
+
+      // Wait for initialization
+      await Future.delayed(const Duration(milliseconds: 200));
+
       await container
           .read(forecastProvider.notifier)
           .addRecurringTransaction(transaction);
 
       verify(() => mockRecurringStorage.save(transaction)).called(1);
 
+      await Future.delayed(const Duration(milliseconds: 100));
       container.dispose();
     });
 
@@ -363,19 +442,12 @@ void main() {
         name: 'Test Budget',
         categoryId: 'cat-1',
         limit: 500.0,
-        period: finance.BudgetPeriod.monthly,
+        period: BudgetPeriod.monthly,
         startDate: now,
         createdAt: now,
       );
 
-      when(
-        () => mockRecurringStorage.watch(),
-      ).thenAnswer((_) => Stream.value([]));
-      when(() => mockBudgetStorage.watch()).thenAnswer((_) => Stream.value([]));
-      when(() => mockAlertStorage.watch()).thenAnswer((_) => Stream.value([]));
-      when(() => mockProjectionStorage.getAll()).thenAnswer((_) async => []);
-      when(() => mockLinkStorage.getAll()).thenAnswer((_) async => []);
-      when(() => mockBudgetStorage.save(any())).thenAnswer((_) async => null);
+      when(() => mockBudgetStorage.save(any())).thenAnswer((_) async {});
 
       final container = ProviderContainer(
         overrides: [
@@ -395,10 +467,17 @@ void main() {
         ],
       );
 
+      // Trigger provider initialization
+      container.read(forecastProvider);
+
+      // Wait for initialization
+      await Future.delayed(const Duration(milliseconds: 200));
+
       await container.read(forecastProvider.notifier).addBudget(budget);
 
       verify(() => mockBudgetStorage.save(budget)).called(1);
 
+      await Future.delayed(const Duration(milliseconds: 100));
       container.dispose();
     });
 
@@ -412,7 +491,7 @@ void main() {
           categoryId: 'cat-1',
           type: FinanceCategoryType.expense,
           recurrence: RecurrenceRule(
-            frequency: finance.RecurrenceFrequency.monthly,
+            frequency: RecurrenceFrequency.monthly,
             interval: 1,
             startDate: now,
           ),
@@ -421,18 +500,9 @@ void main() {
       ];
 
       when(
-        () => mockRecurringStorage.watch(),
-      ).thenAnswer((_) => Stream.value([]));
-      when(() => mockBudgetStorage.watch()).thenAnswer((_) => Stream.value([]));
-      when(() => mockAlertStorage.watch()).thenAnswer((_) => Stream.value([]));
-      when(() => mockProjectionStorage.getAll()).thenAnswer((_) async => []);
-      when(() => mockLinkStorage.getAll()).thenAnswer((_) async => []);
-      when(
         () => mockRecurringService.detectRecurringPatterns(),
       ).thenAnswer((_) async => patterns);
-      when(
-        () => mockRecurringStorage.save(any()),
-      ).thenAnswer((_) async => null);
+      when(() => mockRecurringStorage.save(any())).thenAnswer((_) async {});
 
       final container = ProviderContainer(
         overrides: [
@@ -452,7 +522,11 @@ void main() {
         ],
       );
 
-      await container.read(forecastProvider.notifier).detectRecurringPatterns();
+      // Trigger provider initialization and wait for it
+      final notifier = container.read(forecastProvider.notifier);
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      await notifier.detectRecurringPatterns();
 
       verify(() => mockRecurringService.detectRecurringPatterns()).called(1);
       verify(() => mockRecurringStorage.save(any())).called(patterns.length);
@@ -462,13 +536,13 @@ void main() {
   });
 
   group('Forecast Providers', () {
-    test('activeAlertsProvider should return only active alerts', () {
+    test('activeAlertsProvider should return only active alerts', () async {
       final now = DateTime.now();
       final alerts = [
         FinanceAlert(
           id: '1',
-          type: finance.AlertType.budgetWarning,
-          severity: finance.AlertSeverity.warning,
+          type: AlertType.budgetWarning,
+          severity: AlertSeverity.warning,
           title: 'Active',
           message: 'Test',
           createdAt: now,
@@ -476,8 +550,8 @@ void main() {
         ),
         FinanceAlert(
           id: '2',
-          type: finance.AlertType.budgetExceeded,
-          severity: finance.AlertSeverity.critical,
+          type: AlertType.budgetExceeded,
+          severity: AlertSeverity.critical,
           title: 'Read',
           message: 'Test',
           createdAt: now,
@@ -486,14 +560,8 @@ void main() {
       ];
 
       when(
-        () => mockRecurringStorage.watch(),
-      ).thenAnswer((_) => Stream.value([]));
-      when(() => mockBudgetStorage.watch()).thenAnswer((_) => Stream.value([]));
-      when(
         () => mockAlertStorage.watch(),
       ).thenAnswer((_) => Stream.value(alerts));
-      when(() => mockProjectionStorage.getAll()).thenAnswer((_) async => []);
-      when(() => mockLinkStorage.getAll()).thenAnswer((_) async => []);
 
       final container = ProviderContainer(
         overrides: [
@@ -513,74 +581,77 @@ void main() {
         ],
       );
 
-      // Wait for streams to emit
-      Future.delayed(const Duration(milliseconds: 100), () {
-        final activeAlerts = container.read(activeAlertsProvider);
-        expect(activeAlerts.length, 1);
-        expect(activeAlerts.first.id, '1');
-      });
+      // Trigger provider initialization
+      container.read(forecastProvider.notifier);
+
+      // Wait for streams to emit and notifier to process them
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      final activeAlerts = container.read(activeAlertsProvider);
+      expect(activeAlerts.length, 1);
+      expect(activeAlerts.first.id, '1');
 
       container.dispose();
     });
 
-    test('activeAlertsCountProvider should return count of active alerts', () {
-      final now = DateTime.now();
-      final alerts = [
-        FinanceAlert(
-          id: '1',
-          type: finance.AlertType.budgetWarning,
-          severity: finance.AlertSeverity.warning,
-          title: 'Active 1',
-          message: 'Test',
-          createdAt: now,
-          isRead: false,
-        ),
-        FinanceAlert(
-          id: '2',
-          type: finance.AlertType.lowBalance,
-          severity: finance.AlertSeverity.info,
-          title: 'Active 2',
-          message: 'Test',
-          createdAt: now,
-          isRead: false,
-        ),
-      ];
-
-      when(
-        () => mockRecurringStorage.watch(),
-      ).thenAnswer((_) => Stream.value([]));
-      when(() => mockBudgetStorage.watch()).thenAnswer((_) => Stream.value([]));
-      when(
-        () => mockAlertStorage.watch(),
-      ).thenAnswer((_) => Stream.value(alerts));
-      when(() => mockProjectionStorage.getAll()).thenAnswer((_) async => []);
-      when(() => mockLinkStorage.getAll()).thenAnswer((_) async => []);
-
-      final container = ProviderContainer(
-        overrides: [
-          recurringTransactionStorageProvider.overrideWithValue(
-            mockRecurringStorage,
+    test(
+      'activeAlertsCountProvider should return count of active alerts',
+      () async {
+        final now = DateTime.now();
+        final alerts = [
+          FinanceAlert(
+            id: '1',
+            type: AlertType.budgetWarning,
+            severity: AlertSeverity.warning,
+            title: 'Active 1',
+            message: 'Test',
+            createdAt: now,
+            isRead: false,
           ),
-          budgetStorageProvider.overrideWithValue(mockBudgetStorage),
-          cashFlowProjectionStorageProvider.overrideWithValue(
-            mockProjectionStorage,
+          FinanceAlert(
+            id: '2',
+            type: AlertType.lowBalance,
+            severity: AlertSeverity.info,
+            title: 'Active 2',
+            message: 'Test',
+            createdAt: now,
+            isRead: false,
           ),
-          financeAlertStorageProvider.overrideWithValue(mockAlertStorage),
-          taskFinanceLinkStorageProvider.overrideWithValue(mockLinkStorage),
-          recurringTransactionServiceProvider.overrideWithValue(
-            mockRecurringService,
-          ),
-          errorHandlerProvider.overrideWithValue(mockErrorHandler),
-        ],
-      );
+        ];
 
-      // Wait for streams to emit
-      Future.delayed(const Duration(milliseconds: 100), () {
+        when(
+          () => mockAlertStorage.watch(),
+        ).thenAnswer((_) => Stream.value(alerts));
+
+        final container = ProviderContainer(
+          overrides: [
+            recurringTransactionStorageProvider.overrideWithValue(
+              mockRecurringStorage,
+            ),
+            budgetStorageProvider.overrideWithValue(mockBudgetStorage),
+            cashFlowProjectionStorageProvider.overrideWithValue(
+              mockProjectionStorage,
+            ),
+            financeAlertStorageProvider.overrideWithValue(mockAlertStorage),
+            taskFinanceLinkStorageProvider.overrideWithValue(mockLinkStorage),
+            recurringTransactionServiceProvider.overrideWithValue(
+              mockRecurringService,
+            ),
+            errorHandlerProvider.overrideWithValue(mockErrorHandler),
+          ],
+        );
+
+        // Trigger provider initialization
+        container.read(forecastProvider.notifier);
+
+        // Wait for streams to emit and notifier to process them
+        await Future.delayed(const Duration(milliseconds: 500));
+
         final count = container.read(activeAlertsCountProvider);
         expect(count, 2);
-      });
 
-      container.dispose();
-    });
+        container.dispose();
+      },
+    );
   });
 }

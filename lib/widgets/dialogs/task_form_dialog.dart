@@ -3,10 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../models/task_model.dart';
+import '../../models/task_template.dart';
 import '../../providers/task_provider.dart';
+import '../../providers/template_provider.dart';
 import '../../core/constants/task_constants.dart';
 import '../../core/utils/time_utils.dart';
 import '../../core/utils/dialog_utils.dart';
+import '../finance/task_finance_section.dart';
 
 /// Shows a bottom sheet dialog for creating or editing a task
 Future<void> showTaskFormDialog({
@@ -54,6 +57,13 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
   TimeOfDay? _selectedTime;
   DateTime? _selectedDeadline;
 
+  // Finance state variables
+  double? _financialCost;
+  double? _financialBenefit;
+  String? _financialCategoryId;
+  String? _financialNote;
+  bool _autoGenerateTransaction = false;
+  DateTime? _transactionDate;
 
   bool _isLoading = false;
 
@@ -68,6 +78,14 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
     _selectedDueDate = widget.task?.dueDate;
     _selectedTime = widget.task?.dueTime;
     _selectedDeadline = widget.task?.deadline;
+
+    // Initialize finance fields
+    _financialCost = widget.task?.financialCost;
+    _financialBenefit = widget.task?.financialBenefit;
+    _financialCategoryId = widget.task?.financialCategoryId;
+    _financialNote = widget.task?.financialNote;
+    _autoGenerateTransaction = widget.task?.autoGenerateTransaction ?? false;
+    _transactionDate = widget.task?.dueDate ?? DateTime.now();
   }
 
   @override
@@ -120,10 +138,69 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
     }
   }
 
+  Future<void> _showTemplateSelector() async {
+    final templates = widget.ref.read(templatesByTypeProvider(widget.taskType));
+
+    if (templates.isEmpty) {
+      DialogUtils.showSnackBar(
+        context,
+        'No hay plantillas disponibles para este tipo de tarea',
+        isError: true,
+      );
+      return;
+    }
+
+    final selectedTemplate = await showModalBottomSheet<TaskTemplate>(
+      context: context,
+      builder: (context) => _TemplateSelectionSheet(
+        templates: templates,
+        taskType: widget.taskType,
+      ),
+    );
+
+    if (selectedTemplate != null) {
+      _applyTemplate(selectedTemplate);
+    }
+  }
+
+  void _applyTemplate(TaskTemplate template) {
+    setState(() {
+      _titleController.text = template.title;
+      _selectedCategory = template.category;
+      _selectedPriority = template.priority;
+      _motivationController.text = template.motivation ?? '';
+      _rewardController.text = template.reward ?? '';
+
+      if (template.dueTimeMinutes != null) {
+        final hours = template.dueTimeMinutes! ~/ 60;
+        final minutes = template.dueTimeMinutes! % 60;
+        _selectedTime = TimeOfDay(hour: hours, minute: minutes);
+      }
+
+      // Finance fields
+      _financialCost = template.financialCost;
+      _financialBenefit = template.financialBenefit;
+      _financialCategoryId = template.financialCategoryId;
+      _financialNote = template.financialNote;
+      _autoGenerateTransaction = template.autoGenerateTransaction;
+    });
+
+    DialogUtils.showSnackBar(context, 'Plantilla aplicada: ${template.name}');
+
+    // Mark template as used
+    widget.ref.read(templatesProvider.notifier).useTemplate(template);
+  }
+
   Future<void> _saveTask() async {
     final validationError = DialogUtils.validateTaskTitle(_titleController.text.trim());
     if (validationError != null) {
       DialogUtils.showSnackBar(context, validationError, isError: true);
+      return;
+    }
+
+    // Validate finance fields
+    if ((_financialCost != null || _financialBenefit != null) && _financialCategoryId == null) {
+      DialogUtils.showSnackBar(context, 'Selecciona una categoría financiera', isError: true);
       return;
     }
 
@@ -162,6 +239,15 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
           clearReward: rewardText.isEmpty && originalTask.reward != null,
           deadline: _selectedDeadline,
           clearDeadline: _selectedDeadline == null && originalTask.deadline != null,
+          financialCost: _financialCost,
+          clearFinancialCost: _financialCost == null && originalTask.financialCost != null,
+          financialBenefit: _financialBenefit,
+          clearFinancialBenefit: _financialBenefit == null && originalTask.financialBenefit != null,
+          financialCategoryId: _financialCategoryId,
+          clearFinancialCategoryId: _financialCategoryId == null && originalTask.financialCategoryId != null,
+          financialNote: _financialNote,
+          clearFinancialNote: _financialNote == null && originalTask.financialNote != null,
+          autoGenerateTransaction: _autoGenerateTransaction,
           lastUpdatedAt: DateTime.now(),
         );
 
@@ -190,6 +276,11 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
                   ? null
                   : _rewardController.text.trim(),
               deadline: _selectedDeadline,
+              financialCost: _financialCost,
+              financialBenefit: _financialBenefit,
+              financialCategoryId: _financialCategoryId,
+              financialNote: _financialNote,
+              autoGenerateTransaction: _autoGenerateTransaction,
             );
 
         if (mounted) {
@@ -266,7 +357,19 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+
+              // Use Template Button (only for new tasks)
+              if (!_isEditing)
+                OutlinedButton.icon(
+                  onPressed: _showTemplateSelector,
+                  icon: const Icon(Icons.bookmark_outline),
+                  label: const Text('Usar Plantilla'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              if (!_isEditing) const SizedBox(height: 16),
 
               // Title field
               TextField(
@@ -431,6 +534,27 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
                 maxLines: 2,
                 textCapitalization: TextCapitalization.sentences,
               ),
+              const SizedBox(height: 16),
+
+              // Finance section
+              TaskFinanceSection(
+                initialCost: _financialCost,
+                initialBenefit: _financialBenefit,
+                initialCategoryId: _financialCategoryId,
+                initialNote: _financialNote,
+                initialAutoGenerate: _autoGenerateTransaction,
+                initialTransactionDate: _transactionDate,
+                onDataChanged: (data) {
+                  setState(() {
+                    _financialCost = data.cost;
+                    _financialBenefit = data.benefit;
+                    _financialCategoryId = data.categoryId;
+                    _financialNote = data.note;
+                    _autoGenerateTransaction = data.autoGenerateTransaction;
+                    _transactionDate = data.transactionDate;
+                  });
+                },
+              ),
               const SizedBox(height: 24),
 
               // Save button
@@ -451,6 +575,148 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Bottom sheet for selecting a template
+class _TemplateSelectionSheet extends StatelessWidget {
+  final List<TaskTemplate> templates;
+  final String taskType;
+
+  const _TemplateSelectionSheet({
+    required this.templates,
+    required this.taskType,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Drag handle
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.bookmark_outline,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Selecciona una Plantilla',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+          ),
+
+          const Divider(height: 1),
+
+          // Template list
+          Flexible(
+            child: ListView.builder(
+              shrinkWrap: true,
+              padding: const EdgeInsets.all(16),
+              itemCount: templates.length,
+              itemBuilder: (context, index) {
+                final template = templates[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: theme.colorScheme.primaryContainer,
+                      child: Icon(
+                        template.isPinned ? Icons.push_pin : Icons.bookmark,
+                        color: theme.colorScheme.onPrimaryContainer,
+                        size: 20,
+                      ),
+                    ),
+                    title: Text(
+                      template.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (template.description.isNotEmpty)
+                          Text(
+                            template.description,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.category_outlined,
+                              size: 14,
+                              color: Colors.grey[600],
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              template.category,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            if (template.usageCount > 0) ...[
+                              const SizedBox(width: 12),
+                              Icon(
+                                Icons.repeat,
+                                size: 14,
+                                color: Colors.grey[600],
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${template.usageCount}x',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () => Navigator.of(context).pop(template),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

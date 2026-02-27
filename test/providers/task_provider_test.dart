@@ -176,13 +176,13 @@ void main() {
     });
 
     test('Initial state is empty', () async {
-      container.listen(tasksProvider('daily'), (_, __) {});
+      container.listen(tasksProvider('daily'), (_, _) {});
       final tasks = container.read(tasksProvider('daily'));
       expect(tasks, isEmpty);
     });
 
     test('addTask updates state via stream', () async {
-      container.listen(tasksProvider('daily'), (_, __) {});
+      container.listen(tasksProvider('daily'), (_, _) {});
 
       final notifier = container.read(tasksProvider('daily').notifier);
 
@@ -196,7 +196,7 @@ void main() {
     });
 
     test('toggleTask changes completion status', () async {
-      container.listen(tasksProvider('daily'), (_, __) {});
+      container.listen(tasksProvider('daily'), (_, _) {});
 
       final notifier = container.read(tasksProvider('daily').notifier);
       await notifier.addTask('Toggle Me');
@@ -210,7 +210,7 @@ void main() {
     });
 
     test('deleteTask removes task from state', () async {
-      container.listen(tasksProvider('daily'), (_, __) {});
+      container.listen(tasksProvider('daily'), (_, _) {});
 
       final notifier = container.read(tasksProvider('daily').notifier);
       await notifier.addTask('Delete Me');

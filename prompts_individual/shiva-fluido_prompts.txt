@@ -1,0 +1,64 @@
+Shiva-Fluido - Image Generation Prompts
+============================================================
+
+ID: shiva-fluido
+Color: #5E35B1
+Archetype: Danzante del Cambio
+
+============================================================
+
+VARIATION 1: Cosmic Dancer
+------------------------------------------------------------
+
+PROMPT:
+dancing deity in cosmic dance pose, fluid transformation energy (#5E35B1), shiva nataraja inspired, circle of change around figure, graceful dynamic movement, deep purple and indigo tones, creation and destruction balanced, adaptable flow aesthetic, plans shifting like water, fantasy art, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 2: Anime Dance
+------------------------------------------------------------
+
+PROMPT:
+anime style purple dancing deity, vibrant transformation circle (#5E35B1), dynamic graceful pose, bright indigo colors, bold shiva aesthetic, fluid energy, centered change composition, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 3: Geometric Flow
+------------------------------------------------------------
+
+PROMPT:
+minimalist geometric dancer figure with circle symbol, purple (#5E35B1) angular transformation pattern, clean flow lines, modern shiva aesthetic, symbolic adaptability, elegant dance composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 4: Watercolor Dance
+------------------------------------------------------------
+
+PROMPT:
+watercolor painting of purple cosmic dancer, flowing brushstrokes of transformation (#5E35B1), dreamy change atmosphere, soft indigo washes, artistic flow aesthetic, graceful fluid patterns, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 5: Art Nouveau Shiva
+------------------------------------------------------------
+
+PROMPT:
+art nouveau style dancing deity with ornate purple patterns (#5E35B1), decorative transformation circle, elegant flowing dance design, intricate border of change, sophisticated indigo palette, mythical fluid aesthetic, centered ornamental composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+

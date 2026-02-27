@@ -10,6 +10,7 @@ import '../models/notebook_model.dart';
 import '../models/user_preferences.dart';
 import '../models/sync_metadata.dart';
 import '../models/guide_achievement_model.dart';
+import '../models/task_template.dart';
 import '../features/finance/models/finance_category.dart';
 import '../features/finance/models/transaction.dart';
 import '../features/finance/models/recurring_transaction.dart';
@@ -217,6 +218,9 @@ class DatabaseService {
       }
       if (!Hive.isAdapterRegistered(29)) {
         Hive.registerAdapter(TaskFinanceLinkAdapter());
+      }
+      if (!Hive.isAdapterRegistered(30)) {
+        Hive.registerAdapter(TaskTemplateAdapter());
       }
 
       // Open boxes managed directly by DatabaseService

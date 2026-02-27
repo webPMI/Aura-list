@@ -1,0 +1,64 @@
+Gloria-Sincro - Image Generation Prompts
+============================================================
+
+ID: gloria-sincro
+Color: #FFD700
+Archetype: Tejedora de Logros
+
+============================================================
+
+VARIATION 1: Victory Weaver
+------------------------------------------------------------
+
+PROMPT:
+victorious weaver goddess holding golden laurel crown (#FFD700), triumphant dignified pose, threads of achievement flowing from hands, nike-inspired victory figure, radiant golden light, proud expression, tapestry of success backdrop, brilliant gold and amber tones, fantasy art, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 2: Anime Glory
+------------------------------------------------------------
+
+PROMPT:
+anime style golden victory goddess, vibrant laurel crown (#FFD700), achievement threads glowing, triumphant pose, bright gold and amber colors, bold radiant aesthetic, nike wings, centered victorious composition, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 3: Geometric Achievement
+------------------------------------------------------------
+
+PROMPT:
+minimalist geometric weaver figure with crown symbol, golden (#FFD700) angular threads, clean victory lines, modern mythical aesthetic, symbolic achievement pattern, elegant simple composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 4: Watercolor Triumph
+------------------------------------------------------------
+
+PROMPT:
+watercolor painting of golden victory weaver, flowing brushstrokes of achievement threads (#FFD700), dreamy triumphant atmosphere, soft crown of light, artistic glory aesthetic, warm radiant washes, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 5: Art Nouveau Victory
+------------------------------------------------------------
+
+PROMPT:
+art nouveau style victory goddess with ornate golden patterns (#FFD700), decorative laurel crown, elegant flowing achievement threads, intricate border of triumph, sophisticated warm palette, mythical glory aesthetic, centered ornamental composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+

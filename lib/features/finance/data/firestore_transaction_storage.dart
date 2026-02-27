@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import '../models/transaction.dart';
 import '../../../services/contracts/i_cloud_storage.dart';
 import '../../../services/error_handler.dart';
-import '../../../services/logger_service.dart';
 
 class FirestoreTransactionStorage
     implements ICloudStorageWithTimeout<Transaction> {

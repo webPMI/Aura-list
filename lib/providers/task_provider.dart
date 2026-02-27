@@ -6,7 +6,6 @@ import '../services/auth_service.dart';
 import '../services/error_handler.dart';
 import 'navigation_provider.dart';
 import '../services/logger_service.dart';
-import '../services/task_finance_integration_service.dart';
 
 final tasksProvider = StateNotifierProvider.family
     .autoDispose<TaskNotifier, List<Task>, String>((ref, type) {
@@ -106,6 +105,13 @@ class TaskNotifier extends StateNotifier<List<Task>> {
     String? reward,
     DateTime? deadline,
     int? recurrenceDay,
+    double? financialCost,
+    double? financialBenefit,
+    String? financialCategoryId,
+    String? financialNote,
+    bool autoGenerateTransaction = false,
+    String? financialImpactType,
+    String? linkedRecurringTransactionId,
   }) async {
     try {
       final now = DateTime.now();
@@ -121,6 +127,13 @@ class TaskNotifier extends StateNotifier<List<Task>> {
         reward: reward,
         deadline: deadline,
         recurrenceDay: recurrenceDay,
+        financialCost: financialCost,
+        financialBenefit: financialBenefit,
+        financialCategoryId: financialCategoryId,
+        financialNote: financialNote,
+        autoGenerateTransaction: autoGenerateTransaction,
+        financialImpactType: financialImpactType,
+        linkedRecurringTransactionId: linkedRecurringTransactionId,
         lastUpdatedAt: now, // FIX 6 - Establecer lastUpdatedAt desde creación
       );
 
@@ -202,6 +215,13 @@ class TaskNotifier extends StateNotifier<List<Task>> {
           reward: task.reward,
           recurrenceDay: task.recurrenceDay,
           deadline: task.deadline,
+          financialCost: task.financialCost,
+          financialBenefit: task.financialBenefit,
+          financialCategoryId: task.financialCategoryId,
+          financialNote: task.financialNote,
+          autoGenerateTransaction: task.autoGenerateTransaction,
+          financialImpactType: task.financialImpactType,
+          linkedRecurringTransactionId: task.linkedRecurringTransactionId,
           deleted: task.deleted,
           deletedAt: task.deletedAt,
           lastUpdatedAt: DateTime.now(),
@@ -357,15 +377,192 @@ class TaskNotifier extends StateNotifier<List<Task>> {
       rethrow;
     }
   }
+
+  /// Pospone una tarea hasta una fecha/hora específica.
+  /// La tarea se ocultará de las vistas normales hasta ese momento.
+  Future<void> snoozeTask(Task task, DateTime deferredUntil) async {
+    try {
+      if (task.isInBox) {
+        task.updateInPlace(
+          deferredUntil: deferredUntil,
+          lastUpdatedAt: DateTime.now(),
+        );
+        await task.save();
+
+        final user = _auth.currentUser;
+        if (user != null) {
+          await _db.syncTaskToCloudDebounced(task, user.uid);
+        }
+      } else {
+        // Fallback: buscar la tarea original y actualizarla
+        Task? original;
+
+        if (task.key != null) {
+          original = state.cast<Task?>().firstWhere(
+            (t) => t?.key == task.key,
+            orElse: () => null,
+          );
+        }
+        if (original == null && task.firestoreId.isNotEmpty) {
+          original = state.cast<Task?>().firstWhere(
+            (t) => t?.firestoreId == task.firestoreId,
+            orElse: () => null,
+          );
+        }
+        original ??= state.cast<Task?>().firstWhere(
+          (t) =>
+              t != null &&
+              t.createdAt.millisecondsSinceEpoch ==
+                  task.createdAt.millisecondsSinceEpoch,
+          orElse: () => null,
+        );
+
+        if (original != null && original.isInBox) {
+          original.updateInPlace(
+            deferredUntil: deferredUntil,
+            lastUpdatedAt: DateTime.now(),
+          );
+          await original.save();
+
+          final user = _auth.currentUser;
+          if (user != null) {
+            await _db.syncTaskToCloudDebounced(original, user.uid);
+          }
+        } else {
+          LoggerService().debug('Provider', '⚠️ [TaskProvider] snoozeTask llamado con tarea no encontrada');
+          await updateTask(
+            task.copyWith(
+              deferredUntil: deferredUntil,
+              lastUpdatedAt: DateTime.now(),
+            ),
+          );
+        }
+      }
+    } catch (e, stack) {
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        severity: ErrorSeverity.error,
+        message: 'Error al posponer tarea',
+        userMessage: 'No se pudo posponer la tarea',
+        stackTrace: stack,
+      );
+      rethrow;
+    }
+  }
+
+  /// Quita la posposición de una tarea, haciéndola visible de nuevo.
+  Future<void> unsnoozeTask(Task task) async {
+    try {
+      if (task.isInBox) {
+        task.updateInPlace(
+          clearDeferredUntil: true,
+          lastUpdatedAt: DateTime.now(),
+        );
+        await task.save();
+
+        final user = _auth.currentUser;
+        if (user != null) {
+          await _db.syncTaskToCloudDebounced(task, user.uid);
+        }
+      } else {
+        // Fallback: buscar la tarea original y actualizarla
+        Task? original;
+
+        if (task.key != null) {
+          original = state.cast<Task?>().firstWhere(
+            (t) => t?.key == task.key,
+            orElse: () => null,
+          );
+        }
+        if (original == null && task.firestoreId.isNotEmpty) {
+          original = state.cast<Task?>().firstWhere(
+            (t) => t?.firestoreId == task.firestoreId,
+            orElse: () => null,
+          );
+        }
+        original ??= state.cast<Task?>().firstWhere(
+          (t) =>
+              t != null &&
+              t.createdAt.millisecondsSinceEpoch ==
+                  task.createdAt.millisecondsSinceEpoch,
+          orElse: () => null,
+        );
+
+        if (original != null && original.isInBox) {
+          original.updateInPlace(
+            clearDeferredUntil: true,
+            lastUpdatedAt: DateTime.now(),
+          );
+          await original.save();
+
+          final user = _auth.currentUser;
+          if (user != null) {
+            await _db.syncTaskToCloudDebounced(original, user.uid);
+          }
+        } else {
+          LoggerService().debug('Provider', '⚠️ [TaskProvider] unsnoozeTask llamado con tarea no encontrada');
+          await updateTask(
+            task.copyWith(
+              clearDeferredUntil: true,
+              lastUpdatedAt: DateTime.now(),
+            ),
+          );
+        }
+      }
+    } catch (e, stack) {
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        severity: ErrorSeverity.error,
+        message: 'Error al quitar posposición de tarea',
+        userMessage: 'No se pudo quitar la posposición',
+        stackTrace: stack,
+      );
+      rethrow;
+    }
+  }
 }
 
-/// Provider for filtered tasks based on search query
-/// Combines task type filtering with text search
-final filteredTasksProvider = Provider.autoDispose.family<List<Task>, String>((
+/// Provider for active (non-deferred) tasks of a specific type
+/// Filters out tasks that are currently deferred
+final activeTasksProvider = Provider.autoDispose.family<List<Task>, String>((
   ref,
   type,
 ) {
   final tasks = ref.watch(tasksProvider(type));
+  return tasks.where((task) => !task.isDeferred).toList();
+});
+
+/// Provider for all deferred tasks across all types
+/// Returns tasks sorted by deferredUntil date
+final deferredTasksProvider = Provider.autoDispose<List<Task>>((ref) {
+  final types = ['daily', 'weekly', 'monthly', 'yearly', 'once'];
+  final allDeferred = <Task>[];
+
+  for (final type in types) {
+    final tasks = ref.watch(tasksProvider(type));
+    allDeferred.addAll(tasks.where((task) => task.isDeferred));
+  }
+
+  // Sort by deferredUntil date (earliest first)
+  allDeferred.sort((a, b) {
+    if (a.deferredUntil == null) return 1;
+    if (b.deferredUntil == null) return -1;
+    return a.deferredUntil!.compareTo(b.deferredUntil!);
+  });
+
+  return allDeferred;
+});
+
+/// Provider for filtered tasks based on search query
+/// Combines task type filtering with text search
+/// Now uses activeTasksProvider to exclude deferred tasks
+final filteredTasksProvider = Provider.autoDispose.family<List<Task>, String>((
+  ref,
+  type,
+) {
+  final tasks = ref.watch(activeTasksProvider(type));
   final searchQuery = ref.watch(taskSearchQueryProvider).toLowerCase().trim();
 
   if (searchQuery.isEmpty) {

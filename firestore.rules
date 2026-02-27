@@ -8,6 +8,7 @@ rules_version = '2';
 // - users/{userId}/notes/{noteId}
 // - users/{userId}/notebooks/{notebookId}
 // - users/{userId}/preferences/{prefId}
+// - users/{userId}/task_templates/{templateId} (Task templates for reuse)
 // - users/{userId}/transactions/{transactionId} (Finance)
 // - users/{userId}/categories/{categoryId} (Finance)
 // - users/{userId}/recurringTransactions/{docId} (Finance - Auto-repeating transactions)
@@ -201,6 +202,14 @@ service cloud.firestore {
 
       // Finance alerts subcollection
       match /financeAlerts/{docId} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow create: if isAuthenticated() && isOwner(userId);
+        allow update: if isAuthenticated() && isOwner(userId);
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
+
+      // Task templates subcollection
+      match /task_templates/{templateId} {
         allow read: if isAuthenticated() && isOwner(userId);
         allow create: if isAuthenticated() && isOwner(userId);
         allow update: if isAuthenticated() && isOwner(userId);

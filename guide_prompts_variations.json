@@ -1,0 +1,651 @@
+{
+  "metadata": {
+    "total_guides": 19,
+    "variations_per_guide": 5,
+    "total_prompts": 95,
+    "base_negative": "ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin",
+    "base_params": {
+      "steps": 30,
+      "cfg_scale": 7.5,
+      "width": 512,
+      "height": 512,
+      "sampler": "DPM++ 2M Karras"
+    },
+    "style_descriptions": {
+      "style_1": "Ethereal fantasy art, soft glowing aura, mystical atmosphere",
+      "style_2": "Bold anime style, vibrant colors, dynamic energy",
+      "style_3": "Minimalist geometric, clean lines, symbolic representation",
+      "style_4": "Painterly watercolor, flowing brushstrokes, dreamy aesthetic",
+      "style_5": "Digital art nouveau, ornate patterns, elegant composition"
+    }
+  },
+  "guides": [
+    {
+      "id": "luna-vacia",
+      "name": "Luna-Vacía",
+      "color": "#4A148C",
+      "archetype": "Samurái del Silencio",
+      "variations": [
+        {
+          "style": 1,
+          "name": "Ethereal Samurai",
+          "prompt": "ethereal purple samurai warrior meditating under crescent moon, flowing silver-purple robes, void energy swirling around, serene peaceful expression, japanese zen aesthetic, deep purple (#4A148C) and silver color palette, soft mystical glow, tranquil starlit night, fantasy art style, centered composition, 1:1 square format"
+        },
+        {
+          "style": 2,
+          "name": "Anime Warrior",
+          "prompt": "anime style purple samurai in meditation pose, crescent moon symbol glowing on forehead, lunar energy radiating from armor, vibrant deep purple (#4A148C) and silver tones, dynamic lighting, peaceful warrior aesthetic, starlit background, bold colors, centered portrait, 1:1 square"
+        },
+        {
+          "style": 3,
+          "name": "Minimal Zen",
+          "prompt": "minimalist geometric samurai silhouette, crescent moon motif, clean lines, purple (#4A148C) and silver color scheme, zen circle background, symbolic void representation, simple elegant composition, modern mystical aesthetic, 1:1 square format"
+        },
+        {
+          "style": 4,
+          "name": "Watercolor Dream",
+          "prompt": "watercolor painting of purple samurai warrior, flowing silver-purple robes like liquid moonlight, soft brushstrokes, dreamy peaceful atmosphere, crescent moon above, deep purple (#4A148C) washes, tranquil zen energy, ethereal aesthetic, 1:1 square"
+        },
+        {
+          "style": 5,
+          "name": "Art Nouveau Moon",
+          "prompt": "art nouveau style samurai warrior with ornate purple patterns, crescent moon decorative frame, elegant flowing lines, deep purple (#4A148C) and silver metallics, zen meditation pose, intricate border design, mystical sophisticated aesthetic, 1:1 square format"
+        }
+      ]
+    },
+    {
+      "id": "helioforja",
+      "name": "Helioforja",
+      "color": "#8B2500",
+      "archetype": "Forjador del Sol",
+      "variations": [
+        {
+          "style": 1,
+          "name": "Cosmic Forge",
+          "prompt": "powerful blacksmith deity forging in cosmic flames, red-hot molten metal (#8B2500), muscular silhouette against burning sun, hammer raised high creating sparks, intense fiery mystical aura, dark crimson and orange glow, fantasy forge aesthetic, dramatic lighting, centered composition, 1:1 square"
+        },
+        {
+          "style": 2,
+          "name": "Anime Forgemaster",
+          "prompt": "anime style powerful forgemaster with hammer, cosmic red flames (#8B2500) swirling around, dynamic action pose, intense expression, bright fiery energy, dark crimson and orange color palette, bold shadows, solar forge background, vibrant dramatic lighting, 1:1 square"
+        },
+        {
+          "style": 3,
+          "name": "Geometric Fire",
+          "prompt": "minimalist geometric blacksmith figure, angular hammer symbol, red-hot metal colors (#8B2500), clean geometric flames, bold shapes, modern mythical aesthetic, dark crimson background, symbolic forge representation, 1:1 square format"
+        },
+        {
+          "style": 4,
+          "name": "Painted Flames",
+          "prompt": "watercolor painting of cosmic blacksmith, flowing red and orange flames (#8B2500), painterly brushstrokes of molten metal, dreamy fiery atmosphere, hammer silhouette, soft yet intense colors, artistic forge scene, ethereal fire aesthetic, 1:1 square"
+        },
+        {
+          "style": 5,
+          "name": "Ornate Forgemaster",
+          "prompt": "art nouveau style forge deity with ornate flame patterns, decorative red-hot metal swirls (#8B2500), elegant hammer design, intricate border of fire, sophisticated crimson and orange palette, mythical craftsman aesthetic, centered ornamental composition, 1:1 square"
+        }
+      ]
+    },
+    {
+      "id": "leona-nova",
+      "name": "Leona-Nova",
+      "color": "#B8860B",
+      "archetype": "Soberana Solar",
+      "variations": [
+        {
+          "style": 1,
+          "name": "Golden Sovereign",
+          "prompt": "regal golden lioness queen wearing solar crown, majestic noble posture, golden mane flowing like sunlight (#B8860B), leo constellation glowing in background, queenly authority, warm golden amber tones, celestial royalty aesthetic, radiant dignified presence, fantasy art, 1:1 square"
+        },
+        {
+          "style": 2,
+          "name": "Anime Queen Leo",
+          "prompt": "anime style golden lion queen with solar crown, vibrant golden (#B8860B) flowing mane, leo stars shining, regal expression, dynamic pose, bright warm colors, bold celestial aesthetic, majestic sovereign energy, centered portrait, 1:1 square format"
+        },
+        {
+          "style": 3,
+          "name": "Geometric Royalty",
+          "prompt": "minimalist geometric lion queen silhouette, angular crown symbol, golden (#B8860B) color scheme, leo constellation pattern, clean modern design, symbolic sovereignty, elegant simple composition, royal aesthetic, 1:1 square"
+        },
+        {
+          "style": 4,
+          "name": "Watercolor Majesty",
+          "prompt": "watercolor painting of golden lioness sovereign, flowing brushstrokes of sunlight mane (#B8860B), soft regal atmosphere, crown of light, dreamy warm colors, painterly royal aesthetic, celestial queen energy, 1:1 square format"
+        },
+        {
+          "style": 5,
+          "name": "Art Nouveau Sovereign",
+          "prompt": "art nouveau style lion queen with ornate golden patterns (#B8860B), decorative solar crown, elegant flowing mane design, intricate leo constellation border, sophisticated warm palette, mythical royalty aesthetic, centered ornamental composition, 1:1 square"
+        }
+      ]
+    },
+    {
+      "id": "chispa-azul",
+      "name": "Chispa-Azul",
+      "color": "#1E88E5",
+      "archetype": "Mensajero del Relámpago",
+      "variations": [
+        {
+          "style": 1,
+          "name": "Lightning Messenger",
+          "prompt": "lightning messenger deity in motion blur, electric blue energy (#1E88E5) crackling around body, quicksilver speed, dynamic action pose, winged sandals glowing, mercury-like fluidity, bright blue and white lightning bolts, fantasy messenger aesthetic, rapid movement trails, 1:1 square"
+        },
+        {
+          "style": 2,
+          "name": "Anime Thunder",
+          "prompt": "anime style blue lightning messenger, vibrant electric energy (#1E88E5), dynamic speed lines, bright crackling bolts, energetic pose, bold blue and white colors, mercury wings, fast action aesthetic, centered dynamic composition, 1:1 square format"
+        },
+        {
+          "style": 3,
+          "name": "Geometric Speed",
+          "prompt": "minimalist geometric messenger figure with lightning bolt symbol, electric blue (#1E88E5) angular design, clean speed lines, modern mythical aesthetic, geometric wings, symbolic swiftness, simple dynamic composition, 1:1 square"
+        },
+        {
+          "style": 4,
+          "name": "Watercolor Lightning",
+          "prompt": "watercolor painting of blue lightning messenger, flowing electric brushstrokes (#1E88E5), dreamy speed trails, soft yet energetic atmosphere, mercury wing washes, artistic lightning aesthetic, dynamic fluid movement, 1:1 square format"
+        },
+        {
+          "style": 5,
+          "name": "Art Nouveau Mercury",
+          "prompt": "art nouveau style messenger with ornate lightning patterns (#1E88E5), decorative electric swirls, elegant winged design, intricate border of speed, sophisticated blue palette, mythical swift messenger aesthetic, centered ornamental composition, 1:1 square"
+        }
+      ]
+    },
+    {
+      "id": "gloria-sincro",
+      "name": "Gloria-Sincro",
+      "color": "#FFD700",
+      "archetype": "Tejedora de Logros",
+      "variations": [
+        {
+          "style": 1,
+          "name": "Victory Weaver",
+          "prompt": "victorious weaver goddess holding golden laurel crown (#FFD700), triumphant dignified pose, threads of achievement flowing from hands, nike-inspired victory figure, radiant golden light, proud expression, tapestry of success backdrop, brilliant gold and amber tones, fantasy art, 1:1 square"
+        },
+        {
+          "style": 2,
+          "name": "Anime Glory",
+          "prompt": "anime style golden victory goddess, vibrant laurel crown (#FFD700), achievement threads glowing, triumphant pose, bright gold and amber colors, bold radiant aesthetic, nike wings, centered victorious composition, 1:1 square format"
+        },
+        {
+          "style": 3,
+          "name": "Geometric Achievement",
+          "prompt": "minimalist geometric weaver figure with crown symbol, golden (#FFD700) angular threads, clean victory lines, modern mythical aesthetic, symbolic achievement pattern, elegant simple composition, 1:1 square"
+        },
+        {
+          "style": 4,
+          "name": "Watercolor Triumph",
+          "prompt": "watercolor painting of golden victory weaver, flowing brushstrokes of achievement threads (#FFD700), dreamy triumphant atmosphere, soft crown of light, artistic glory aesthetic, warm radiant washes, 1:1 square format"
+        },
+        {
+          "style": 5,
+          "name": "Art Nouveau Victory",
+          "prompt": "art nouveau style victory goddess with ornate golden patterns (#FFD700), decorative laurel crown, elegant flowing achievement threads, intricate border of triumph, sophisticated warm palette, mythical glory aesthetic, centered ornamental composition, 1:1 square"
+        }
+      ]
+    },
+    {
+      "id": "pacha-nexo",
+      "name": "Pacha-Nexo",
+      "color": "#2E7D32",
+      "archetype": "Tejedor del Ecosistema",
+      "variations": [
+        {
+          "style": 1,
+          "name": "Earth Weaver",
+          "prompt": "earth mother deity weaving ecosystem web, green life energy (#2E7D32) connecting all living things, gaia-inspired figure, hands creating interconnected network, nature and technology merged, verdant forest green tones, web of life visualization, harmonious balance aesthetic, fantasy art, 1:1 square"
+        },
+        {
+          "style": 2,
+          "name": "Anime Nature Network",
+          "prompt": "anime style earth weaver with glowing green network (#2E7D32), vibrant ecosystem connections, dynamic pose, bright verdant colors, bold nature aesthetic, gaia energy, centered balanced composition, 1:1 square format"
+        },
+        {
+          "style": 3,
+          "name": "Geometric Ecosystem",
+          "prompt": "minimalist geometric earth figure with web pattern, green (#2E7D32) angular network, clean connection lines, modern gaia aesthetic, symbolic ecosystem, elegant systemic composition, 1:1 square"
+        },
+        {
+          "style": 4,
+          "name": "Watercolor Web",
+          "prompt": "watercolor painting of green earth weaver, flowing brushstrokes of ecosystem threads (#2E7D32), dreamy interconnected atmosphere, soft network washes, artistic nature aesthetic, organic fluid patterns, 1:1 square format"
+        },
+        {
+          "style": 5,
+          "name": "Art Nouveau Gaia",
+          "prompt": "art nouveau style earth deity with ornate green patterns (#2E7D32), decorative ecosystem web, elegant flowing life connections, intricate border of nature, sophisticated verdant palette, mythical balance aesthetic, centered ornamental composition, 1:1 square"
+        }
+      ]
+    },
+    {
+      "id": "gea-metrica",
+      "name": "Gea-Métrica",
+      "color": "#388E3C",
+      "archetype": "Guardiana de Hábitos",
+      "variations": [
+        {
+          "style": 1,
+          "name": "Earth Nurturer",
+          "prompt": "earth goddess nurturing growing seedlings, gentle maternal presence, hands in fertile soil, plants sprouting with geometric patterns (#388E3C), gaia earth mother, natural growth cycles, rich green and brown earth tones, garden of habits, patient cultivation aesthetic, fantasy art, 1:1 square"
+        },
+        {
+          "style": 2,
+          "name": "Anime Growth",
+          "prompt": "anime style earth goddess with growing plants, vibrant green (#388E3C) sprouting energy, nurturing pose, bright natural colors, bold garden aesthetic, gaia cultivation, centered growth composition, 1:1 square format"
+        },
+        {
+          "style": 3,
+          "name": "Geometric Growth",
+          "prompt": "minimalist geometric earth figure with seedling symbols, green (#388E3C) angular growth pattern, clean cultivation lines, modern gaia aesthetic, symbolic habits, elegant growth composition, 1:1 square"
+        },
+        {
+          "style": 4,
+          "name": "Watercolor Garden",
+          "prompt": "watercolor painting of green earth nurturer, flowing brushstrokes of sprouting plants (#388E3C), dreamy growth atmosphere, soft earth washes, artistic cultivation aesthetic, organic gentle patterns, 1:1 square format"
+        },
+        {
+          "style": 5,
+          "name": "Art Nouveau Earth",
+          "prompt": "art nouveau style earth goddess with ornate green patterns (#388E3C), decorative growing vines, elegant flowing plant design, intricate border of nature, sophisticated verdant palette, mythical nurturing aesthetic, centered ornamental composition, 1:1 square"
+        }
+      ]
+    },
+    {
+      "id": "selene-fase",
+      "name": "Selene-Fase",
+      "color": "#B0BEC5",
+      "archetype": "Tejedora de Fases",
+      "variations": [
+        {
+          "style": 1,
+          "name": "Lunar Phases",
+          "prompt": "lunar phase weaver goddess under crescent moon, silver-gray robes (#B0BEC5) flowing like moonlight, all moon phases orbiting around figure, selene moon deity, gentle progressive energy, pearl and silver tones, waxing and waning cycles visible, patient transformation aesthetic, fantasy art, 1:1 square"
+        },
+        {
+          "style": 2,
+          "name": "Anime Moon Cycles",
+          "prompt": "anime style silver moon weaver, vibrant lunar phases (#B0BEC5) orbiting, dynamic gentle pose, bright pearl and silver colors, bold moon aesthetic, selene energy, centered phase composition, 1:1 square format"
+        },
+        {
+          "style": 3,
+          "name": "Geometric Phases",
+          "prompt": "minimalist geometric moon figure with phase symbols, silver (#B0BEC5) angular moon pattern, clean cycle lines, modern selene aesthetic, symbolic transformation, elegant progressive composition, 1:1 square"
+        },
+        {
+          "style": 4,
+          "name": "Watercolor Moonlight",
+          "prompt": "watercolor painting of silver moon weaver, flowing brushstrokes of lunar phases (#B0BEC5), dreamy cycle atmosphere, soft moonlight washes, artistic transformation aesthetic, gentle ethereal patterns, 1:1 square format"
+        },
+        {
+          "style": 5,
+          "name": "Art Nouveau Luna",
+          "prompt": "art nouveau style moon goddess with ornate silver patterns (#B0BEC5), decorative lunar phases, elegant flowing moonlight design, intricate border of cycles, sophisticated pearl palette, mythical progressive aesthetic, centered ornamental composition, 1:1 square"
+        }
+      ]
+    },
+    {
+      "id": "viento-estacion",
+      "name": "Viento-Estación",
+      "color": "#0288D1",
+      "archetype": "Navegante de Estaciones",
+      "variations": [
+        {
+          "style": 1,
+          "name": "Wind Navigator",
+          "prompt": "wind navigator deity with seasonal elements swirling, sky blue robes (#0288D1) billowing in mystical winds, compass rose symbol, four seasons represented in background, zephyr wind god, sailing vessel motif, azure and cyan tones, adaptive flow aesthetic, fantasy art, 1:1 square"
+        },
+        {
+          "style": 2,
+          "name": "Anime Seasons",
+          "prompt": "anime style blue wind navigator, vibrant seasonal swirls (#0288D1), dynamic flowing pose, bright azure and cyan colors, bold wind aesthetic, zephyr energy, centered adaptive composition, 1:1 square format"
+        },
+        {
+          "style": 3,
+          "name": "Geometric Wind",
+          "prompt": "minimalist geometric wind figure with compass symbol, blue (#0288D1) angular seasonal pattern, clean flow lines, modern zephyr aesthetic, symbolic navigation, elegant adaptive composition, 1:1 square"
+        },
+        {
+          "style": 4,
+          "name": "Watercolor Breeze",
+          "prompt": "watercolor painting of blue wind navigator, flowing brushstrokes of seasonal winds (#0288D1), dreamy adaptive atmosphere, soft azure washes, artistic flow aesthetic, gentle swirling patterns, 1:1 square format"
+        },
+        {
+          "style": 5,
+          "name": "Art Nouveau Zephyr",
+          "prompt": "art nouveau style wind deity with ornate blue patterns (#0288D1), decorative seasonal swirls, elegant flowing wind design, intricate border of navigation, sophisticated azure palette, mythical adaptive aesthetic, centered ornamental composition, 1:1 square"
+        }
+      ]
+    },
+    {
+      "id": "atlas-orbital",
+      "name": "Atlas-Orbital",
+      "color": "#37474F",
+      "archetype": "Sustentador",
+      "variations": [
+        {
+          "style": 1,
+          "name": "Cosmic Sustainer",
+          "prompt": "titan sustaining orbital spheres on shoulders, strong dignified posture, cosmic orbs floating in synchronized paths (#37474F), atlas mythology, burden and strength visualized, dark steel gray tones, celestial mechanics visible, reliable foundation aesthetic, eternal support energy, fantasy art, 1:1 square"
+        },
+        {
+          "style": 2,
+          "name": "Anime Atlas",
+          "prompt": "anime style gray titan with orbital spheres, vibrant cosmic orbs (#37474F), strong powerful pose, bold steel colors, dynamic support aesthetic, atlas energy, centered sustaining composition, 1:1 square format"
+        },
+        {
+          "style": 3,
+          "name": "Geometric Support",
+          "prompt": "minimalist geometric titan figure with sphere symbols, gray (#37474F) angular orbital pattern, clean support lines, modern atlas aesthetic, symbolic sustenance, elegant strong composition, 1:1 square"
+        },
+        {
+          "style": 4,
+          "name": "Watercolor Burden",
+          "prompt": "watercolor painting of gray titan sustainer, flowing brushstrokes of orbital spheres (#37474F), dreamy support atmosphere, soft steel washes, artistic strength aesthetic, dignified gentle patterns, 1:1 square format"
+        },
+        {
+          "style": 5,
+          "name": "Art Nouveau Atlas",
+          "prompt": "art nouveau style titan with ornate gray patterns (#37474F), decorative orbital spheres, elegant flowing support design, intricate border of mechanics, sophisticated steel palette, mythical sustaining aesthetic, centered ornamental composition, 1:1 square"
+        }
+      ]
+    },
+    {
+      "id": "erebo-logica",
+      "name": "Érebo-Lógica",
+      "color": "#455A64",
+      "archetype": "Oráculo de la Calma",
+      "variations": [
+        {
+          "style": 1,
+          "name": "Twilight Oracle",
+          "prompt": "calm oracle figure in twilight shadows, soothing presence amid darkness, soft gray-blue tones (#455A64), erebus penumbra deity, gentle wisdom emanating, ordered mind visualization, first step glowing in shadow, tranquil meditation pose, anxiety dissolving into clarity aesthetic, fantasy art, 1:1 square"
+        },
+        {
+          "style": 2,
+          "name": "Anime Calm",
+          "prompt": "anime style gray-blue oracle in shadows, vibrant calm energy (#455A64), serene pose, soft penumbra colors, bold wisdom aesthetic, erebus tranquility, centered peaceful composition, 1:1 square format"
+        },
+        {
+          "style": 3,
+          "name": "Geometric Order",
+          "prompt": "minimalist geometric oracle figure in twilight, gray-blue (#455A64) angular calm pattern, clean shadow lines, modern erebus aesthetic, symbolic order, elegant peaceful composition, 1:1 square"
+        },
+        {
+          "style": 4,
+          "name": "Watercolor Twilight",
+          "prompt": "watercolor painting of gray-blue oracle, flowing brushstrokes of calming shadows (#455A64), dreamy peaceful atmosphere, soft penumbra washes, artistic wisdom aesthetic, gentle ordered patterns, 1:1 square format"
+        },
+        {
+          "style": 5,
+          "name": "Art Nouveau Erebus",
+          "prompt": "art nouveau style oracle with ornate gray-blue patterns (#455A64), decorative twilight swirls, elegant flowing calm design, intricate border of order, sophisticated penumbra palette, mythical peaceful aesthetic, centered ornamental composition, 1:1 square"
+        }
+      ]
+    },
+    {
+      "id": "anima-suave",
+      "name": "Ánima-Suave",
+      "color": "#F8BBD9",
+      "archetype": "Mensajera Suave",
+      "variations": [
+        {
+          "style": 1,
+          "name": "Butterfly Messenger",
+          "prompt": "gentle messenger with butterfly wings, soft pink aura (#F8BBD9), psyche-inspired figure, whispering presence, delicate and compassionate energy, pastel rose tones, tender notification aesthetic, floating ethereal being, butterfly symbolism, non-judgmental companion, soft glow of awareness, fantasy art, 1:1 square"
+        },
+        {
+          "style": 2,
+          "name": "Anime Whisper",
+          "prompt": "anime style pink butterfly messenger, vibrant soft aura (#F8BBD9), gentle floating pose, bright pastel colors, delicate psyche aesthetic, tender energy, centered compassionate composition, 1:1 square format"
+        },
+        {
+          "style": 3,
+          "name": "Geometric Softness",
+          "prompt": "minimalist geometric butterfly figure, pink (#F8BBD9) angular gentle pattern, clean whisper lines, modern psyche aesthetic, symbolic tenderness, elegant soft composition, 1:1 square"
+        },
+        {
+          "style": 4,
+          "name": "Watercolor Flutter",
+          "prompt": "watercolor painting of pink butterfly messenger, flowing brushstrokes of gentle wings (#F8BBD9), dreamy soft atmosphere, pastel washes, artistic compassion aesthetic, delicate ethereal patterns, 1:1 square format"
+        },
+        {
+          "style": 5,
+          "name": "Art Nouveau Psyche",
+          "prompt": "art nouveau style messenger with ornate pink patterns (#F8BBD9), decorative butterfly wings, elegant flowing gentle design, intricate border of tenderness, sophisticated pastel palette, mythical soft aesthetic, centered ornamental composition, 1:1 square"
+        }
+      ]
+    },
+    {
+      "id": "morfeo-astral",
+      "name": "Morfeo-Astral",
+      "color": "#7E57C2",
+      "archetype": "Tejedor de Sueños",
+      "variations": [
+        {
+          "style": 1,
+          "name": "Dream Weaver",
+          "prompt": "dream weaver deity spinning cosmic threads, purple mystical energy (#7E57C2), morpheus god of dreams, floating notes and ideas materialized, loom of consciousness, deep violet and lavender tones, astral plane aesthetic, dreamcatcher motif, thoughts becoming reality, fantasy art, 1:1 square"
+        },
+        {
+          "style": 2,
+          "name": "Anime Dreams",
+          "prompt": "anime style purple dream weaver, vibrant cosmic threads (#7E57C2), dynamic spinning pose, bright violet and lavender colors, bold morpheus aesthetic, astral energy, centered dream composition, 1:1 square format"
+        },
+        {
+          "style": 3,
+          "name": "Geometric Dreams",
+          "prompt": "minimalist geometric dream figure with thread symbols, purple (#7E57C2) angular astral pattern, clean weaving lines, modern morpheus aesthetic, symbolic consciousness, elegant dream composition, 1:1 square"
+        },
+        {
+          "style": 4,
+          "name": "Watercolor Dreams",
+          "prompt": "watercolor painting of purple dream weaver, flowing brushstrokes of cosmic threads (#7E57C2), dreamy astral atmosphere, soft violet washes, artistic consciousness aesthetic, ethereal gentle patterns, 1:1 square format"
+        },
+        {
+          "style": 5,
+          "name": "Art Nouveau Morpheus",
+          "prompt": "art nouveau style dream deity with ornate purple patterns (#7E57C2), decorative cosmic threads, elegant flowing dream design, intricate border of consciousness, sophisticated violet palette, mythical astral aesthetic, centered ornamental composition, 1:1 square"
+        }
+      ]
+    },
+    {
+      "id": "shiva-fluido",
+      "name": "Shiva-Fluido",
+      "color": "#5E35B1",
+      "archetype": "Danzante del Cambio",
+      "variations": [
+        {
+          "style": 1,
+          "name": "Cosmic Dancer",
+          "prompt": "dancing deity in cosmic dance pose, fluid transformation energy (#5E35B1), shiva nataraja inspired, circle of change around figure, graceful dynamic movement, deep purple and indigo tones, creation and destruction balanced, adaptable flow aesthetic, plans shifting like water, fantasy art, 1:1 square"
+        },
+        {
+          "style": 2,
+          "name": "Anime Dance",
+          "prompt": "anime style purple dancing deity, vibrant transformation circle (#5E35B1), dynamic graceful pose, bright indigo colors, bold shiva aesthetic, fluid energy, centered change composition, 1:1 square format"
+        },
+        {
+          "style": 3,
+          "name": "Geometric Flow",
+          "prompt": "minimalist geometric dancer figure with circle symbol, purple (#5E35B1) angular transformation pattern, clean flow lines, modern shiva aesthetic, symbolic adaptability, elegant dance composition, 1:1 square"
+        },
+        {
+          "style": 4,
+          "name": "Watercolor Dance",
+          "prompt": "watercolor painting of purple cosmic dancer, flowing brushstrokes of transformation (#5E35B1), dreamy change atmosphere, soft indigo washes, artistic flow aesthetic, graceful fluid patterns, 1:1 square format"
+        },
+        {
+          "style": 5,
+          "name": "Art Nouveau Shiva",
+          "prompt": "art nouveau style dancing deity with ornate purple patterns (#5E35B1), decorative transformation circle, elegant flowing dance design, intricate border of change, sophisticated indigo palette, mythical fluid aesthetic, centered ornamental composition, 1:1 square"
+        }
+      ]
+    },
+    {
+      "id": "loki-error",
+      "name": "Loki-Error",
+      "color": "#FF8F00",
+      "archetype": "Tramoyista",
+      "variations": [
+        {
+          "style": 1,
+          "name": "Trickster Chaos",
+          "prompt": "trickster deity with mischievous knowing smile, orange chaos energy (#FF8F00) swirling playfully, loki norse god, unexpected paths visible, dice and chance symbols, amber and gold tones, theatrical masks, clever improvisation, hidden order in chaos aesthetic, friendly chaos agent, fantasy art, 1:1 square"
+        },
+        {
+          "style": 2,
+          "name": "Anime Trickster",
+          "prompt": "anime style orange trickster with playful grin, vibrant chaos swirls (#FF8F00), dynamic mischievous pose, bright amber colors, bold loki aesthetic, clever energy, centered playful composition, 1:1 square format"
+        },
+        {
+          "style": 3,
+          "name": "Geometric Chaos",
+          "prompt": "minimalist geometric trickster figure with dice symbol, orange (#FF8F00) angular chaos pattern, clean improvisation lines, modern loki aesthetic, symbolic chance, elegant playful composition, 1:1 square"
+        },
+        {
+          "style": 4,
+          "name": "Watercolor Mischief",
+          "prompt": "watercolor painting of orange trickster, flowing brushstrokes of playful chaos (#FF8F00), dreamy mischievous atmosphere, soft amber washes, artistic improvisation aesthetic, clever gentle patterns, 1:1 square format"
+        },
+        {
+          "style": 5,
+          "name": "Art Nouveau Loki",
+          "prompt": "art nouveau style trickster with ornate orange patterns (#FF8F00), decorative chaos swirls, elegant flowing mischief design, intricate border of chance, sophisticated amber palette, mythical playful aesthetic, centered ornamental composition, 1:1 square"
+        }
+      ]
+    },
+    {
+      "id": "eris-nucleo",
+      "name": "Eris-Núcleo",
+      "color": "#C2185B",
+      "archetype": "Centella Creativa",
+      "variations": [
+        {
+          "style": 1,
+          "name": "Creative Spark",
+          "prompt": "creative spark goddess holding golden apple, magenta creative energy (#C2185B) radiating outward, eris goddess of discord and creativity, breakthrough moment visualization, fuchsia and pink tones, idea explosion, divine inspiration spark, catalyst of change aesthetic, innovative fire, fantasy art, 1:1 square"
+        },
+        {
+          "style": 2,
+          "name": "Anime Spark",
+          "prompt": "anime style magenta creative goddess with golden apple, vibrant breakthrough energy (#C2185B), dynamic inspired pose, bright fuchsia colors, bold eris aesthetic, innovation spark, centered creative composition, 1:1 square format"
+        },
+        {
+          "style": 3,
+          "name": "Geometric Spark",
+          "prompt": "minimalist geometric creative figure with apple symbol, magenta (#C2185B) angular inspiration pattern, clean spark lines, modern eris aesthetic, symbolic innovation, elegant creative composition, 1:1 square"
+        },
+        {
+          "style": 4,
+          "name": "Watercolor Inspiration",
+          "prompt": "watercolor painting of magenta creative spark, flowing brushstrokes of breakthrough energy (#C2185B), dreamy innovative atmosphere, soft fuchsia washes, artistic inspiration aesthetic, explosive gentle patterns, 1:1 square format"
+        },
+        {
+          "style": 5,
+          "name": "Art Nouveau Eris",
+          "prompt": "art nouveau style creative goddess with ornate magenta patterns (#C2185B), decorative golden apple, elegant flowing spark design, intricate border of innovation, sophisticated fuchsia palette, mythical creative aesthetic, centered ornamental composition, 1:1 square"
+        }
+      ]
+    },
+    {
+      "id": "anubis-vinculo",
+      "name": "Anubis-Vínculo",
+      "color": "#212121",
+      "archetype": "Guardián",
+      "variations": [
+        {
+          "style": 1,
+          "name": "Threshold Guardian",
+          "prompt": "egyptian jackal guardian deity at threshold gate, black and gold colors (#212121, #FFD54F), anubis god of transitions, weighing scale of privacy, protective stance, golden ankh symbol, guardian of sacred data, threshold guardian aesthetic, digital-ancient fusion, secure passage energy, fantasy art, 1:1 square"
+        },
+        {
+          "style": 2,
+          "name": "Anime Anubis",
+          "prompt": "anime style black and gold jackal guardian, vibrant threshold gate (#212121, #FFD54F), powerful protective pose, bold contrasting colors, dynamic anubis aesthetic, sacred energy, centered guardian composition, 1:1 square format"
+        },
+        {
+          "style": 3,
+          "name": "Geometric Guardian",
+          "prompt": "minimalist geometric jackal figure with ankh symbol, black and gold (#212121, #FFD54F) angular protection pattern, clean threshold lines, modern anubis aesthetic, symbolic security, elegant guardian composition, 1:1 square"
+        },
+        {
+          "style": 4,
+          "name": "Watercolor Threshold",
+          "prompt": "watercolor painting of black and gold guardian, flowing brushstrokes of protective energy (#212121, #FFD54F), dreamy sacred atmosphere, contrasting washes, artistic guardian aesthetic, dignified gentle patterns, 1:1 square format"
+        },
+        {
+          "style": 5,
+          "name": "Art Nouveau Anubis",
+          "prompt": "art nouveau style jackal guardian with ornate black and gold patterns (#212121, #FFD54F), decorative threshold gate, elegant flowing protection design, intricate border of security, sophisticated contrasting palette, mythical guardian aesthetic, centered ornamental composition, 1:1 square"
+        }
+      ]
+    },
+    {
+      "id": "zenit-cero",
+      "name": "Zenit-Cero",
+      "color": "#0277BD",
+      "archetype": "Cartógrafo",
+      "variations": [
+        {
+          "style": 1,
+          "name": "Star Cartographer",
+          "prompt": "celestial cartographer reading star maps, bright blue navigation tools (#0277BD), astrolabe and compass symbols, zenith point above, constellation charts visible, cyan and azure tones, data as stars aesthetic, objective observer, cosmic measurement, non-judgmental mapping, fantasy art, 1:1 square"
+        },
+        {
+          "style": 2,
+          "name": "Anime Navigator",
+          "prompt": "anime style blue cartographer with star maps, vibrant navigation tools (#0277BD), focused mapping pose, bright cyan colors, bold cosmic aesthetic, data energy, centered objective composition, 1:1 square format"
+        },
+        {
+          "style": 3,
+          "name": "Geometric Maps",
+          "prompt": "minimalist geometric cartographer figure with astrolabe symbol, blue (#0277BD) angular constellation pattern, clean measurement lines, modern cosmic aesthetic, symbolic data, elegant mapping composition, 1:1 square"
+        },
+        {
+          "style": 4,
+          "name": "Watercolor Stars",
+          "prompt": "watercolor painting of blue star cartographer, flowing brushstrokes of constellation maps (#0277BD), dreamy cosmic atmosphere, soft cyan washes, artistic measurement aesthetic, objective gentle patterns, 1:1 square format"
+        },
+        {
+          "style": 5,
+          "name": "Art Nouveau Zenith",
+          "prompt": "art nouveau style cartographer with ornate blue patterns (#0277BD), decorative star maps, elegant flowing navigation design, intricate border of constellations, sophisticated azure palette, mythical mapping aesthetic, centered ornamental composition, 1:1 square"
+        }
+      ]
+    },
+    {
+      "id": "oceano-bit",
+      "name": "Océano-Bit",
+      "color": "#00838F",
+      "archetype": "Flujo",
+      "variations": [
+        {
+          "style": 1,
+          "name": "Digital Ocean",
+          "prompt": "ocean deity in flowing water form, turquoise digital waves (#00838F), poseidon-inspired figure, flowing effortless movement, water and code merged, cyan and teal tones, river of consciousness, mental flow state aesthetic, fluid adaptation, currents of thought visible, peaceful momentum, fantasy art, 1:1 square"
+        },
+        {
+          "style": 2,
+          "name": "Anime Flow",
+          "prompt": "anime style turquoise ocean deity, vibrant digital waves (#00838F), dynamic flowing pose, bright cyan colors, bold water aesthetic, flow energy, centered fluid composition, 1:1 square format"
+        },
+        {
+          "style": 3,
+          "name": "Geometric Waves",
+          "prompt": "minimalist geometric ocean figure with wave symbol, turquoise (#00838F) angular flow pattern, clean current lines, modern aquatic aesthetic, symbolic fluidity, elegant flowing composition, 1:1 square"
+        },
+        {
+          "style": 4,
+          "name": "Watercolor Current",
+          "prompt": "watercolor painting of turquoise ocean deity, flowing brushstrokes of digital waves (#00838F), dreamy fluid atmosphere, soft cyan washes, artistic flow aesthetic, peaceful gentle patterns, 1:1 square format"
+        },
+        {
+          "style": 5,
+          "name": "Art Nouveau Ocean",
+          "prompt": "art nouveau style ocean deity with ornate turquoise patterns (#00838F), decorative digital waves, elegant flowing water design, intricate border of currents, sophisticated cyan palette, mythical flow aesthetic, centered ornamental composition, 1:1 square"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # Stable Diffusion WebUI con API habilitada
+  stable-diffusion-webui:
+    image: ghcr.io/ai-dock/stable-diffusion-webui:latest-cuda
+    container_name: auralist-sd-webui
+    ports:
+      - "7860:7860"  # WebUI interface
+      - "7861:7861"  # API endpoint (si se necesita separado)
+    volumes:
+      - ./sd-data:/data
+      - ./sd-output:/output
+      - ./assets/guides/avatars:/workspace/outputs/avatars
+      - ./guide_prompts.json:/workspace/guide_prompts.json:ro
+      - ./guide_prompts_variations.json:/workspace/guide_prompts_variations.json:ro
+    environment:
+      # Habilitar API y optimizaciones
+      - CLI_ARGS=--api --listen --xformers --medvram --enable-insecure-extension-access --no-half-vae
+      - NVIDIA_VISIBLE_DEVICES=all
+      # Configuración de memoria (ajustar según tu GPU)
+      - COMMANDLINE_ARGS=--xformers --medvram
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+        limits:
+          memory: 16G  # Aumentado para instalación de PyTorch
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/sdapi/v1/sd-models"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+# Para levantar el servicio:
+# docker-compose up -d
+#
+# Ver logs:
+# docker-compose logs -f stable-diffusion-webui
+#
+# Para acceder:
+# WebUI: http://localhost:7860
+# API Docs: http://localhost:7860/docs
+#
+# Para detener:
+# docker-compose down
+#
+# Notas:
+# - Primera ejecución descarga modelo base (~4GB), tarda 10-15 min
+# - Para GPU de 6GB o menos, usa --lowvram en vez de --medvram
+# - Para CPU sin GPU, quita la sección 'deploy' completa

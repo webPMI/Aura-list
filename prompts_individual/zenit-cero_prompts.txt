@@ -1,0 +1,64 @@
+Zenit-Cero - Image Generation Prompts
+============================================================
+
+ID: zenit-cero
+Color: #0277BD
+Archetype: Cartógrafo
+
+============================================================
+
+VARIATION 1: Star Cartographer
+------------------------------------------------------------
+
+PROMPT:
+celestial cartographer reading star maps, bright blue navigation tools (#0277BD), astrolabe and compass symbols, zenith point above, constellation charts visible, cyan and azure tones, data as stars aesthetic, objective observer, cosmic measurement, non-judgmental mapping, fantasy art, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 2: Anime Navigator
+------------------------------------------------------------
+
+PROMPT:
+anime style blue cartographer with star maps, vibrant navigation tools (#0277BD), focused mapping pose, bright cyan colors, bold cosmic aesthetic, data energy, centered objective composition, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 3: Geometric Maps
+------------------------------------------------------------
+
+PROMPT:
+minimalist geometric cartographer figure with astrolabe symbol, blue (#0277BD) angular constellation pattern, clean measurement lines, modern cosmic aesthetic, symbolic data, elegant mapping composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 4: Watercolor Stars
+------------------------------------------------------------
+
+PROMPT:
+watercolor painting of blue star cartographer, flowing brushstrokes of constellation maps (#0277BD), dreamy cosmic atmosphere, soft cyan washes, artistic measurement aesthetic, objective gentle patterns, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 5: Art Nouveau Zenith
+------------------------------------------------------------
+
+PROMPT:
+art nouveau style cartographer with ornate blue patterns (#0277BD), decorative star maps, elegant flowing navigation design, intricate border of constellations, sophisticated azure palette, mythical mapping aesthetic, centered ornamental composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+

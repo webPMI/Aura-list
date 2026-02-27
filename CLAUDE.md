@@ -64,9 +64,18 @@ UI (ConsumerWidget) ← watches ← Riverpod Providers ← streams ← Hive (loc
 - `category`: 'Personal' | 'Trabajo' | 'Hogar' | 'Salud' | 'Otros'
 - `dueTimeMinutes`: Minutes since midnight (0-1439) for time-based tasks
 - `deadline`: Hard deadline (distinct from suggested dueDate)
+- `deferredUntil` (HiveField 24): DateTime for snooze/deferral feature
 - `motivation`: Why accomplish this task
 - `reward`: Prize text shown on completion
 - `firestoreId`: Cloud document ID (null if not synced)
+- Finance fields (HiveFields 16-23): cost, benefit, categoryId, note, autoGenerate, etc.
+
+**TaskTemplate Model (typeId: 30)** ⭐ NEW
+- Reusable task configurations
+- Includes all task fields plus template metadata
+- `name`, `description`, `usageCount`, `isPinned`, `tags`
+- Supports finance integration
+- Cloud sync: `users/{uid}/task_templates`
 
 **Note Model (typeId: 2)**
 - `checklist`: List of ChecklistItem for task-based notes
@@ -94,6 +103,7 @@ UI (ConsumerWidget) ← watches ← Riverpod Providers ← streams ← Hive (loc
 - **AuthService**: Firebase anonymous auth, auth state stream
 - **ErrorHandler**: Singleton for classified error handling (database/network/auth/validation)
 - **RecurringTransactionService**: Manages recurring financial transactions with pattern detection
+- **DeadlineNotificationService** ⭐ NEW: Local push notifications for task deadlines with escalating urgency
 
 ### Key Dependencies
 
@@ -102,6 +112,8 @@ UI (ConsumerWidget) ← watches ← Riverpod Providers ← streams ← Hive (loc
 - **firebase_core/auth/firestore**: Optional cloud sync and authentication
 - **flutter_riverpod (^2.6.1)**: State management with reactive streams
 - **shared_preferences (^2.2.2)**: Persistent key-value storage for settings
+- **flutter_local_notifications (^18.0.1)** ⭐ NEW: Cross-platform local push notifications
+- **timezone (^0.9.4)** ⭐ NEW: Timezone support for notification scheduling
 
 ## Finance Features
 
@@ -163,6 +175,75 @@ final link = TaskFinanceLink(
   relationship: 'reward', // or 'cost', 'investment'
 );
 ```
+
+## Productivity Features (v2.0)
+
+AuraList includes three major productivity features introduced in version 2.0:
+
+**Smart Snooze/Deferral (PROD-3)**
+- Temporarily hide tasks until a specified date/time
+- Quick snooze presets: "Más tarde hoy", "Esta noche", "Mañana", "Próximo lunes", etc.
+- Custom date/time picker for flexible scheduling
+- Automatic reappearance when deferral period expires
+- Deferred tasks widget on dashboard showing all snoozed tasks
+- Field: `Task.deferredUntil` (HiveField 24)
+- Providers: `activeTasksProvider`, `deferredTasksProvider`
+- Methods: `TaskProvider.snoozeTask()`, `TaskProvider.unsnoozeTask()`
+
+**Task Templates (PROD-2)**
+- Save task configurations as reusable templates
+- Create from scratch or from completed tasks
+- Pin frequently used templates
+- Usage tracking and sorting (most used, recently used)
+- Search and filter templates
+- Model: `TaskTemplate` (HiveType typeId: 30)
+- Providers: `templatesProvider`, `templatesByTypeProvider`, `filteredTemplatesProvider`
+- Cloud sync: `users/{userId}/task_templates`
+- Screens: `TemplatesScreen`, `TemplateFormDialog`, `SaveAsTemplateDialog`
+
+**Push Notifications & Deadline Enforcement (PROD-1)**
+- Local push notifications for approaching deadlines
+- Four urgency levels: Normal (7d), High (1d), Urgent (0d), Critical (overdue)
+- Quiet hours support (default: 10 PM - 8 AM)
+- Customizable escalation schedule
+- Priority filtering (high priority only mode)
+- Overdue tasks banner on dashboard
+- Service: `DeadlineNotificationService`
+- Providers: `notificationServiceProvider`, `taskDeadlineWatcherProvider`, `overdueTasksStreamProvider`
+- Preferences: `UserPreferences` HiveFields 15-21 for notification settings
+- Cross-platform: Android (API 26+), iOS (10+), Windows, Linux, macOS
+
+**Usage Examples:**
+```dart
+// Snooze a task
+await ref.read(tasksProvider('daily').notifier).snoozeTask(
+  task,
+  DateTime.now().add(const Duration(hours: 4)),
+);
+
+// Create and use a template
+final template = TaskTemplate(
+  name: 'Weekly Groceries',
+  taskType: 'weekly',
+  title: 'Go grocery shopping',
+  category: 'Personal',
+  priority: 1,
+);
+await ref.read(templatesProvider.notifier).createTemplate(template);
+
+// Apply template to create task
+final newTask = template.toTask();
+await ref.read(tasksProvider('weekly').notifier).addTask(/* ... */);
+
+// Schedule notifications for a task with deadline
+final service = DeadlineNotificationService();
+await service.scheduleDeadlineNotifications(task, preferences);
+```
+
+**Platform Configuration:**
+- Android: Notification permissions, exact alarm support, desugaring enabled
+- iOS: UNUserNotificationCenter delegate setup
+- Windows/Linux/macOS: Native notifications (no extra config)
 
 ## Code Conventions
 

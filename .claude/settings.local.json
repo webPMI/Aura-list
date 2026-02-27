@@ -31,7 +31,22 @@
       "Bash(del \"D:\\\\program\\\\checklist-app\\\\lib\\\\widgets\\\\dialogs\\\\link_account_dialog.dart\")",
       "Bash(python:*)",
       "Bash(del \"D:\\\\program\\\\checklist-app\\\\test_output.json\")",
-      "Skill(implement)"
+      "Skill(implement)",
+      "Bash(docker:*)",
+      "Bash(wc:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker-compose logs:*)",
+      "Bash(docker-compose down:*)",
+      "Bash(docker-compose:*)",
+      "Bash(nvidia-smi:*)",
+      "Bash(curl:*)",
+      "Bash(where:*)",
+      "Bash(mkdir:*)",
+      "Bash(node create-admins-simple.js:*)",
+      "Bash(node delete-all-auth-users.js:*)",
+      "Bash(node create-admin-auto.js:*)",
+      "Bash(if exist \"D:\\\\program\\\\checklist-app\\\\pubspec.yaml\" type \"D:\\\\program\\\\checklist-app\\\\pubspec.yaml\")",
+      "Bash(node -e:*)"
     ]
   }
 }

@@ -23,6 +23,7 @@ import 'sync_orchestrator.dart';
 import 'sync_watcher_service.dart';
 import 'error_handler.dart';
 import 'logger_service.dart';
+import 'deadline_notification_service.dart';
 
 /// Bootstrap state representing initialization progress
 class BootstrapState {
@@ -32,6 +33,7 @@ class BootstrapState {
   final bool authReady;
   final bool databaseReady;
   final bool syncReady;
+  final bool notificationsReady;
   final String? currentStep;
   final String? error;
   final double progress;
@@ -43,6 +45,7 @@ class BootstrapState {
     this.authReady = false,
     this.databaseReady = false,
     this.syncReady = false,
+    this.notificationsReady = false,
     this.currentStep,
     this.error,
     this.progress = 0.0,
@@ -55,6 +58,7 @@ class BootstrapState {
     bool? authReady,
     bool? databaseReady,
     bool? syncReady,
+    bool? notificationsReady,
     String? currentStep,
     String? error,
     double? progress,
@@ -66,6 +70,7 @@ class BootstrapState {
       authReady: authReady ?? this.authReady,
       databaseReady: databaseReady ?? this.databaseReady,
       syncReady: syncReady ?? this.syncReady,
+      notificationsReady: notificationsReady ?? this.notificationsReady,
       currentStep: currentStep ?? this.currentStep,
       error: error,
       progress: progress ?? this.progress,
@@ -228,13 +233,36 @@ class AppBootstrap {
 
       _updateState(_currentState.copyWith(
         syncReady: true,
-        progress: 0.8,
+        progress: 0.75,
       ));
 
-      // Step 5: Perform Initial Sync (100%)
+      // Step 5: Initialize Notifications (85%)
+      _updateState(_currentState.copyWith(
+        currentStep: 'Inicializando notificaciones...',
+        progress: 0.75,
+      ));
+
+      try {
+        final notificationService = DeadlineNotificationService();
+        await notificationService.initialize();
+        _logger.info('AppBootstrap', 'Notification service inicializado');
+      } catch (e) {
+        _logger.warning(
+          'AppBootstrap',
+          'Error al inicializar notificaciones (no critico)',
+          metadata: {'error': e.toString()},
+        );
+      }
+
+      _updateState(_currentState.copyWith(
+        notificationsReady: true,
+        progress: 0.85,
+      ));
+
+      // Step 6: Perform Initial Sync (100%)
       _updateState(_currentState.copyWith(
         currentStep: 'Sincronizando datos...',
-        progress: 0.8,
+        progress: 0.85,
       ));
 
       if (firebaseAvailable && isAuthenticated && userId != null) {

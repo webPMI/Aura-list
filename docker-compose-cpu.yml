@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  # Stable Diffusion WebUI - Modo CPU
+  stable-diffusion-webui:
+    image: ghcr.io/ai-dock/stable-diffusion-webui:latest
+    container_name: auralist-sd-webui
+    ports:
+      - "7860:7860"  # WebUI interface
+    volumes:
+      - ./sd-data:/data
+      - ./sd-output:/output
+      - ./assets/guides/avatars:/workspace/outputs/avatars
+      - ./guide_prompts.json:/workspace/guide_prompts.json:ro
+      - ./guide_prompts_variations.json:/workspace/guide_prompts_variations.json:ro
+    environment:
+      # Configuración para CPU (sin GPU)
+      - CLI_ARGS=--api --listen --skip-torch-cuda-test --precision full --no-half --no-half-vae
+      - COMMANDLINE_ARGS=--skip-torch-cuda-test --precision full --no-half
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/sdapi/v1/sd-models"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+# NOTA: Este contenedor funciona en CPU porque tu RTX 5060 Ti (sm_120)
+# es muy nueva para PyTorch actual (soporta hasta sm_90).
+#
+# Generación será más lenta (~5-10 min por imagen) pero funcionará.
+#
+# Para usar GPU necesitarías:
+# - Contenedor con PyTorch más nuevo que soporte sm_120
+# - O esperar a actualización de ai-dock/stable-diffusion-webui

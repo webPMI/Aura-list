@@ -1,0 +1,64 @@
+Morfeo-Astral - Image Generation Prompts
+============================================================
+
+ID: morfeo-astral
+Color: #7E57C2
+Archetype: Tejedor de Sueños
+
+============================================================
+
+VARIATION 1: Dream Weaver
+------------------------------------------------------------
+
+PROMPT:
+dream weaver deity spinning cosmic threads, purple mystical energy (#7E57C2), morpheus god of dreams, floating notes and ideas materialized, loom of consciousness, deep violet and lavender tones, astral plane aesthetic, dreamcatcher motif, thoughts becoming reality, fantasy art, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 2: Anime Dreams
+------------------------------------------------------------
+
+PROMPT:
+anime style purple dream weaver, vibrant cosmic threads (#7E57C2), dynamic spinning pose, bright violet and lavender colors, bold morpheus aesthetic, astral energy, centered dream composition, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 3: Geometric Dreams
+------------------------------------------------------------
+
+PROMPT:
+minimalist geometric dream figure with thread symbols, purple (#7E57C2) angular astral pattern, clean weaving lines, modern morpheus aesthetic, symbolic consciousness, elegant dream composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 4: Watercolor Dreams
+------------------------------------------------------------
+
+PROMPT:
+watercolor painting of purple dream weaver, flowing brushstrokes of cosmic threads (#7E57C2), dreamy astral atmosphere, soft violet washes, artistic consciousness aesthetic, ethereal gentle patterns, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 5: Art Nouveau Morpheus
+------------------------------------------------------------
+
+PROMPT:
+art nouveau style dream deity with ornate purple patterns (#7E57C2), decorative cosmic threads, elegant flowing dream design, intricate border of consciousness, sophisticated violet palette, mythical astral aesthetic, centered ornamental composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+

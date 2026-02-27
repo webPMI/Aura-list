@@ -1,0 +1,64 @@
+Eris-Núcleo - Image Generation Prompts
+============================================================
+
+ID: eris-nucleo
+Color: #C2185B
+Archetype: Centella Creativa
+
+============================================================
+
+VARIATION 1: Creative Spark
+------------------------------------------------------------
+
+PROMPT:
+creative spark goddess holding golden apple, magenta creative energy (#C2185B) radiating outward, eris goddess of discord and creativity, breakthrough moment visualization, fuchsia and pink tones, idea explosion, divine inspiration spark, catalyst of change aesthetic, innovative fire, fantasy art, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 2: Anime Spark
+------------------------------------------------------------
+
+PROMPT:
+anime style magenta creative goddess with golden apple, vibrant breakthrough energy (#C2185B), dynamic inspired pose, bright fuchsia colors, bold eris aesthetic, innovation spark, centered creative composition, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 3: Geometric Spark
+------------------------------------------------------------
+
+PROMPT:
+minimalist geometric creative figure with apple symbol, magenta (#C2185B) angular inspiration pattern, clean spark lines, modern eris aesthetic, symbolic innovation, elegant creative composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 4: Watercolor Inspiration
+------------------------------------------------------------
+
+PROMPT:
+watercolor painting of magenta creative spark, flowing brushstrokes of breakthrough energy (#C2185B), dreamy innovative atmosphere, soft fuchsia washes, artistic inspiration aesthetic, explosive gentle patterns, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 5: Art Nouveau Eris
+------------------------------------------------------------
+
+PROMPT:
+art nouveau style creative goddess with ornate magenta patterns (#C2185B), decorative golden apple, elegant flowing spark design, intricate border of innovation, sophisticated fuchsia palette, mythical creative aesthetic, centered ornamental composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+

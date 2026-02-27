@@ -51,6 +51,34 @@ class UserPreferences extends HiveObject {
   @HiveField(14)
   int? restDayOfWeek;
 
+  /// Enable deadline reminders for tasks
+  @HiveField(15, defaultValue: true)
+  late bool notificationDeadlineReminders;
+
+  /// Quiet hour start (hour 0-23, default 22 = 10PM)
+  @HiveField(16, defaultValue: 22)
+  late int notificationQuietHourStart;
+
+  /// Quiet hour end (hour 0-23, default 8 = 8AM)
+  @HiveField(17, defaultValue: 8)
+  late int notificationQuietHourEnd;
+
+  /// Only notify for high priority tasks
+  @HiveField(18, defaultValue: false)
+  late bool notificationHighPriorityOnly;
+
+  /// Enable notification sound
+  @HiveField(19, defaultValue: true)
+  late bool notificationSound;
+
+  /// Enable notification vibration
+  @HiveField(20, defaultValue: true)
+  late bool notificationVibration;
+
+  /// Days before deadline to send escalating reminders (default: 7, 1, 0 days)
+  @HiveField(21)
+  late List<int> notificationEscalationDays;
+
   UserPreferences({
     this.odId = 'default',
     this.hasAcceptedTerms = false,
@@ -67,8 +95,16 @@ class UserPreferences extends HiveObject {
     String? firestoreId,
     this.lastUpdatedAt,
     this.restDayOfWeek,
+    this.notificationDeadlineReminders = true,
+    this.notificationQuietHourStart = 22,
+    this.notificationQuietHourEnd = 8,
+    this.notificationHighPriorityOnly = false,
+    this.notificationSound = true,
+    this.notificationVibration = true,
+    List<int>? notificationEscalationDays,
   })  : collectionLastSync = collectionLastSync ?? {},
-        firestoreId = firestoreId ?? '';
+        firestoreId = firestoreId ?? '',
+        notificationEscalationDays = notificationEscalationDays ?? [7, 1, 0];
 
   // Check if user has accepted all legal requirements
   bool get hasAcceptedAll => hasAcceptedTerms && hasAcceptedPrivacy;
@@ -127,6 +163,13 @@ class UserPreferences extends HiveObject {
       'syncDebounceMs': syncDebounceMs,
       'cloudSyncEnabled': cloudSyncEnabled,
       'restDayOfWeek': restDayOfWeek,
+      'notificationDeadlineReminders': notificationDeadlineReminders,
+      'notificationQuietHourStart': notificationQuietHourStart,
+      'notificationQuietHourEnd': notificationQuietHourEnd,
+      'notificationHighPriorityOnly': notificationHighPriorityOnly,
+      'notificationSound': notificationSound,
+      'notificationVibration': notificationVibration,
+      'notificationEscalationDays': notificationEscalationDays,
     };
   }
 
@@ -145,6 +188,13 @@ class UserPreferences extends HiveObject {
       'syncDebounceMs': syncDebounceMs,
       'cloudSyncEnabled': cloudSyncEnabled,
       'restDayOfWeek': restDayOfWeek,
+      'notificationDeadlineReminders': notificationDeadlineReminders,
+      'notificationQuietHourStart': notificationQuietHourStart,
+      'notificationQuietHourEnd': notificationQuietHourEnd,
+      'notificationHighPriorityOnly': notificationHighPriorityOnly,
+      'notificationSound': notificationSound,
+      'notificationVibration': notificationVibration,
+      'notificationEscalationDays': notificationEscalationDays,
       'lastUpdatedAt': (lastUpdatedAt ?? DateTime.now()).toIso8601String(),
     };
   }
@@ -173,6 +223,15 @@ class UserPreferences extends HiveObject {
       syncDebounceMs: data['syncDebounceMs'] as int? ?? 3000,
       cloudSyncEnabled: data['cloudSyncEnabled'] as bool? ?? false,
       restDayOfWeek: data['restDayOfWeek'] as int?,
+      notificationDeadlineReminders: data['notificationDeadlineReminders'] as bool? ?? true,
+      notificationQuietHourStart: data['notificationQuietHourStart'] as int? ?? 22,
+      notificationQuietHourEnd: data['notificationQuietHourEnd'] as int? ?? 8,
+      notificationHighPriorityOnly: data['notificationHighPriorityOnly'] as bool? ?? false,
+      notificationSound: data['notificationSound'] as bool? ?? true,
+      notificationVibration: data['notificationVibration'] as bool? ?? true,
+      notificationEscalationDays: data['notificationEscalationDays'] != null
+          ? List<int>.from(data['notificationEscalationDays'] as List)
+          : [7, 1, 0],
       firestoreId: docId,
       lastUpdatedAt: data['lastUpdatedAt'] != null
           ? DateTime.parse(data['lastUpdatedAt'] as String)
@@ -199,6 +258,15 @@ class UserPreferences extends HiveObject {
       syncDebounceMs: data['syncDebounceMs'] ?? 3000,
       cloudSyncEnabled: data['cloudSyncEnabled'] ?? false,
       restDayOfWeek: data['restDayOfWeek'] as int?,
+      notificationDeadlineReminders: data['notificationDeadlineReminders'] ?? true,
+      notificationQuietHourStart: data['notificationQuietHourStart'] ?? 22,
+      notificationQuietHourEnd: data['notificationQuietHourEnd'] ?? 8,
+      notificationHighPriorityOnly: data['notificationHighPriorityOnly'] ?? false,
+      notificationSound: data['notificationSound'] ?? true,
+      notificationVibration: data['notificationVibration'] ?? true,
+      notificationEscalationDays: data['notificationEscalationDays'] != null
+          ? List<int>.from(data['notificationEscalationDays'])
+          : [7, 1, 0],
     );
   }
 
@@ -217,6 +285,13 @@ class UserPreferences extends HiveObject {
     String? firestoreId,
     DateTime? lastUpdatedAt,
     int? restDayOfWeek,
+    bool? notificationDeadlineReminders,
+    int? notificationQuietHourStart,
+    int? notificationQuietHourEnd,
+    bool? notificationHighPriorityOnly,
+    bool? notificationSound,
+    bool? notificationVibration,
+    List<int>? notificationEscalationDays,
   }) {
     return UserPreferences(
       odId: odId,
@@ -232,6 +307,13 @@ class UserPreferences extends HiveObject {
       syncDebounceMs: syncDebounceMs ?? this.syncDebounceMs,
       cloudSyncEnabled: cloudSyncEnabled ?? this.cloudSyncEnabled,
       restDayOfWeek: restDayOfWeek ?? this.restDayOfWeek,
+      notificationDeadlineReminders: notificationDeadlineReminders ?? this.notificationDeadlineReminders,
+      notificationQuietHourStart: notificationQuietHourStart ?? this.notificationQuietHourStart,
+      notificationQuietHourEnd: notificationQuietHourEnd ?? this.notificationQuietHourEnd,
+      notificationHighPriorityOnly: notificationHighPriorityOnly ?? this.notificationHighPriorityOnly,
+      notificationSound: notificationSound ?? this.notificationSound,
+      notificationVibration: notificationVibration ?? this.notificationVibration,
+      notificationEscalationDays: notificationEscalationDays ?? List.from(this.notificationEscalationDays),
       firestoreId: firestoreId ?? this.firestoreId,
       lastUpdatedAt: lastUpdatedAt ?? this.lastUpdatedAt,
     );

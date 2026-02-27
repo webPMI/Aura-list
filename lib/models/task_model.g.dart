@@ -41,13 +41,14 @@ class TaskAdapter extends TypeAdapter<Task> {
       financialCategoryId: fields[21] as String?,
       linkedRecurringTransactionId: fields[22] as String?,
       financialNote: fields[23] as String?,
+      deferredUntil: fields[24] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Task obj) {
     writer
-      ..writeByte(24)
+      ..writeByte(25)
       ..writeByte(0)
       ..write(obj.firestoreId)
       ..writeByte(1)
@@ -95,7 +96,9 @@ class TaskAdapter extends TypeAdapter<Task> {
       ..writeByte(22)
       ..write(obj.linkedRecurringTransactionId)
       ..writeByte(23)
-      ..write(obj.financialNote);
+      ..write(obj.financialNote)
+      ..writeByte(24)
+      ..write(obj.deferredUntil);
   }
 
   @override

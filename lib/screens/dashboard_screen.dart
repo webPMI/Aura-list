@@ -16,6 +16,8 @@ import '../widgets/layouts/dashboard_layout.dart';
 import '../widgets/navigation/drawer_menu_button.dart';
 import '../widgets/dashboard/wellness_suggestions_card.dart';
 import '../widgets/dashboard/user_card.dart';
+import '../widgets/dashboard/overdue_tasks_banner.dart';
+import '../widgets/deferred_tasks_widget.dart';
 import '../providers/streak_provider.dart';
 import 'today_screen.dart';
 
@@ -183,17 +185,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         icon: const Icon(Icons.add),
         label: const Text('Nueva tarea'),
       ),
-      body: DashboardLayout(
-        cards: [
-          const UserCard(),
-          _TodayProgressCard(),
-          _FocusModeCard(),
-          _TodayTasksCard(),
-          const WellnessSuggestionsCard(),
-          _UpcomingDeadlinesCard(),
-          _WeeklyProgressCard(),
-          _QuickNotesCard(),
-          _StatsOverviewCard(),
+      body: Column(
+        children: [
+          const OverdueTasksBanner(),
+          Expanded(
+            child: DashboardLayout(
+              cards: [
+                const UserCard(),
+                _TodayProgressCard(),
+                _FocusModeCard(),
+                const DeferredTasksWidget(),
+                _TodayTasksCard(),
+                const WellnessSuggestionsCard(),
+                _UpcomingDeadlinesCard(),
+                _WeeklyProgressCard(),
+                _QuickNotesCard(),
+                _StatsOverviewCard(),
+              ],
+            ),
+          ),
         ],
       ),
     );

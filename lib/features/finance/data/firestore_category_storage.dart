@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/finance_category.dart';
 import '../../../services/contracts/i_cloud_storage.dart';
 import '../../../services/error_handler.dart';
-import '../../../services/logger_service.dart';
 
 class FirestoreCategoryStorage
     implements ICloudStorageWithTimeout<FinanceCategory> {

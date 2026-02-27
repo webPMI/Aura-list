@@ -23,20 +23,86 @@ void main() {
   late MockTransactionStorage mockTransactionStorage;
   late MockErrorHandler mockErrorHandler;
 
+  setUpAll(() {
+    // Register fallback values for mocktail
+    registerFallbackValue(ErrorType.database);
+    registerFallbackValue(ErrorSeverity.error);
+    registerFallbackValue(StackTrace.empty);
+
+    // Register fallback values for RecurringTransaction
+    final now = DateTime.now();
+    registerFallbackValue(RecurringTransaction(
+      id: 'fallback',
+      title: 'Fallback',
+      amount: 0,
+      categoryId: 'fallback',
+      type: FinanceCategoryType.expense,
+      recurrence: RecurrenceRule(
+        frequency: RecurrenceFrequency.monthly,
+        interval: 1,
+        startDate: now,
+      ),
+      createdAt: now,
+    ));
+
+    // Register fallback values for Transaction
+    registerFallbackValue(Transaction(
+      id: 'fallback',
+      title: 'Fallback',
+      amount: 0,
+      categoryId: 'fallback',
+      type: FinanceCategoryType.expense,
+      date: now,
+      createdAt: now,
+    ));
+  });
+
   setUp(() {
     mockRecurringStorage = MockRecurringTransactionStorage();
     mockTransactionStorage = MockTransactionStorage();
     mockErrorHandler = MockErrorHandler();
+
+    // Set up default stub for error handler
+    when(
+      () => mockErrorHandler.handle(
+        any(),
+        type: any(named: 'type'),
+        severity: any(named: 'severity'),
+        message: any(named: 'message'),
+        userMessage: any(named: 'userMessage'),
+        stackTrace: any(named: 'stackTrace'),
+        shouldLog: any(named: 'shouldLog'),
+        actionLabel: any(named: 'actionLabel'),
+        onAction: any(named: 'onAction'),
+      ),
+    ).thenReturn(AppError(
+      type: ErrorType.database,
+      severity: ErrorSeverity.error,
+      message: 'Test error',
+    ));
+
+    // Set up default stubs for storage methods to prevent null returns
+    when(() => mockRecurringStorage.getAll())
+        .thenAnswer((_) async => <RecurringTransaction>[]);
+    when(() => mockRecurringStorage.getActive())
+        .thenAnswer((_) async => <RecurringTransaction>[]);
+    when(() => mockRecurringStorage.getByCategory(any()))
+        .thenAnswer((_) async => <RecurringTransaction>[]);
+    when(() => mockRecurringStorage.save(any()))
+        .thenAnswer((_) async {});
+    when(() => mockRecurringStorage.delete(any()))
+        .thenAnswer((_) async {});
+
+    when(() => mockTransactionStorage.getAll())
+        .thenAnswer((_) async => <Transaction>[]);
+    when(() => mockTransactionStorage.save(any()))
+        .thenAnswer((_) async {});
 
     service = RecurringTransactionService(
       storage: mockRecurringStorage,
       transactionStorage: mockTransactionStorage,
       errorHandler: mockErrorHandler,
     );
-
-    // Register fallback values for mocktail
-    registerFallbackValue(ErrorType.database);
-    registerFallbackValue(StackTrace.empty);
   });
 
   group('RecurringTransactionService - Pattern Detection', () {
@@ -73,8 +139,9 @@ void main() {
         ),
       ];
 
-      when(() => mockTransactionStorage.getAll())
-          .thenAnswer((_) async => transactions);
+      when(
+        () => mockTransactionStorage.getAll(),
+      ).thenAnswer((_) async => transactions);
 
       final patterns = await service.detectRecurringPatterns();
 
@@ -111,8 +178,9 @@ void main() {
         ),
       ];
 
-      when(() => mockTransactionStorage.getAll())
-          .thenAnswer((_) async => transactions);
+      when(
+        () => mockTransactionStorage.getAll(),
+      ).thenAnswer((_) async => transactions);
 
       final patterns = await service.detectRecurringPatterns();
 
@@ -180,8 +248,9 @@ void main() {
         ),
       ];
 
-      when(() => mockTransactionStorage.getAll())
-          .thenAnswer((_) async => transactions);
+      when(
+        () => mockTransactionStorage.getAll(),
+      ).thenAnswer((_) async => transactions);
 
       final patterns = await service.detectRecurringPatterns();
 
@@ -209,8 +278,9 @@ void main() {
         ),
       );
 
-      when(() => mockTransactionStorage.getAll())
-          .thenAnswer((_) async => transactions);
+      when(
+        () => mockTransactionStorage.getAll(),
+      ).thenAnswer((_) async => transactions);
 
       final patterns = await service.detectRecurringPatterns();
 
@@ -234,8 +304,9 @@ void main() {
         ),
       );
 
-      when(() => mockTransactionStorage.getAll())
-          .thenAnswer((_) async => transactions);
+      when(
+        () => mockTransactionStorage.getAll(),
+      ).thenAnswer((_) async => transactions);
 
       final patterns = await service.detectRecurringPatterns();
 
@@ -245,68 +316,79 @@ void main() {
     });
 
     test('should handle errors gracefully', () async {
-      when(() => mockTransactionStorage.getAll())
-          .thenThrow(Exception('Database error'));
+      when(
+        () => mockTransactionStorage.getAll(),
+      ).thenThrow(Exception('Database error'));
 
-      when(() => mockErrorHandler.handle(
-            any(),
-            type: any(named: 'type'),
-            stackTrace: any(named: 'stackTrace'),
-            userMessage: any(named: 'userMessage'),
-          )).thenAnswer((_) => Future.value());
+      when(
+        () => mockErrorHandler.handle(
+          any(),
+          type: any(named: 'type'),
+          stackTrace: any(named: 'stackTrace'),
+          userMessage: any(named: 'userMessage'),
+        ),
+      ).thenReturn(AppError(
+        type: ErrorType.database,
+        severity: ErrorSeverity.error,
+        message: 'Database error',
+      ));
 
       final patterns = await service.detectRecurringPatterns();
 
       expect(patterns, isEmpty);
-      verify(() => mockErrorHandler.handle(
-            any(),
-            type: ErrorType.database,
-            stackTrace: any(named: 'stackTrace'),
-            userMessage: 'Error al detectar patrones recurrentes',
-          )).called(1);
+      verify(
+        () => mockErrorHandler.handle(
+          any(),
+          type: ErrorType.database,
+          stackTrace: any(named: 'stackTrace'),
+          userMessage: 'Error al detectar patrones recurrentes',
+        ),
+      ).called(1);
     });
   });
 
   group('RecurringTransactionService - Transaction Generation', () {
-    test('should generate upcoming transactions from active recurring', () async {
-      final now = DateTime.now();
-      final recurring = RecurringTransaction(
-        id: 'rec-1',
-        title: 'Monthly Subscription',
-        amount: 10.0,
-        categoryId: 'cat-1',
-        type: FinanceCategoryType.expense,
-        recurrence: RecurrenceRule(
-          frequency: RecurrenceFrequency.monthly,
-          interval: 1,
-          startDate: now,
-        ),
-        autoGenerate: true,
-        active: true,
-        createdAt: now,
-      );
+    test(
+      'should generate upcoming transactions from active recurring',
+      () async {
+        final now = DateTime.now();
+        final recurring = RecurringTransaction(
+          id: 'rec-1',
+          title: 'Monthly Subscription',
+          amount: 10.0,
+          categoryId: 'cat-1',
+          type: FinanceCategoryType.expense,
+          recurrence: RecurrenceRule(
+            frequency: RecurrenceFrequency.monthly,
+            interval: 1,
+            startDate: now,
+          ),
+          autoGenerate: true,
+          active: true,
+          createdAt: now,
+        );
 
-      when(() => mockRecurringStorage.getActive())
-          .thenAnswer((_) async => [recurring]);
+        when(
+          () => mockRecurringStorage.getActive(),
+        ).thenAnswer((_) async => [recurring]);
 
-      when(() => mockTransactionStorage.save(any()))
-          .thenAnswer((_) async => null);
+        when(() => mockTransactionStorage.save(any())).thenAnswer((_) async {});
 
-      when(() => mockRecurringStorage.save(any()))
-          .thenAnswer((_) async => null);
+        when(() => mockRecurringStorage.save(any())).thenAnswer((_) async {});
 
-      final generated = await service.generateUpcomingTransactions(
-        until: now.add(const Duration(days: 90)),
-        maxTransactions: 3,
-      );
+        final generated = await service.generateUpcomingTransactions(
+          until: now.add(const Duration(days: 90)),
+          maxTransactions: 3,
+        );
 
-      expect(generated, isNotEmpty);
-      expect(generated.length, greaterThan(0));
+        expect(generated, isNotEmpty);
+        expect(generated.length, greaterThan(0));
 
-      // Verify transactions were saved
-      verify(() => mockTransactionStorage.save(any())).called(greaterThan(0));
-      verify(() => mockRecurringStorage.save(any())).called(greaterThan(0));
-    });
+        // Verify transactions were saved
+        verify(() => mockTransactionStorage.save(any())).called(greaterThan(0));
+        verify(() => mockRecurringStorage.save(any())).called(greaterThan(0));
+      },
+    );
 
     test('should not generate transactions for inactive recurring', () async {
       final now = DateTime.now();
@@ -326,8 +408,9 @@ void main() {
         createdAt: now,
       );
 
-      when(() => mockRecurringStorage.getActive())
-          .thenAnswer((_) async => [recurring]);
+      when(
+        () => mockRecurringStorage.getActive(),
+      ).thenAnswer((_) async => [recurring]);
 
       final generated = await service.generateUpcomingTransactions();
 
@@ -335,32 +418,36 @@ void main() {
       verifyNever(() => mockTransactionStorage.save(any()));
     });
 
-    test('should not generate transactions when autoGenerate is false', () async {
-      final now = DateTime.now();
-      final recurring = RecurringTransaction(
-        id: 'rec-manual',
-        title: 'Manual',
-        amount: 10.0,
-        categoryId: 'cat-1',
-        type: FinanceCategoryType.expense,
-        recurrence: RecurrenceRule(
-          frequency: RecurrenceFrequency.monthly,
-          interval: 1,
-          startDate: now,
-        ),
-        autoGenerate: false, // Manual
-        active: true,
-        createdAt: now,
-      );
+    test(
+      'should not generate transactions when autoGenerate is false',
+      () async {
+        final now = DateTime.now();
+        final recurring = RecurringTransaction(
+          id: 'rec-manual',
+          title: 'Manual',
+          amount: 10.0,
+          categoryId: 'cat-1',
+          type: FinanceCategoryType.expense,
+          recurrence: RecurrenceRule(
+            frequency: RecurrenceFrequency.monthly,
+            interval: 1,
+            startDate: now,
+          ),
+          autoGenerate: false, // Manual
+          active: true,
+          createdAt: now,
+        );
 
-      when(() => mockRecurringStorage.getActive())
-          .thenAnswer((_) async => [recurring]);
+        when(
+          () => mockRecurringStorage.getActive(),
+        ).thenAnswer((_) async => [recurring]);
 
-      final generated = await service.generateUpcomingTransactions();
+        final generated = await service.generateUpcomingTransactions();
 
-      expect(generated, isEmpty);
-      verifyNever(() => mockTransactionStorage.save(any()));
-    });
+        expect(generated, isEmpty);
+        verifyNever(() => mockTransactionStorage.save(any()));
+      },
+    );
   });
 
   group('RecurringTransactionService - CRUD Operations', () {
@@ -379,8 +466,7 @@ void main() {
         createdAt: DateTime.now(),
       );
 
-      when(() => mockRecurringStorage.save(any()))
-          .thenAnswer((_) async => null);
+      when(() => mockRecurringStorage.save(any())).thenAnswer((_) async {});
 
       await service.save(recurring);
 
@@ -402,8 +488,7 @@ void main() {
         createdAt: DateTime.now(),
       );
 
-      when(() => mockRecurringStorage.save(any()))
-          .thenAnswer((_) async => null);
+      when(() => mockRecurringStorage.save(any())).thenAnswer((_) async {});
 
       await service.update(recurring);
 
@@ -426,11 +511,11 @@ void main() {
         createdAt: DateTime.now(),
       );
 
-      when(() => mockRecurringStorage.getById('test-pause'))
-          .thenAnswer((_) async => recurring);
+      when(
+        () => mockRecurringStorage.getById('test-pause'),
+      ).thenAnswer((_) async => recurring);
 
-      when(() => mockRecurringStorage.save(any()))
-          .thenAnswer((_) async => null);
+      when(() => mockRecurringStorage.save(any())).thenAnswer((_) async {});
 
       await service.pause('test-pause');
 
@@ -453,11 +538,11 @@ void main() {
         createdAt: DateTime.now(),
       );
 
-      when(() => mockRecurringStorage.getById('test-resume'))
-          .thenAnswer((_) async => recurring);
+      when(
+        () => mockRecurringStorage.getById('test-resume'),
+      ).thenAnswer((_) async => recurring);
 
-      when(() => mockRecurringStorage.save(any()))
-          .thenAnswer((_) async => null);
+      when(() => mockRecurringStorage.save(any())).thenAnswer((_) async {});
 
       await service.resume('test-resume');
 
@@ -481,8 +566,9 @@ void main() {
         ),
       ];
 
-      when(() => mockRecurringStorage.getAll())
-          .thenAnswer((_) async => recurring);
+      when(
+        () => mockRecurringStorage.getAll(),
+      ).thenAnswer((_) async => recurring);
 
       final result = await service.getAll();
 
@@ -508,8 +594,9 @@ void main() {
         ),
       ];
 
-      when(() => mockRecurringStorage.getActive())
-          .thenAnswer((_) async => recurring);
+      when(
+        () => mockRecurringStorage.getActive(),
+      ).thenAnswer((_) async => recurring);
 
       final result = await service.getActive();
 
@@ -534,8 +621,9 @@ void main() {
         ),
       ];
 
-      when(() => mockRecurringStorage.getByCategory('cat-1'))
-          .thenAnswer((_) async => recurring);
+      when(
+        () => mockRecurringStorage.getByCategory('cat-1'),
+      ).thenAnswer((_) async => recurring);
 
       final result = await service.getByCategory('cat-1');
 

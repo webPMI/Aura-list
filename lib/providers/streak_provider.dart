@@ -108,13 +108,18 @@ class StreakNotifier extends StateNotifier<StreakState> {
       } else {
         graceDaysUsed = prefs.getInt(_keyGraceDaysUsed) ?? 0;
       }
-      final graceDaysRemaining = (_graceDaysPerMonth - graceDaysUsed).clamp(0, _graceDaysPerMonth);
+      final graceDaysRemaining = (_graceDaysPerMonth - graceDaysUsed).clamp(
+        0,
+        _graceDaysPerMonth,
+      );
 
       if (lastDate != null && streak > 0) {
         final today = _formatDate(now);
         final yesterday = _formatDate(now.subtract(const Duration(days: 1)));
         final yesterdayDate = now.subtract(const Duration(days: 1));
-        final dayBeforeYesterday = _formatDate(now.subtract(const Duration(days: 2)));
+        final dayBeforeYesterday = _formatDate(
+          now.subtract(const Duration(days: 2)),
+        );
 
         // Verificar si ayer fue dia de descanso
         final yesterdayWasRestDay = await _isRestDay(yesterdayDate);
@@ -229,8 +234,11 @@ class StreakNotifier extends StateNotifier<StreakState> {
     if (!state.needsGraceDayOffer) return;
 
     final prefs = await SharedPreferences.getInstance();
-    final yesterday = _formatDate(DateTime.now().subtract(const Duration(days: 1)));
-    final newGraceDaysUsed = (_graceDaysPerMonth - state.graceDaysRemainingThisMonth) + 1;
+    final yesterday = _formatDate(
+      DateTime.now().subtract(const Duration(days: 1)),
+    );
+    final newGraceDaysUsed =
+        (_graceDaysPerMonth - state.graceDaysRemainingThisMonth) + 1;
 
     await prefs.setInt(_keyGraceDaysUsed, newGraceDaysUsed);
 
@@ -266,11 +274,13 @@ class StreakNotifier extends StateNotifier<StreakState> {
 }
 
 /// Provider principal del estado de la racha
-final streakProvider = StateNotifierProvider<StreakNotifier, StreakState>((ref) {
+final streakProvider = StateNotifierProvider<StreakNotifier, StreakState>((
+  ref,
+) {
   final dbService = ref.watch(databaseServiceProvider);
   return StreakNotifier(() async {
     final prefs = await dbService.getUserPreferences();
-    return prefs?.restDayOfWeek;
+    return prefs.restDayOfWeek;
   });
 });
 

@@ -1,0 +1,64 @@
+Atlas-Orbital - Image Generation Prompts
+============================================================
+
+ID: atlas-orbital
+Color: #37474F
+Archetype: Sustentador
+
+============================================================
+
+VARIATION 1: Cosmic Sustainer
+------------------------------------------------------------
+
+PROMPT:
+titan sustaining orbital spheres on shoulders, strong dignified posture, cosmic orbs floating in synchronized paths (#37474F), atlas mythology, burden and strength visualized, dark steel gray tones, celestial mechanics visible, reliable foundation aesthetic, eternal support energy, fantasy art, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 2: Anime Atlas
+------------------------------------------------------------
+
+PROMPT:
+anime style gray titan with orbital spheres, vibrant cosmic orbs (#37474F), strong powerful pose, bold steel colors, dynamic support aesthetic, atlas energy, centered sustaining composition, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 3: Geometric Support
+------------------------------------------------------------
+
+PROMPT:
+minimalist geometric titan figure with sphere symbols, gray (#37474F) angular orbital pattern, clean support lines, modern atlas aesthetic, symbolic sustenance, elegant strong composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 4: Watercolor Burden
+------------------------------------------------------------
+
+PROMPT:
+watercolor painting of gray titan sustainer, flowing brushstrokes of orbital spheres (#37474F), dreamy support atmosphere, soft steel washes, artistic strength aesthetic, dignified gentle patterns, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 5: Art Nouveau Atlas
+------------------------------------------------------------
+
+PROMPT:
+art nouveau style titan with ornate gray patterns (#37474F), decorative orbital spheres, elegant flowing support design, intricate border of mechanics, sophisticated steel palette, mythical sustaining aesthetic, centered ornamental composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+

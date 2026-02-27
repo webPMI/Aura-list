@@ -1,0 +1,64 @@
+Pacha-Nexo - Image Generation Prompts
+============================================================
+
+ID: pacha-nexo
+Color: #2E7D32
+Archetype: Tejedor del Ecosistema
+
+============================================================
+
+VARIATION 1: Earth Weaver
+------------------------------------------------------------
+
+PROMPT:
+earth mother deity weaving ecosystem web, green life energy (#2E7D32) connecting all living things, gaia-inspired figure, hands creating interconnected network, nature and technology merged, verdant forest green tones, web of life visualization, harmonious balance aesthetic, fantasy art, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 2: Anime Nature Network
+------------------------------------------------------------
+
+PROMPT:
+anime style earth weaver with glowing green network (#2E7D32), vibrant ecosystem connections, dynamic pose, bright verdant colors, bold nature aesthetic, gaia energy, centered balanced composition, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 3: Geometric Ecosystem
+------------------------------------------------------------
+
+PROMPT:
+minimalist geometric earth figure with web pattern, green (#2E7D32) angular network, clean connection lines, modern gaia aesthetic, symbolic ecosystem, elegant systemic composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 4: Watercolor Web
+------------------------------------------------------------
+
+PROMPT:
+watercolor painting of green earth weaver, flowing brushstrokes of ecosystem threads (#2E7D32), dreamy interconnected atmosphere, soft network washes, artistic nature aesthetic, organic fluid patterns, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 5: Art Nouveau Gaia
+------------------------------------------------------------
+
+PROMPT:
+art nouveau style earth deity with ornate green patterns (#2E7D32), decorative ecosystem web, elegant flowing life connections, intricate border of nature, sophisticated verdant palette, mythical balance aesthetic, centered ornamental composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+

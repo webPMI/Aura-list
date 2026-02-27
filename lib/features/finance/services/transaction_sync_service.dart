@@ -1,8 +1,6 @@
 import '../data/transaction_storage.dart';
 import '../data/firestore_transaction_storage.dart';
-import '../../../services/error_handler.dart';
 import '../models/transaction.dart';
-import '../../../services/contracts/i_sync_service.dart';
 import 'base_sync_service.dart';
 
 /// Adapter to make TransactionStorage compatible with BaseSyncStorage
@@ -83,18 +81,15 @@ class TransactionSyncService extends BaseSyncService<Transaction> {
   TransactionSyncService({
     required TransactionStorage localStorage,
     required FirestoreTransactionStorage cloudStorage,
-    required ErrorHandler errorHandler,
-    required Future<bool> Function() isCloudSyncEnabled,
-    SyncConfig config = const SyncConfig(),
+    required super.errorHandler,
+    required super.isCloudSyncEnabled,
+    super.config,
   }) : _localStorage = localStorage,
        super(
          localStorage: _TransactionStorageAdapter(localStorage),
          cloudStorage: _FirestoreTransactionStorageAdapter(cloudStorage),
-         errorHandler: errorHandler,
-         isCloudSyncEnabled: isCloudSyncEnabled,
          queueBoxName: 'finance_transaction_sync_queue',
          deadLetterBoxName: 'finance_transaction_dead_letter',
-         config: config,
        );
 
   @override

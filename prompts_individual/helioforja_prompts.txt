@@ -1,0 +1,64 @@
+Helioforja - Image Generation Prompts
+============================================================
+
+ID: helioforja
+Color: #8B2500
+Archetype: Forjador del Sol
+
+============================================================
+
+VARIATION 1: Cosmic Forge
+------------------------------------------------------------
+
+PROMPT:
+powerful blacksmith deity forging in cosmic flames, red-hot molten metal (#8B2500), muscular silhouette against burning sun, hammer raised high creating sparks, intense fiery mystical aura, dark crimson and orange glow, fantasy forge aesthetic, dramatic lighting, centered composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 2: Anime Forgemaster
+------------------------------------------------------------
+
+PROMPT:
+anime style powerful forgemaster with hammer, cosmic red flames (#8B2500) swirling around, dynamic action pose, intense expression, bright fiery energy, dark crimson and orange color palette, bold shadows, solar forge background, vibrant dramatic lighting, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 3: Geometric Fire
+------------------------------------------------------------
+
+PROMPT:
+minimalist geometric blacksmith figure, angular hammer symbol, red-hot metal colors (#8B2500), clean geometric flames, bold shapes, modern mythical aesthetic, dark crimson background, symbolic forge representation, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 4: Painted Flames
+------------------------------------------------------------
+
+PROMPT:
+watercolor painting of cosmic blacksmith, flowing red and orange flames (#8B2500), painterly brushstrokes of molten metal, dreamy fiery atmosphere, hammer silhouette, soft yet intense colors, artistic forge scene, ethereal fire aesthetic, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 5: Ornate Forgemaster
+------------------------------------------------------------
+
+PROMPT:
+art nouveau style forge deity with ornate flame patterns, decorative red-hot metal swirls (#8B2500), elegant hammer design, intricate border of fire, sophisticated crimson and orange palette, mythical craftsman aesthetic, centered ornamental composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+

@@ -77,6 +77,9 @@ class Task extends HiveObject {
   @HiveField(23)
   String? financialNote; // Nota sobre el impacto financiero
 
+  @HiveField(24)
+  DateTime? deferredUntil; // Fecha/hora hasta la cual está pospuesta la tarea
+
   Task({
     this.firestoreId = '',
     required this.title,
@@ -102,6 +105,7 @@ class Task extends HiveObject {
     this.financialCategoryId,
     this.linkedRecurringTransactionId,
     this.financialNote,
+    this.deferredUntil,
   });
 
   // For compatibility with existing code
@@ -168,6 +172,27 @@ class Task extends HiveObject {
     }
   }
 
+  // Check if task is currently deferred
+  bool get isDeferred => deferredUntil != null && DateTime.now().isBefore(deferredUntil!);
+
+  // Check if deferral has expired
+  bool get isDeferralExpired => deferredUntil != null && DateTime.now().isAfter(deferredUntil!);
+
+  // Get formatted deferral status text
+  String get deferralStatusText {
+    if (deferredUntil == null) return '';
+    final deferred = deferredUntil!;
+
+    // Format: "Pospuesta hasta 25/02 9:00 AM"
+    final dateStr = '${deferred.day.toString().padLeft(2, '0')}/${deferred.month.toString().padLeft(2, '0')}';
+    final hour = deferred.hour > 12 ? deferred.hour - 12 : (deferred.hour == 0 ? 12 : deferred.hour);
+    final minute = deferred.minute.toString().padLeft(2, '0');
+    final period = deferred.hour >= 12 ? 'PM' : 'AM';
+    final timeStr = '$hour:$minute $period';
+
+    return 'Pospuesta hasta $dateStr $timeStr';
+  }
+
   Map<String, dynamic> toFirestore() {
     return {
       'title': title,
@@ -193,6 +218,7 @@ class Task extends HiveObject {
       'financialCategoryId': financialCategoryId,
       'linkedRecurringTransactionId': linkedRecurringTransactionId,
       'financialNote': financialNote,
+      'deferredUntil': deferredUntil?.toIso8601String(),
     };
   }
 
@@ -224,6 +250,7 @@ class Task extends HiveObject {
       financialCategoryId: data['financialCategoryId'],
       linkedRecurringTransactionId: data['linkedRecurringTransactionId'],
       financialNote: data['financialNote'],
+      deferredUntil: data['deferredUntil'] != null ? DateTime.parse(data['deferredUntil']) : null,
     );
   }
 
@@ -254,6 +281,8 @@ class Task extends HiveObject {
     String? financialCategoryId,
     String? linkedRecurringTransactionId,
     String? financialNote,
+    DateTime? deferredUntil,
+    bool clearDeferredUntil = false,
   }) {
     return Task(
       firestoreId: firestoreId ?? this.firestoreId,
@@ -280,6 +309,7 @@ class Task extends HiveObject {
       financialCategoryId: financialCategoryId ?? this.financialCategoryId,
       linkedRecurringTransactionId: linkedRecurringTransactionId ?? this.linkedRecurringTransactionId,
       financialNote: financialNote ?? this.financialNote,
+      deferredUntil: clearDeferredUntil ? null : (deferredUntil ?? this.deferredUntil),
     );
   }
 
@@ -323,6 +353,8 @@ class Task extends HiveObject {
     bool clearLinkedRecurringTransactionId = false,
     String? financialNote,
     bool clearFinancialNote = false,
+    DateTime? deferredUntil,
+    bool clearDeferredUntil = false,
   }) {
     if (firestoreId != null) this.firestoreId = firestoreId;
     if (title != null) this.title = title;
@@ -398,6 +430,11 @@ class Task extends HiveObject {
       this.financialNote = null;
     } else if (financialNote != null) {
       this.financialNote = financialNote;
+    }
+    if (clearDeferredUntil) {
+      this.deferredUntil = null;
+    } else if (deferredUntil != null) {
+      this.deferredUntil = deferredUntil;
     }
   }
 

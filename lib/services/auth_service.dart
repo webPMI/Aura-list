@@ -164,7 +164,8 @@ class AuthService {
 
     try {
       _logger.info('AuthService', 'Intentando login anonimo...');
-      final result = await _auth!.signInAnonymously();
+      final result =
+          null; //es null porqueno queremos auth anonimo await _auth!.signInAnonymously();
       _logger.info('AuthService', 'Login anonimo exitoso: ${result.user?.uid}');
       return result;
     } on FirebaseAuthException catch (e, stack) {
@@ -577,7 +578,7 @@ class AuthService {
       _logger.info('AuthService', 'Cuenta eliminada completamente');
 
       // 5. Sign in anonymously for fresh start
-      await signInAnonymously();
+      // await signInAnonymously();
 
       return true;
     } on FirebaseAuthException catch (e, stack) {

@@ -1,0 +1,64 @@
+Loki-Error - Image Generation Prompts
+============================================================
+
+ID: loki-error
+Color: #FF8F00
+Archetype: Tramoyista
+
+============================================================
+
+VARIATION 1: Trickster Chaos
+------------------------------------------------------------
+
+PROMPT:
+trickster deity with mischievous knowing smile, orange chaos energy (#FF8F00) swirling playfully, loki norse god, unexpected paths visible, dice and chance symbols, amber and gold tones, theatrical masks, clever improvisation, hidden order in chaos aesthetic, friendly chaos agent, fantasy art, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 2: Anime Trickster
+------------------------------------------------------------
+
+PROMPT:
+anime style orange trickster with playful grin, vibrant chaos swirls (#FF8F00), dynamic mischievous pose, bright amber colors, bold loki aesthetic, clever energy, centered playful composition, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 3: Geometric Chaos
+------------------------------------------------------------
+
+PROMPT:
+minimalist geometric trickster figure with dice symbol, orange (#FF8F00) angular chaos pattern, clean improvisation lines, modern loki aesthetic, symbolic chance, elegant playful composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 4: Watercolor Mischief
+------------------------------------------------------------
+
+PROMPT:
+watercolor painting of orange trickster, flowing brushstrokes of playful chaos (#FF8F00), dreamy mischievous atmosphere, soft amber washes, artistic improvisation aesthetic, clever gentle patterns, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 5: Art Nouveau Loki
+------------------------------------------------------------
+
+PROMPT:
+art nouveau style trickster with ornate orange patterns (#FF8F00), decorative chaos swirls, elegant flowing mischief design, intricate border of chance, sophisticated amber palette, mythical playful aesthetic, centered ornamental composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+

@@ -1,0 +1,64 @@
+Viento-Estación - Image Generation Prompts
+============================================================
+
+ID: viento-estacion
+Color: #0288D1
+Archetype: Navegante de Estaciones
+
+============================================================
+
+VARIATION 1: Wind Navigator
+------------------------------------------------------------
+
+PROMPT:
+wind navigator deity with seasonal elements swirling, sky blue robes (#0288D1) billowing in mystical winds, compass rose symbol, four seasons represented in background, zephyr wind god, sailing vessel motif, azure and cyan tones, adaptive flow aesthetic, fantasy art, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 2: Anime Seasons
+------------------------------------------------------------
+
+PROMPT:
+anime style blue wind navigator, vibrant seasonal swirls (#0288D1), dynamic flowing pose, bright azure and cyan colors, bold wind aesthetic, zephyr energy, centered adaptive composition, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 3: Geometric Wind
+------------------------------------------------------------
+
+PROMPT:
+minimalist geometric wind figure with compass symbol, blue (#0288D1) angular seasonal pattern, clean flow lines, modern zephyr aesthetic, symbolic navigation, elegant adaptive composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 4: Watercolor Breeze
+------------------------------------------------------------
+
+PROMPT:
+watercolor painting of blue wind navigator, flowing brushstrokes of seasonal winds (#0288D1), dreamy adaptive atmosphere, soft azure washes, artistic flow aesthetic, gentle swirling patterns, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 5: Art Nouveau Zephyr
+------------------------------------------------------------
+
+PROMPT:
+art nouveau style wind deity with ornate blue patterns (#0288D1), decorative seasonal swirls, elegant flowing wind design, intricate border of navigation, sophisticated azure palette, mythical adaptive aesthetic, centered ornamental composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+

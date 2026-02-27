@@ -1,0 +1,64 @@
+Leona-Nova - Image Generation Prompts
+============================================================
+
+ID: leona-nova
+Color: #B8860B
+Archetype: Soberana Solar
+
+============================================================
+
+VARIATION 1: Golden Sovereign
+------------------------------------------------------------
+
+PROMPT:
+regal golden lioness queen wearing solar crown, majestic noble posture, golden mane flowing like sunlight (#B8860B), leo constellation glowing in background, queenly authority, warm golden amber tones, celestial royalty aesthetic, radiant dignified presence, fantasy art, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 2: Anime Queen Leo
+------------------------------------------------------------
+
+PROMPT:
+anime style golden lion queen with solar crown, vibrant golden (#B8860B) flowing mane, leo stars shining, regal expression, dynamic pose, bright warm colors, bold celestial aesthetic, majestic sovereign energy, centered portrait, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 3: Geometric Royalty
+------------------------------------------------------------
+
+PROMPT:
+minimalist geometric lion queen silhouette, angular crown symbol, golden (#B8860B) color scheme, leo constellation pattern, clean modern design, symbolic sovereignty, elegant simple composition, royal aesthetic, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 4: Watercolor Majesty
+------------------------------------------------------------
+
+PROMPT:
+watercolor painting of golden lioness sovereign, flowing brushstrokes of sunlight mane (#B8860B), soft regal atmosphere, crown of light, dreamy warm colors, painterly royal aesthetic, celestial queen energy, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 5: Art Nouveau Sovereign
+------------------------------------------------------------
+
+PROMPT:
+art nouveau style lion queen with ornate golden patterns (#B8860B), decorative solar crown, elegant flowing mane design, intricate leo constellation border, sophisticated warm palette, mythical royalty aesthetic, centered ornamental composition, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+

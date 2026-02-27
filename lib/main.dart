@@ -14,6 +14,7 @@ import 'services/database_service.dart';
 import 'services/logger_service.dart';
 import 'features/guides/services/avatar_preload_service.dart';
 import 'widgets/global_error_listener.dart';
+import 'providers/notification_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -67,6 +68,7 @@ class _ChecklistAppState extends ConsumerState<ChecklistApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeAuth();
       _preloadAvatars();
+      _initializeNotifications();
     });
   }
 
@@ -82,6 +84,23 @@ class _ChecklistAppState extends ConsumerState<ChecklistApp> {
     } catch (e) {
       _logger.error('AvatarPreload', 'Error al precargar avatares', error: e);
       // Non-critical - app continues without preload optimization
+    }
+  }
+
+  /// Initialize notification system and start deadline watcher
+  void _initializeNotifications() {
+    try {
+      // Read the TaskDeadlineWatcher to start watching for deadline changes
+      // This will automatically schedule/cancel notifications as tasks change
+      ref.read(taskDeadlineWatcherProvider);
+      _logger.info('NotificationInit', 'Task deadline watcher iniciado');
+    } catch (e) {
+      _logger.error(
+        'NotificationInit',
+        'Error al inicializar watcher de notificaciones',
+        error: e,
+      );
+      // Non-critical - app continues without notification watching
     }
   }
 

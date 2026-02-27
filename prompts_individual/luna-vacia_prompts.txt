@@ -1,0 +1,64 @@
+Luna-Vacía - Image Generation Prompts
+============================================================
+
+ID: luna-vacia
+Color: #4A148C
+Archetype: Samurái del Silencio
+
+============================================================
+
+VARIATION 1: Ethereal Samurai
+------------------------------------------------------------
+
+PROMPT:
+ethereal purple samurai warrior meditating under crescent moon, flowing silver-purple robes, void energy swirling around, serene peaceful expression, japanese zen aesthetic, deep purple (#4A148C) and silver color palette, soft mystical glow, tranquil starlit night, fantasy art style, centered composition, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 2: Anime Warrior
+------------------------------------------------------------
+
+PROMPT:
+anime style purple samurai in meditation pose, crescent moon symbol glowing on forehead, lunar energy radiating from armor, vibrant deep purple (#4A148C) and silver tones, dynamic lighting, peaceful warrior aesthetic, starlit background, bold colors, centered portrait, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 3: Minimal Zen
+------------------------------------------------------------
+
+PROMPT:
+minimalist geometric samurai silhouette, crescent moon motif, clean lines, purple (#4A148C) and silver color scheme, zen circle background, symbolic void representation, simple elegant composition, modern mystical aesthetic, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 4: Watercolor Dream
+------------------------------------------------------------
+
+PROMPT:
+watercolor painting of purple samurai warrior, flowing silver-purple robes like liquid moonlight, soft brushstrokes, dreamy peaceful atmosphere, crescent moon above, deep purple (#4A148C) washes, tranquil zen energy, ethereal aesthetic, 1:1 square
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+
+VARIATION 5: Art Nouveau Moon
+------------------------------------------------------------
+
+PROMPT:
+art nouveau style samurai warrior with ornate purple patterns, crescent moon decorative frame, elegant flowing lines, deep purple (#4A148C) and silver metallics, zen meditation pose, intricate border design, mystical sophisticated aesthetic, 1:1 square format
+
+NEGATIVE:
+ugly, deformed, noisy, blurry, low contrast, photorealistic, 3d render, text, watermark, signature, multiple faces, asymmetric, human photo, realistic skin
+
+============================================================
+

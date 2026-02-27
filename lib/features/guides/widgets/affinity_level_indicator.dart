@@ -33,8 +33,7 @@ class AffinityLevelIndicator extends ConsumerStatefulWidget {
       _AffinityLevelIndicatorState();
 }
 
-class _AffinityLevelIndicatorState
-    extends ConsumerState<AffinityLevelIndicator>
+class _AffinityLevelIndicatorState extends ConsumerState<AffinityLevelIndicator>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -50,13 +49,17 @@ class _AffinityLevelIndicatorState
 
     _scaleAnimation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 1.3)
-            .chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 1.3,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 50,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.3, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeIn)),
+        tween: Tween<double>(
+          begin: 1.3,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeIn)),
         weight: 50,
       ),
     ]).animate(_animationController);
@@ -94,16 +97,15 @@ class _AffinityLevelIndicatorState
         final isMaxLevel = affinity?.isMaxLevel ?? false;
 
         final guideColor =
-            parseHexColor(widget.guide.themeAccentHex ?? widget.guide.themePrimaryHex) ??
-                Theme.of(context).colorScheme.primary;
+            parseHexColor(
+              widget.guide.themeAccentHex ?? widget.guide.themePrimaryHex,
+            ) ??
+            Theme.of(context).colorScheme.primary;
 
         final indicator = AnimatedBuilder(
           animation: _animationController,
           builder: (context, child) {
-            return Transform.scale(
-              scale: _scaleAnimation.value,
-              child: child,
-            );
+            return Transform.scale(scale: _scaleAnimation.value, child: child);
           },
           child: _buildIndicator(
             context,
@@ -136,7 +138,7 @@ class _AffinityLevelIndicatorState
         isMaxLevel: false,
         guideColor: Theme.of(context).colorScheme.primary,
       ),
-      error: (_, __) => _buildIndicator(
+      error: (_, _) => _buildIndicator(
         context,
         level: 0,
         progress: 0.0,
@@ -291,10 +293,7 @@ class _AffinityLevelIndicatorState
       decoration: BoxDecoration(
         color: guideColor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: guideColor.withValues(alpha: 0.3),
-          width: 1,
-        ),
+        border: Border.all(color: guideColor.withValues(alpha: 0.3), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -308,7 +307,9 @@ class _AffinityLevelIndicatorState
                   child: Icon(
                     index < level ? Icons.star : Icons.star_border,
                     size: sizeConfig.iconSize,
-                    color: index < level ? guideColor : theme.colorScheme.outline,
+                    color: index < level
+                        ? guideColor
+                        : theme.colorScheme.outline,
                   ),
                 ),
               ),
@@ -349,17 +350,17 @@ class _AffinityLevelIndicatorState
             ),
             if (!isMaxLevel) ...[
               const SizedBox(height: 12),
-              _buildSeparateProgressBars(theme, affinity: affinity, guideColor: guideColor),
+              _buildSeparateProgressBars(
+                theme,
+                affinity: affinity,
+                guideColor: guideColor,
+              ),
             ],
             if (isMaxLevel) ...[
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(
-                    Icons.emoji_events,
-                    size: 20,
-                    color: guideColor,
-                  ),
+                  Icon(Icons.emoji_events, size: 20, color: guideColor),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -506,11 +507,7 @@ class _AffinityLevelIndicatorState
   }) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 16,
-          color: guideColor.withValues(alpha: 0.8),
-        ),
+        Icon(icon, size: 16, color: guideColor.withValues(alpha: 0.8)),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -583,18 +580,13 @@ void showAffinityDetailsDialog(
 ) {
   showDialog(
     context: context,
-    builder: (context) => _AffinityDetailsDialog(
-      guide: guide,
-      affinity: affinity,
-    ),
+    builder: (context) =>
+        _AffinityDetailsDialog(guide: guide, affinity: affinity),
   );
 }
 
 class _AffinityDetailsDialog extends StatelessWidget {
-  const _AffinityDetailsDialog({
-    required this.guide,
-    required this.affinity,
-  });
+  const _AffinityDetailsDialog({required this.guide, required this.affinity});
 
   final Guide guide;
   final GuideAffinity? affinity;
@@ -602,7 +594,8 @@ class _AffinityDetailsDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final guideColor = parseHexColor(guide.themeAccentHex ?? guide.themePrimaryHex) ??
+    final guideColor =
+        parseHexColor(guide.themeAccentHex ?? guide.themePrimaryHex) ??
         theme.colorScheme.primary;
 
     return AlertDialog(
@@ -610,9 +603,7 @@ class _AffinityDetailsDialog extends StatelessWidget {
         children: [
           Icon(Icons.stars, color: guideColor),
           const SizedBox(width: 8),
-          Expanded(
-            child: Text('Afinidad con ${guide.name}'),
-          ),
+          Expanded(child: Text('Afinidad con ${guide.name}')),
         ],
       ),
       content: SingleChildScrollView(
@@ -717,14 +708,18 @@ class _AffinityDetailsDialog extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                         color: isUnlocked
                             ? guideColor
-                            : theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                            : theme.colorScheme.onSurface.withValues(
+                                alpha: 0.7,
+                              ),
                       ),
                     ),
                     const SizedBox(width: 4),
                     Text(
                       '(Nivel $level)',
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.5,
+                        ),
                       ),
                     ),
                   ],

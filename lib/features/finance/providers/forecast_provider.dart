@@ -77,7 +77,6 @@ class ForecastNotifier extends StateNotifier<ForecastState> {
   final TaskFinanceLinkStorage _linkStorage;
   final RecurringTransactionService _recurringService;
   final ErrorHandler _errorHandler;
-  final Ref _ref;
 
   StreamSubscription? _recurringSubscription;
   StreamSubscription? _budgetSubscription;
@@ -99,7 +98,6 @@ class ForecastNotifier extends StateNotifier<ForecastState> {
        _linkStorage = linkStorage,
        _recurringService = recurringService,
        _errorHandler = errorHandler,
-       _ref = ref,
        super(ForecastState(isLoading: true)) {
     _init();
   }
