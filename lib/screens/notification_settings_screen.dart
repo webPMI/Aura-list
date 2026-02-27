@@ -323,7 +323,7 @@ class _NotificationSettingsScreenState
       notificationEscalationDays: notificationEscalationDays,
     );
 
-    await db.updateUserPreferences(updatedPrefs);
+    await db.saveUserPreferences(updatedPrefs);
   }
 
   String _formatHour(int hour) {
