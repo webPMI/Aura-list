@@ -343,7 +343,7 @@ class _AddBudgetDialogState extends ConsumerState<_AddBudgetDialog> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _selectedCategoryId,
+                initialValue: _selectedCategoryId,
                 decoration: const InputDecoration(labelText: 'Categoría'),
                 items: categories.map((cat) {
                   return DropdownMenuItem(
@@ -371,7 +371,7 @@ class _AddBudgetDialogState extends ConsumerState<_AddBudgetDialog> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<BudgetPeriod>(
-                value: _selectedPeriod,
+                initialValue: _selectedPeriod,
                 decoration: const InputDecoration(labelText: 'Período'),
                 items: BudgetPeriod.values.map((period) {
                   return DropdownMenuItem(

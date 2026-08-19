@@ -276,7 +276,8 @@ void main() {
 
       final networkErrors = container.read(networkErrorsProvider);
       expect(networkErrors.length, 2);
-      expect(networkErrors.first.message, 'Network 1');
+      expect(networkErrors.first.message, 'Network 2');
+      expect(networkErrors.last.message, 'Network 1');
     });
 
     test('Auto-dismiss can be disabled per error', () async {

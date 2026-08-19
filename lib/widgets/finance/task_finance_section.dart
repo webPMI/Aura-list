@@ -248,7 +248,7 @@ class _TaskFinanceSectionState extends ConsumerState<TaskFinanceSection> {
 
                   // Category Selector
                   DropdownButtonFormField<String>(
-                    value: _selectedCategoryId,
+                    initialValue: _selectedCategoryId,
                     decoration: const InputDecoration(
                       labelText: 'Categoría *',
                       border: OutlineInputBorder(),

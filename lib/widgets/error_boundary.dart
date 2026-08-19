@@ -68,12 +68,21 @@ class ErrorBoundary extends ConsumerStatefulWidget {
 class _ErrorBoundaryState extends ConsumerState<ErrorBoundary> {
   AppException? _error;
   bool _hasError = false;
+  void Function(FlutterErrorDetails)? _originalOnError;
 
   @override
   void initState() {
     super.initState();
-    // Listen to Flutter errors
+    _originalOnError = FlutterError.onError;
     FlutterError.onError = _handleFlutterError;
+  }
+
+  @override
+  void dispose() {
+    if (FlutterError.onError == _handleFlutterError) {
+      FlutterError.onError = _originalOnError;
+    }
+    super.dispose();
   }
 
   void _handleFlutterError(FlutterErrorDetails details) {
@@ -82,20 +91,20 @@ class _ErrorBoundaryState extends ConsumerState<ErrorBoundary> {
         ? error
         : UnknownException.from(error, stackTrace: details.stack);
 
-    if (widget.reportError) {
-      ref.read(errorHandlerProvider).handle(
-            error,
-            message: details.exceptionAsString(),
-            stackTrace: details.stack,
-          );
-    }
-
-    if (mounted) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (widget.reportError) {
+        ref.read(errorHandlerProvider).handle(
+              error,
+              message: details.exceptionAsString(),
+              stackTrace: details.stack,
+            );
+      }
       setState(() {
         _error = appException;
         _hasError = true;
       });
-    }
+    });
   }
 
   void _retry() {

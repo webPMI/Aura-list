@@ -330,7 +330,7 @@ class _TemplateFormDialogState extends State<TemplateFormDialog> {
 
                       // Task Type
                       DropdownButtonFormField<String>(
-                        value: _selectedTaskType,
+                        initialValue: _selectedTaskType,
                         decoration: const InputDecoration(
                           labelText: 'Tipo de tarea',
                           border: OutlineInputBorder(),
@@ -360,7 +360,7 @@ class _TemplateFormDialogState extends State<TemplateFormDialog> {
 
                       // Category
                       DropdownButtonFormField<String>(
-                        value: _selectedCategory,
+                        initialValue: _selectedCategory,
                         decoration: const InputDecoration(
                           labelText: 'Categoría',
                           border: OutlineInputBorder(),
@@ -383,7 +383,7 @@ class _TemplateFormDialogState extends State<TemplateFormDialog> {
 
                       // Priority
                       DropdownButtonFormField<int>(
-                        value: _selectedPriority,
+                        initialValue: _selectedPriority,
                         decoration: const InputDecoration(
                           labelText: 'Prioridad',
                           border: OutlineInputBorder(),
