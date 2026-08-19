@@ -241,10 +241,6 @@ class DatabaseService {
           ? Hive.box<UserPreferences>(_userPrefsBoxName)
           : await Hive.openBox<UserPreferences>(_userPrefsBoxName);
 
-      // Open all finance boxes to prevent race conditions
-      // These must be opened AFTER TypeAdapters are registered
-      await _initializeFinanceBoxes();
-
       // Check if Firebase is available
       try {
         _firebaseAvailable = Firebase.apps.isNotEmpty;
@@ -263,10 +259,13 @@ class DatabaseService {
         _quotaManager = FirebaseQuotaManager(errorHandler: _errorHandler);
       }
 
-      // Initialize repositories
-      await _taskRepository.init();
-      await _noteRepository.init();
-      await _notebookRepository.init();
+      // Initialize repositories and finance boxes in parallel for optimal startup speed
+      await Future.wait([
+        _taskRepository.init(),
+        _noteRepository.init(),
+        _notebookRepository.init(),
+        _initializeFinanceBoxes(),
+      ]);
 
       _initialized = true;
       _initCompleter!.complete();
@@ -288,16 +287,11 @@ class DatabaseService {
     }
   }
 
-  /// Initialize all finance boxes in the correct order
-  /// This prevents race conditions when multiple storage classes try to open boxes simultaneously
+  /// Initialize all finance boxes in parallel
   Future<void> _initializeFinanceBoxes() async {
     try {
-      _logger.debug('Service', '[DatabaseService] Initializing finance boxes...');
+      _logger.debug('Service', '[DatabaseService] Initializing finance boxes in parallel...');
 
-      // Open each finance box with its correct typed form.
-      // Opening as untyped Box<dynamic> would cause a type-mismatch error when
-      // CategoryStorage / TransactionStorage etc. later request Box<T> via
-      // Hive.box<T>(name), so we pre-open them here with the right types.
       Future<void> openTyped<T>(String name) async {
         if (!Hive.isBoxOpen(name)) {
           try {
@@ -308,18 +302,19 @@ class DatabaseService {
               'DatabaseService',
               'Error opening finance box $name: $e',
             );
-            // Continue with other boxes even if one fails
           }
         }
       }
 
-      await openTyped<FinanceCategory>('finance_categories');
-      await openTyped<Transaction>('finance_transactions');
-      await openTyped<RecurringTransaction>('finance_recurring_transactions');
-      await openTyped<Budget>('finance_budgets');
-      await openTyped<CashFlowProjection>('finance_cash_flow_projections');
-      await openTyped<FinanceAlert>('finance_alerts');
-      await openTyped<TaskFinanceLink>('finance_task_links');
+      await Future.wait([
+        openTyped<FinanceCategory>('finance_categories'),
+        openTyped<Transaction>('finance_transactions'),
+        openTyped<RecurringTransaction>('finance_recurring_transactions'),
+        openTyped<Budget>('finance_budgets'),
+        openTyped<CashFlowProjection>('finance_cash_flow_projections'),
+        openTyped<FinanceAlert>('finance_alerts'),
+        openTyped<TaskFinanceLink>('finance_task_links'),
+      ]);
 
       _logger.debug('Service', '[DatabaseService] Finance boxes initialized');
     } catch (e, stack) {

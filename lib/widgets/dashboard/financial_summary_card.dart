@@ -13,16 +13,13 @@ class FinancialSummaryCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final financeState = ref.watch(financeProvider);
-    final forecastState = ref.watch(forecastProvider);
+    final totalIncome = ref.watch(financeProvider.select((s) => s.totalIncome));
+    final totalExpenses = ref.watch(financeProvider.select((s) => s.totalExpenses));
+    final balance = ref.watch(financeProvider.select((s) => s.balance));
+    final activeRecurringCount = ref.watch(forecastProvider.select((s) => s.activeRecurring.length));
+
     final currencyFormat = NumberFormat.simpleCurrency(locale: 'es_ES');
     final theme = Theme.of(context);
-
-    final totalIncome = financeState.totalIncome;
-    final totalExpenses = financeState.totalExpenses;
-    final balance = financeState.balance;
-    final activeRecurring = forecastState.activeRecurring;
-
     final balanceColor = balance >= 0 ? Colors.green.shade700 : Colors.red.shade700;
 
     return Card(
@@ -176,13 +173,13 @@ class FinancialSummaryCard extends ConsumerWidget {
             const SizedBox(height: 12),
 
             // Recordatorio de recurrentes activos si existen
-            if (activeRecurring.isNotEmpty) ...[
+            if (activeRecurringCount > 0) ...[
               Row(
                 children: [
                   const Icon(Icons.repeat, size: 14, color: Colors.blue),
                   const SizedBox(width: 6),
                   Text(
-                    '${activeRecurring.length} pagos/cobros recurrentes programados',
+                    '$activeRecurringCount pagos/cobros recurrentes programados',
                     style: const TextStyle(fontSize: 12, color: Colors.blueGrey),
                   ),
                 ],

@@ -18,6 +18,9 @@ class FinanceState {
   final List<FinanceCategory> categories;
   final bool isLoading;
 
+  double? _cachedTotalIncome;
+  double? _cachedTotalExpenses;
+
   FinanceState({
     this.transactions = const [],
     this.categories = const [],
@@ -36,13 +39,19 @@ class FinanceState {
     );
   }
 
-  double get totalIncome => transactions
-      .where((t) => t.type == FinanceCategoryType.income)
-      .fold(0, (sum, t) => sum + t.amount);
+  double get totalIncome {
+    _cachedTotalIncome ??= transactions
+        .where((t) => t.type == FinanceCategoryType.income)
+        .fold<double>(0.0, (double sum, t) => sum + t.amount);
+    return _cachedTotalIncome!;
+  }
 
-  double get totalExpenses => transactions
-      .where((t) => t.type == FinanceCategoryType.expense)
-      .fold(0, (sum, t) => sum + t.amount);
+  double get totalExpenses {
+    _cachedTotalExpenses ??= transactions
+        .where((t) => t.type == FinanceCategoryType.expense)
+        .fold<double>(0.0, (double sum, t) => sum + t.amount);
+    return _cachedTotalExpenses!;
+  }
 
   double get balance => totalIncome - totalExpenses;
 }
