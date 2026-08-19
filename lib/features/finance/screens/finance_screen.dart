@@ -146,11 +146,12 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Text(
-              'Transacciones Recientes',
+              'Historial de Transacciones',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
           TransactionList(),
+          SizedBox(height: 80),
         ],
       ),
     );

@@ -285,5 +285,146 @@ final financeProvider = StateNotifierProvider<FinanceNotifier, FinanceState>((
   }
 });
 
+/// Períodos contables disponibles para filtrado
+enum FinanceTimePeriod { thisMonth, lastMonth, thisYear, allTime }
+
+extension FinanceTimePeriodExtension on FinanceTimePeriod {
+  String get label {
+    switch (this) {
+      case FinanceTimePeriod.thisMonth:
+        return 'Este Mes';
+      case FinanceTimePeriod.lastMonth:
+        return 'Mes Anterior';
+      case FinanceTimePeriod.thisYear:
+        return 'Este Año';
+      case FinanceTimePeriod.allTime:
+        return 'Todo el Historial';
+    }
+  }
+}
+
+/// Provider para el período contable seleccionado
+final selectedFinancePeriodProvider = StateProvider<FinanceTimePeriod>(
+  (ref) => FinanceTimePeriod.thisMonth,
+);
+
+/// Provider de transacciones filtradas según el período contable seleccionado
+final filteredTransactionsProvider = Provider<List<Transaction>>((ref) {
+  final transactions = ref.watch(financeProvider.select((s) => s.transactions));
+  final period = ref.watch(selectedFinancePeriodProvider);
+  final now = DateTime.now();
+
+  return transactions.where((t) {
+    switch (period) {
+      case FinanceTimePeriod.thisMonth:
+        return t.date.year == now.year && t.date.month == now.month;
+      case FinanceTimePeriod.lastMonth:
+        final lastMonth = now.month == 1 ? 12 : now.month - 1;
+        final year = now.month == 1 ? now.year - 1 : now.year;
+        return t.date.year == year && t.date.month == lastMonth;
+      case FinanceTimePeriod.thisYear:
+        return t.date.year == now.year;
+      case FinanceTimePeriod.allTime:
+        return true;
+    }
+  }).toList();
+});
+
+/// Elemento de desglose de categoría con monto y porcentaje
+class CategoryBreakdownItem {
+  final FinanceCategory category;
+  final double amount;
+  final double percentage;
+
+  const CategoryBreakdownItem({
+    required this.category,
+    required this.amount,
+    required this.percentage,
+  });
+}
+
+/// Estadísticas contables del período seleccionado
+class PeriodFinanceStats {
+  final double totalIncome;
+  final double totalExpenses;
+  final double netSavings;
+  final double savingsRate;
+  final List<CategoryBreakdownItem> expenseCategories;
+  final List<CategoryBreakdownItem> incomeCategories;
+
+  const PeriodFinanceStats({
+    required this.totalIncome,
+    required this.totalExpenses,
+    required this.netSavings,
+    required this.savingsRate,
+    required this.expenseCategories,
+    required this.incomeCategories,
+  });
+}
+
+/// Provider que calcula las estadísticas contables del período activo
+final periodFinanceStatsProvider = Provider<PeriodFinanceStats>((ref) {
+  final transactions = ref.watch(filteredTransactionsProvider);
+  final categories = ref.watch(financeProvider.select((s) => s.categories));
+
+  final totalIncome = transactions
+      .where((t) => t.type == FinanceCategoryType.income)
+      .fold<double>(0.0, (sum, t) => sum + t.amount);
+
+  final totalExpenses = transactions
+      .where((t) => t.type == FinanceCategoryType.expense)
+      .fold<double>(0.0, (sum, t) => sum + t.amount);
+
+  final netSavings = totalIncome - totalExpenses;
+  final savingsRate =
+      totalIncome > 0 ? ((netSavings / totalIncome) * 100).clamp(-100.0, 100.0) : 0.0;
+
+  final Map<String, double> expenseMap = {};
+  final Map<String, double> incomeMap = {};
+
+  for (final t in transactions) {
+    final catId = t.categoryId ?? 'uncategorized';
+    if (t.type == FinanceCategoryType.expense) {
+      expenseMap[catId] = (expenseMap[catId] ?? 0.0) + t.amount;
+    } else {
+      incomeMap[catId] = (incomeMap[catId] ?? 0.0) + t.amount;
+    }
+  }
+
+  List<CategoryBreakdownItem> buildBreakdown(Map<String, double> map, double total) {
+    if (total <= 0) return [];
+    final items = <CategoryBreakdownItem>[];
+    for (final entry in map.entries) {
+      final category = categories.firstWhere(
+        (c) => c.id == entry.key,
+        orElse: () => FinanceCategory(
+          id: entry.key,
+          name: 'General',
+          icon: 'help',
+          color: '#9E9E9E',
+          type: FinanceCategoryType.expense,
+        ),
+      );
+      final percentage = (entry.value / total) * 100;
+      items.add(CategoryBreakdownItem(
+        category: category,
+        amount: entry.value,
+        percentage: percentage,
+      ));
+    }
+    items.sort((a, b) => b.amount.compareTo(a.amount));
+    return items;
+  }
+
+  return PeriodFinanceStats(
+    totalIncome: totalIncome,
+    totalExpenses: totalExpenses,
+    netSavings: netSavings,
+    savingsRate: savingsRate,
+    expenseCategories: buildBreakdown(expenseMap, totalExpenses),
+    incomeCategories: buildBreakdown(incomeMap, totalIncome),
+  );
+});
+
 
 
