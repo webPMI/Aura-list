@@ -264,6 +264,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'home_screen_fab',
         onPressed: _showAddTaskDialog,
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,

@@ -115,6 +115,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     // Dashboard: FAB directo que crea tarea diaria
     if (route == AppRoute.dashboard) {
       return FloatingActionButton.extended(
+        heroTag: 'main_fab_dashboard',
         onPressed: () {
           HapticFeedback.mediumImpact();
           _showAddTaskDialog(context, ref, 'daily');
@@ -135,6 +136,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
       );
 
       return FloatingActionButton.extended(
+        heroTag: 'main_fab_tasks',
         onPressed: () {
           HapticFeedback.mediumImpact();
           _showAddTaskDialog(context, ref, selectedType);
@@ -149,6 +151,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     // Notes: FAB simple para crear nota
     if (route == AppRoute.notes) {
       return FloatingActionButton.extended(
+        heroTag: 'main_fab_notes',
         onPressed: () {
           HapticFeedback.mediumImpact();
           _showNoteEditor(context, ref);
@@ -163,6 +166,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     // Finance: FAB para nueva transaccion
     if (route == AppRoute.finance) {
       return FloatingActionButton.extended(
+        heroTag: 'main_fab_finance',
         onPressed: () {
           HapticFeedback.mediumImpact();
           showDialog(

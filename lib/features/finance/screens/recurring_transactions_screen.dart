@@ -69,6 +69,7 @@ class RecurringTransactionsScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'recurring_tx_fab',
         onPressed: () => _showAddDialog(context),
         icon: const Icon(Icons.add),
         label: const Text('Nueva Recurrente'),

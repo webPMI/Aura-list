@@ -128,6 +128,7 @@ class _SpeedDialFabState extends State<SpeedDialFab>
 
             // Main FAB
             FloatingActionButton(
+              heroTag: 'speed_dial_main_fab',
               onPressed: _toggle,
               backgroundColor: colorScheme.primary,
               foregroundColor: colorScheme.onPrimary,
@@ -262,6 +263,7 @@ class SimpleFab extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return FloatingActionButton(
+      heroTag: 'simple_fab',
       onPressed: onPressed,
       backgroundColor: colorScheme.primary,
       foregroundColor: colorScheme.onPrimary,

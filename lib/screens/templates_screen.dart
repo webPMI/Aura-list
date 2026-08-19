@@ -79,6 +79,7 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
               },
             ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'templates_fab',
         onPressed: _createNewTemplate,
         icon: const Icon(Icons.add),
         label: const Text('Nueva Plantilla'),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/finance_dashboard.dart';
 import '../widgets/transaction_list.dart';
-import '../widgets/unified_transaction_dialog.dart';
 import '../widgets/finance_alert_banner.dart';
 import '../widgets/recurring_transaction_list.dart';
 import '../widgets/budget_progress_card.dart';
@@ -133,7 +132,6 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
           ),
         ],
       ),
-      floatingActionButton: _buildFAB(),
     );
   }
 
@@ -260,21 +258,6 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
 
   Widget _buildForecastTab() {
     return const ForecastScreen();
-  }
-
-  Widget? _buildFAB() {
-    return FloatingActionButton.extended(
-      onPressed: () => _showAddTransaction(context),
-      icon: const Icon(Icons.add),
-      label: const Text('Registrar'),
-    );
-  }
-
-  void _showAddTransaction(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => const UnifiedTransactionDialog(),
-    );
   }
 
   void _showAlerts(BuildContext context) {

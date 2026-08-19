@@ -32,6 +32,7 @@ class BudgetManagementScreen extends ConsumerWidget {
           ? _buildEmptyState(context)
           : _buildBudgetList(context, ref, activeBudgets),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'budget_fab',
         onPressed: () => _showAddBudgetDialog(context, ref),
         icon: const Icon(Icons.add),
         label: const Text('Nuevo Presupuesto'),

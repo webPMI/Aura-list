@@ -11,7 +11,6 @@ import '../providers/task_provider.dart';
 import '../providers/task_providers.dart';
 import '../providers/navigation_provider.dart';
 import '../providers/notes_provider.dart';
-import '../widgets/dialogs/add_task_dialog.dart';
 import '../widgets/layouts/dashboard_layout.dart';
 import '../widgets/navigation/drawer_menu_button.dart';
 import '../widgets/dashboard/wellness_suggestions_card.dart';
@@ -176,15 +175,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             tooltip: 'Buscar',
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => showAddTaskDialog(
-          context: context,
-          ref: ref,
-          defaultType: 'daily',
-        ),
-        icon: const Icon(Icons.add),
-        label: const Text('Nueva tarea'),
       ),
       body: Column(
         children: [

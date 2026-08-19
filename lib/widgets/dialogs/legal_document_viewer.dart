@@ -223,6 +223,7 @@ class _LegalDocumentDialog extends StatelessWidget {
         ),
         // Boton flotante para cerrar (siempre visible)
         floatingActionButton: FloatingActionButton.extended(
+          heroTag: 'legal_doc_fab',
           onPressed: () => Navigator.of(context).pop(),
           icon: const Icon(Icons.check_circle_outline),
           label: const Text('Entendido'),

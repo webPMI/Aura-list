@@ -139,6 +139,7 @@ class _CategoriesManagementScreenState
               },
             ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'categories_fab',
         onPressed: () => _addCategory(context),
         child: const Icon(Icons.add),
       ),
