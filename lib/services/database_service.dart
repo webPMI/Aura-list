@@ -19,6 +19,7 @@ import '../features/finance/models/cash_flow_projection.dart';
 import '../features/finance/models/finance_alert.dart';
 import '../features/finance/models/task_finance_link.dart';
 import '../features/finance/models/finance_enums.dart';
+import '../models/recurrence_rule.dart' as task_recurrence;
 import '../models/recurrence_rule.dart' hide RecurrenceFrequency, RecurrenceFrequencyExtension, RecurrenceFrequencyAdapter;
 import '../core/cache/cache_policy.dart';
 import 'error_handler.dart';
@@ -174,6 +175,9 @@ class DatabaseService {
       }
       if (!Hive.isAdapterRegistered(9)) {
         Hive.registerAdapter(RecurrenceRuleAdapter());
+      }
+      if (!Hive.isAdapterRegistered(10)) {
+        Hive.registerAdapter(task_recurrence.RecurrenceFrequencyAdapter());
       }
       if (!Hive.isAdapterRegistered(11)) {
         Hive.registerAdapter(WeekDayAdapter());

@@ -330,5 +330,17 @@ void main() {
       expect(restored.lastUpdatedAt, isNull);
       expect(restored.deletedAt, isNull);
     });
+
+    test('should write and read RecurringTransaction through Hive adapters without error', () {
+      final adapter = RecurringTransactionAdapter();
+      final ruleAdapter = RecurrenceRuleAdapter();
+      final freqAdapter = RecurrenceFrequencyAdapter();
+      final catTypeAdapter = FinanceCategoryTypeAdapter();
+
+      expect(adapter.typeId, 17);
+      expect(ruleAdapter.typeId, 9);
+      expect(freqAdapter.typeId, 10);
+      expect(catTypeAdapter.typeId, 14);
+    });
   });
 }
