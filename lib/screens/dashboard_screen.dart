@@ -16,6 +16,7 @@ import '../widgets/layouts/dashboard_layout.dart';
 import '../widgets/navigation/drawer_menu_button.dart';
 import '../widgets/dashboard/wellness_suggestions_card.dart';
 import '../widgets/dashboard/user_card.dart';
+import '../widgets/dashboard/financial_summary_card.dart';
 import '../widgets/dashboard/overdue_tasks_banner.dart';
 import '../widgets/deferred_tasks_widget.dart';
 import '../providers/streak_provider.dart';
@@ -192,6 +193,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: DashboardLayout(
               cards: [
                 const UserCard(),
+                const FinancialSummaryCard(),
                 _TodayProgressCard(),
                 _FocusModeCard(),
                 const DeferredTasksWidget(),
