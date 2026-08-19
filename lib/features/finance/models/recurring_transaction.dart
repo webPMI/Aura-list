@@ -95,7 +95,9 @@ class RecurringTransaction extends HiveObject {
   DateTime? nextOccurrence() {
     if (!active || deleted) return null;
 
-    final from = lastGenerated ?? recurrence.startDate;
+    final from = lastGenerated != null
+        ? lastGenerated!.add(const Duration(days: 1))
+        : recurrence.startDate;
     return recurrence.nextOccurrence(from);
   }
 

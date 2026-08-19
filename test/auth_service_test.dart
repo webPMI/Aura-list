@@ -136,6 +136,18 @@ void main() {
       expect(result, isNull);
     });
 
+    test('registerWithEmailPassword handles Firebase unavailability', () async {
+      final authService = container.read(authServiceProvider);
+
+      final result = await authService.registerWithEmailPassword(
+        'test@example.com',
+        'password123',
+      );
+
+      // Should return null when Firebase unavailable
+      expect(result, isNull);
+    });
+
     test('sendPasswordResetEmail handles Firebase unavailability', () async {
       final authService = container.read(authServiceProvider);
 

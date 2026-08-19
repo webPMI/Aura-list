@@ -69,24 +69,46 @@ void main() {
   });
 
   group('AuthService Mocked Implementation Tests', () {
-    test('signInAnonymously returns UserCredential on success', () async {
-      final mockCredential = MockUserCredential();
-      when(
-        () => mockAuth.signInAnonymously(),
-      ).thenAnswer((_) async => mockCredential);
-
+    test('signInAnonymously returns null because anonymous login is disabled', () async {
       final result = await authService.signInAnonymously();
-
-      expect(result, mockCredential);
-      verify(() => mockAuth.signInAnonymously()).called(1);
+      expect(result, isNull);
     });
 
-    test('signInAnonymously handles FirebaseAuthException', () async {
+    test('registerWithEmailPassword returns UserCredential on success', () async {
+      final mockCredential = MockUserCredential();
       when(
-        () => mockAuth.signInAnonymously(),
-      ).thenThrow(FirebaseAuthException(code: 'operation-not-allowed'));
+        () => mockAuth.createUserWithEmailAndPassword(
+          email: 'test@example.com',
+          password: 'Password123',
+        ),
+      ).thenAnswer((_) async => mockCredential);
 
-      final result = await authService.signInAnonymously();
+      final result = await authService.registerWithEmailPassword(
+        'test@example.com',
+        'Password123',
+      );
+
+      expect(result, mockCredential);
+      verify(
+        () => mockAuth.createUserWithEmailAndPassword(
+          email: 'test@example.com',
+          password: 'Password123',
+        ),
+      ).called(1);
+    });
+
+    test('registerWithEmailPassword handles FirebaseAuthException gracefully', () async {
+      when(
+        () => mockAuth.createUserWithEmailAndPassword(
+          email: 'test@example.com',
+          password: 'Password123',
+        ),
+      ).thenThrow(FirebaseAuthException(code: 'email-already-in-use'));
+
+      final result = await authService.registerWithEmailPassword(
+        'test@example.com',
+        'Password123',
+      );
 
       expect(result, isNull);
       verify(
@@ -97,6 +119,29 @@ void main() {
           message: any(named: 'message'),
           userMessage: any(named: 'userMessage'),
           stackTrace: any(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+
+    test('signInWithEmailPassword returns UserCredential on success', () async {
+      final mockCredential = MockUserCredential();
+      when(
+        () => mockAuth.signInWithEmailAndPassword(
+          email: 'test@example.com',
+          password: 'Password123',
+        ),
+      ).thenAnswer((_) async => mockCredential);
+
+      final result = await authService.signInWithEmailPassword(
+        'test@example.com',
+        'Password123',
+      );
+
+      expect(result, mockCredential);
+      verify(
+        () => mockAuth.signInWithEmailAndPassword(
+          email: 'test@example.com',
+          password: 'Password123',
         ),
       ).called(1);
     });

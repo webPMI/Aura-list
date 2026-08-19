@@ -167,8 +167,8 @@ class Budget extends HiveObject {
 
   bool get isGlobal => categoryId.isEmpty;
 
-  DateTime getCurrentPeriodStart() {
-    final now = DateTime.now();
+  DateTime getCurrentPeriodStart([DateTime? asOf]) {
+    final now = asOf ?? DateTime.now();
     switch (period) {
       case BudgetPeriod.daily:
         return DateTime(now.year, now.month, now.day);
@@ -185,19 +185,19 @@ class Budget extends HiveObject {
     }
   }
 
-  DateTime getCurrentPeriodEnd() {
-    final start = getCurrentPeriodStart();
+  DateTime getCurrentPeriodEnd([DateTime? asOf]) {
+    final start = getCurrentPeriodStart(asOf);
     switch (period) {
       case BudgetPeriod.daily:
         return DateTime(start.year, start.month, start.day, 23, 59, 59);
       case BudgetPeriod.weekly:
         return start.add(const Duration(days: 7));
       case BudgetPeriod.monthly:
-        return DateTime(start.year, start.month + 1, 1).subtract(const Duration(days: 1));
+        return DateTime(start.year, start.month + 1, 0, 23, 59, 59);
       case BudgetPeriod.quarterly:
-        return DateTime(start.year, start.month + 3, 1).subtract(const Duration(days: 1));
+        return DateTime(start.year, start.month + 3, 0, 23, 59, 59);
       case BudgetPeriod.yearly:
-        return DateTime(start.year + 1, 1, 1).subtract(const Duration(days: 1));
+        return DateTime(start.year, 12, 31, 23, 59, 59);
     }
   }
 }

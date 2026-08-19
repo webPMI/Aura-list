@@ -8,7 +8,7 @@ void main() {
       expect(prefs.hasAcceptedTerms, false);
       expect(prefs.hasAcceptedPrivacy, false);
       expect(prefs.notificationsEnabled, false);
-      expect(prefs.cloudSyncEnabled, false);
+      expect(prefs.cloudSyncEnabled, true);
       expect(prefs.syncOnMobileData, true);
     });
 

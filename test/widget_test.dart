@@ -1,18 +1,23 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:checklist_app/main.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:checklist_app/screens/welcome_screen.dart';
 
 void main() {
-  testWidgets('App smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    // Note: This is a minimal smoke test that verifies the app widget can be instantiated
-    // Full integration tests would require setting up path_provider and Hive mocks
-    await tester.pumpWidget(const ProviderScope(
-      child: ChecklistApp(firebaseInitialized: false),
-    ));
+  testWidgets('WelcomeScreen renders properly with all CTA buttons', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: WelcomeScreen(),
+        ),
+      ),
+    );
 
-    // Just verify the widget was created without immediate crashes
-    // We can't pump and settle as async operations require platform plugins
-    expect(find.byType(ChecklistApp), findsOneWidget);
+    expect(find.text('AuraList'), findsOneWidget);
+    expect(find.text('Crear cuenta'), findsOneWidget);
+    expect(find.text('Ya tengo cuenta'), findsOneWidget);
+    expect(find.text('Continuar sin cuenta'), findsOneWidget);
   });
 }

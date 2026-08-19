@@ -136,12 +136,20 @@ class ErrorStateNotifier extends StateNotifier<ErrorState> {
   /// [autoDismiss] - Si es true, el error se eliminara automaticamente
   /// despues de [dismissAfter].
   /// [severity] - Severidad del error. Solo errores de tipo info/warning
-  /// se auto-descartan. Errores criticos permanecen visibles.
+  final List<Timer> _dismissTimers = [];
+
+  /// Agrega un nuevo error al estado.
+  ///
+  /// Parametros:
+  /// - [error]: La excepcion a registrar
+  /// - [severity]: Severidad opcional (si no se proporciona, se detecta automaticamente)
+  /// - [autoDismiss]: Si es true, los errores de severidad info/warning se descartan tras [dismissAfter]
+  /// - [dismissAfter]: Duracion antes del auto-descarte (default: 10 segundos)
   void addError(
     AppException error, {
-    bool autoDismiss = true,
-    Duration dismissAfter = defaultAutoDismiss,
     ErrorSeverity? severity,
+    bool autoDismiss = true,
+    Duration dismissAfter = const Duration(seconds: 10),
   }) {
     final newErrors = [error, ...state.errors];
 
@@ -161,9 +169,12 @@ class ErrorStateNotifier extends StateNotifier<ErrorState> {
       final shouldAutoDismiss = _shouldAutoDismiss(errorSeverity);
 
       if (shouldAutoDismiss) {
-        Future.delayed(dismissAfter, () {
+        Timer? timer;
+        timer = Timer(dismissAfter, () {
+          _dismissTimers.remove(timer);
           removeError(error);
         });
+        _dismissTimers.add(timer);
       }
     }
   }
@@ -232,6 +243,10 @@ class ErrorStateNotifier extends StateNotifier<ErrorState> {
 
   /// Elimina todos los errores del estado.
   void clearAll() {
+    for (final timer in _dismissTimers) {
+      timer.cancel();
+    }
+    _dismissTimers.clear();
     state = ErrorState.initial;
   }
 
@@ -281,6 +296,10 @@ class ErrorStateNotifier extends StateNotifier<ErrorState> {
 
   @override
   void dispose() {
+    for (final timer in _dismissTimers) {
+      timer.cancel();
+    }
+    _dismissTimers.clear();
     _subscription?.cancel();
     super.dispose();
   }

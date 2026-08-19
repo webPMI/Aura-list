@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -124,15 +125,18 @@ void main() {
     testWidgets('Banner updates when preferences change', (
       WidgetTester tester,
     ) async {
+      final controller = StreamController<UserPreferences>();
+      addTearDown(controller.close);
+
       final container = ProviderContainer(
         overrides: [
-          // Start with Tuesday as rest day (today is Monday)
           userPreferencesProvider.overrideWith(
-            (ref) => Stream.value(UserPreferences(restDayOfWeek: 2)),
+            (ref) => controller.stream,
           ),
           currentTimeProvider.overrideWithValue(DateTime(2024, 1, 1)), // Monday
         ],
       );
+      addTearDown(container.dispose);
 
       await tester.pumpWidget(
         UncontrolledProviderScope(
@@ -141,22 +145,18 @@ void main() {
         ),
       );
 
+      // Set to Tuesday (not rest day on Monday)
+      controller.add(UserPreferences(restDayOfWeek: 2));
+      await tester.pump();
       await tester.pumpAndSettle();
 
       // Banner should not be visible initially
       expect(find.text('🌙 Hoy es tu día de descanso'), findsNothing);
 
-      // Update override to set rest day to Monday
-      container.updateOverrides([
-        userPreferencesProvider.overrideWith(
-          (ref) => Stream.value(UserPreferences(restDayOfWeek: 1)),
-        ),
-        currentTimeProvider.overrideWithValue(DateTime(2024, 1, 1)), // Monday
-      ]);
-
-      // Rebuild
-      await tester.pump(); // Start rebuild
-      await tester.pumpAndSettle(); // Wait for stream and animations
+      // Update to Monday (today IS rest day)
+      controller.add(UserPreferences(restDayOfWeek: 1));
+      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Banner should now be visible
       expect(find.text('🌙 Hoy es tu día de descanso'), findsOneWidget);

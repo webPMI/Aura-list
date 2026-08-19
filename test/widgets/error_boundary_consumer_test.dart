@@ -3,10 +3,9 @@
 /// Estos tests verifican:
 /// - Renderizado correcto del widget
 /// - Manejo de diferentes tipos de errores
-/// - Auto-dismiss basado en severidad
 /// - Descarte manual
 /// - Acciones de reintento
-/// - Modos de visualizacion (banner vs SnackBar)
+/// - Modos de visualizacion
 library;
 
 import 'package:flutter/material.dart';
@@ -58,6 +57,7 @@ void main() {
               message: 'Permission denied',
               userMessage: 'No tienes permiso.',
             ),
+            autoDismiss: false,
           );
 
       await tester.pump();
@@ -91,6 +91,7 @@ void main() {
               userMessage: 'Sin conexion.',
               isRetryable: true,
             ),
+            autoDismiss: false,
           );
 
       await tester.pump();
@@ -123,6 +124,7 @@ void main() {
               userMessage: 'Sin conexion.',
               isRetryable: true,
             ),
+            autoDismiss: false,
           );
 
       await tester.pump();
@@ -154,6 +156,7 @@ void main() {
               message: 'Network error',
               userMessage: 'Sin conexion.',
             ),
+            autoDismiss: false,
           );
 
       await tester.pump();
@@ -192,14 +195,16 @@ void main() {
         ),
       );
 
-      // Agregar error reintentable
       final testError = NetworkException(
         message: 'Network error',
         userMessage: 'Sin conexion.',
         isRetryable: true,
       );
 
-      container.read(errorStateProvider.notifier).addError(testError);
+      container.read(errorStateProvider.notifier).addError(
+            testError,
+            autoDismiss: false,
+          );
       await tester.pump();
 
       // Presionar boton de reintentar
@@ -236,6 +241,7 @@ void main() {
               message: 'Validation error',
               userMessage: 'Campo obligatorio.',
             ),
+            autoDismiss: false,
           );
 
       await tester.pump();
@@ -294,6 +300,7 @@ void main() {
           message: 'Network error',
           userMessage: 'Sin conexion.',
         ),
+        autoDismiss: false,
       );
       await tester.pump();
       expect(find.byIcon(Icons.wifi_off), findsOneWidget);
@@ -307,6 +314,7 @@ void main() {
           message: 'Permission error',
           userMessage: 'Sin permiso.',
         ),
+        autoDismiss: false,
       );
       await tester.pump();
       expect(find.byIcon(Icons.lock_outline), findsOneWidget);
@@ -320,6 +328,7 @@ void main() {
           message: 'Validation error',
           userMessage: 'Campo invalido.',
         ),
+        autoDismiss: false,
       );
       await tester.pump();
       expect(find.byIcon(Icons.warning_amber), findsOneWidget);
@@ -351,6 +360,7 @@ void main() {
               userMessage: 'Sin conexion.',
               isRetryable: true,
             ),
+            autoDismiss: false,
           );
 
       await tester.pump();
@@ -384,6 +394,7 @@ void main() {
               message: 'Storage error',
               userMessage: 'Error de almacenamiento.',
             ),
+            autoDismiss: false,
           );
 
       await tester.pump();
@@ -417,6 +428,7 @@ void main() {
               userMessage: 'Conexion lenta.',
               isRetryable: true,
             ),
+            autoDismiss: false,
           );
 
       await tester.pump();
@@ -448,6 +460,7 @@ void main() {
               message: 'Validation error',
               userMessage: 'Campo requerido.',
             ),
+            autoDismiss: false,
           );
 
       await tester.pump();

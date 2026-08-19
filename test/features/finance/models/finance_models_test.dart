@@ -426,7 +426,7 @@ void main() {
         createdAt: DateTime(2026, 3, 15),
       );
 
-      final start = budget.getCurrentPeriodStart();
+      final start = budget.getCurrentPeriodStart(DateTime(2026, 3, 15));
       expect(start.day, 1);
       expect(start.month, 3);
       expect(start.year, 2026);
@@ -443,7 +443,7 @@ void main() {
         createdAt: DateTime(2026, 6, 15),
       );
 
-      final start = budget.getCurrentPeriodStart();
+      final start = budget.getCurrentPeriodStart(DateTime(2026, 6, 15));
       expect(start.day, 1);
       expect(start.month, 1);
       expect(start.year, 2026);
@@ -461,7 +461,7 @@ void main() {
         createdAt: DateTime(2026, 4, 15),
       );
 
-      final start = budget.getCurrentPeriodStart();
+      final start = budget.getCurrentPeriodStart(DateTime(2026, 4, 15));
       expect(start.day, 1);
       expect(start.month, 4);
       expect(start.year, 2026);
@@ -479,7 +479,7 @@ void main() {
         createdAt: start,
       );
 
-      final end = budget.getCurrentPeriodEnd();
+      final end = budget.getCurrentPeriodEnd(DateTime(2026, 4, 15));
       expect(end.year, 2026);
       expect(end.month, 4);
       expect(end.day, 15);
@@ -499,7 +499,7 @@ void main() {
         createdAt: DateTime(2026, 2, 1),
       );
 
-      final end = budget.getCurrentPeriodEnd();
+      final end = budget.getCurrentPeriodEnd(DateTime(2026, 2, 15));
       expect(end.year, 2026);
       expect(end.month, 2);
       expect(end.day, 28);
@@ -516,7 +516,7 @@ void main() {
         createdAt: DateTime(2024, 2, 1),
       );
 
-      final end = budget.getCurrentPeriodEnd();
+      final end = budget.getCurrentPeriodEnd(DateTime(2024, 2, 15));
       expect(end.year, 2024);
       expect(end.month, 2);
       expect(end.day, 29);
@@ -533,7 +533,7 @@ void main() {
         createdAt: DateTime(2026, 1, 1),
       );
 
-      final end = budget.getCurrentPeriodEnd();
+      final end = budget.getCurrentPeriodEnd(DateTime(2026, 5, 20));
       expect(end.year, 2026);
       expect(end.month, 12);
       expect(end.day, 31);
@@ -1367,7 +1367,7 @@ void main() {
       expect(restored.createdAt, original.createdAt);
       expect(restored.lastUpdatedAt, original.lastUpdatedAt);
       expect(restored.deleted, original.deleted);
-      expect(restored.firestoreId, 'rt-full-rt'); // fromFirestore usa id de data
+      expect(restored.firestoreId, 'different-id'); // fromFirestore uses the doc id argument
     });
 
     test('copyWith basic fields', () {

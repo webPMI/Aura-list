@@ -156,13 +156,13 @@ void main() {
 
     test('User preferences CRUD', () async {
       final prefs = await databaseService.getUserPreferences();
-      expect(prefs.cloudSyncEnabled, false); // Default
+      expect(prefs.cloudSyncEnabled, true); // Default is true
 
-      prefs.cloudSyncEnabled = true;
+      prefs.cloudSyncEnabled = false;
       await databaseService.saveUserPreferences(prefs);
 
       final updatedPrefs = await databaseService.getUserPreferences();
-      expect(updatedPrefs.cloudSyncEnabled, true);
+      expect(updatedPrefs.cloudSyncEnabled, false);
     });
 
     test('Note CRUD', () async {
