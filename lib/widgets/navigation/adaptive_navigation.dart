@@ -50,7 +50,7 @@ class _MobileNavigation extends ConsumerWidget {
       drawer: AppDrawer(onNavigate: () => Navigator.pop(context)),
       body: child,
       bottomNavigationBar: NavigationBar(
-        selectedIndex: selectedRoute.index.clamp(0, 3),
+        selectedIndex: selectedRoute.index.clamp(0, 4),
         onDestinationSelected: (index) {
           final route = AppRouteExtension.fromIndex(index);
           ref.read(selectedRouteProvider.notifier).state = route;
@@ -65,6 +65,11 @@ class _MobileNavigation extends ConsumerWidget {
             icon: Icon(Icons.checklist_outlined),
             selectedIcon: Icon(Icons.checklist),
             label: 'Tareas',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.account_balance_wallet_outlined),
+            selectedIcon: Icon(Icons.account_balance_wallet),
+            label: 'Finanzas',
           ),
           NavigationDestination(
             icon: Icon(Icons.note_outlined),
@@ -99,7 +104,7 @@ class _TabletNavigation extends ConsumerWidget {
       body: Row(
         children: [
           NavigationRail(
-            selectedIndex: selectedRoute.index.clamp(0, 4),
+            selectedIndex: selectedRoute.index.clamp(0, 5),
             onDestinationSelected: (index) {
               final route = AppRouteExtension.fromIndex(index);
               ref.read(selectedRouteProvider.notifier).state = route;
@@ -139,6 +144,11 @@ class _TabletNavigation extends ConsumerWidget {
                 icon: Icon(Icons.checklist_outlined),
                 selectedIcon: Icon(Icons.checklist),
                 label: Text('Tareas'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.account_balance_wallet_outlined),
+                selectedIcon: Icon(Icons.account_balance_wallet),
+                label: Text('Finanzas'),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.note_outlined),
