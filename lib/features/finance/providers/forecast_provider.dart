@@ -549,3 +549,6 @@ final activeRecurringProvider = Provider<List<RecurringTransaction>>((ref) {
 final activeBudgetsProvider = Provider<List<Budget>>((ref) {
   return ref.watch(forecastProvider).activeBudgets;
 });
+
+
+

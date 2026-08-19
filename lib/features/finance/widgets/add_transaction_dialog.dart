@@ -22,11 +22,16 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
   FinanceCategory? _selectedCategory;
   FinanceCategoryType _selectedType = FinanceCategoryType.expense;
 
+  bool _showCategoryCreator = false;
+  final _newCategoryName = TextEditingController();
+  Color _newCategoryColor = const Color(0xFF66BB6A);
+
   @override
   void dispose() {
     _titleController.dispose();
     _amountController.dispose();
     _noteController.dispose();
+    _newCategoryName.dispose();
     super.dispose();
   }
 
@@ -36,6 +41,99 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
     final categories = financeState.categories
         .where((c) => c.type == _selectedType)
         .toList();
+
+    // Dialog de creación de categoría
+    if (_showCategoryCreator) {
+      return AlertDialog(
+        title: const Text('Crear Categoría'),
+        content: SizedBox(
+          width: 300,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _newCategoryName,
+                decoration: const InputDecoration(
+                  labelText: 'Nombre de la categoría',
+                  border: OutlineInputBorder(),
+                ),
+                autofocus: true,
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Requerido' : null,
+              ),
+              const SizedBox(height: 16),
+              const Text('Color'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final c in [
+                    const Color(0xFFEF5350),
+                    const Color(0xFFFF7043),
+                    const Color(0xFFFFA726),
+                    const Color(0xFFFFCA28),
+                    const Color(0xFF42A5F5),
+                    const Color(0xFF2196F3),
+                    const Color(0xFF66BB6A),
+                    const Color(0xFF26A69A),
+                    const Color(0xFF78909C),
+                    const Color(0xFFAB47BC),
+                    const Color(0xFF5C6BC0),
+                    const Color(0xFF9E9E9E),
+                  ])
+                    GestureDetector(
+                      onTap: () =>
+                          setState(() => _newCategoryColor = c),
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: c,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: _newCategoryColor == c
+                                ? Colors.black
+                                : Colors.grey,
+                            width: _newCategoryColor == c ? 2 : 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => setState(() => _showCategoryCreator = false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (_newCategoryName.text.isEmpty) return;
+              final newCat = FinanceCategory(
+                id: DateTime.now().millisecondsSinceEpoch.toString(),
+                name: _newCategoryName.text,
+                icon: 'category',
+                color: '#${_newCategoryColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
+                type: _selectedType,
+                isDefault: false,
+              );
+              await ref.read(financeProvider.notifier).addCategory(newCat);
+              if (!mounted) return;
+              setState(() {
+                _showCategoryCreator = false;
+                _selectedCategory = newCat;
+                _newCategoryName.clear();
+              });
+            },
+            child: const Text('Crear'),
+          ),
+        ],
+      );
+    }
 
     return AlertDialog(
       title: const Text('Nueva Transacción'),
@@ -89,7 +187,9 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Requerido';
-                  if (double.tryParse(value) == null) return 'Número inválido';
+                  if (double.tryParse(value) == null) {
+                    return 'Número inválido';
+                  }
                   return null;
                 },
               ),
@@ -100,20 +200,39 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
                   labelText: 'Categoría',
                   border: OutlineInputBorder(),
                 ),
-                items: categories.map((c) {
-                  return DropdownMenuItem(
-                    value: c,
+                items: [
+                  ...categories.map((c) {
+                    return DropdownMenuItem(
+                      value: c,
+                      child: Row(
+                        children: [
+                          _getIcon(c.icon, c.color),
+                          const SizedBox(width: 8),
+                          Text(c.name),
+                        ],
+                      ),
+                    );
+                  }),
+                  DropdownMenuItem(
+                    value: null,
                     child: Row(
-                      children: [
-                        _getIcon(c.icon, c.color),
-                        const SizedBox(width: 8),
-                        Text(c.name),
+                      children: const [
+                        Icon(Icons.add, color: Colors.grey),
+                        SizedBox(width: 8),
+                        Text(
+                          'Crear categoría...',
+                          style: TextStyle(color: Colors.grey),
+                        ),
                       ],
                     ),
-                  );
-                }).toList(),
+                  ),
+                ],
                 onChanged: (value) {
-                  setState(() => _selectedCategory = value);
+                  if (value == null && categories.isNotEmpty) {
+                    setState(() => _showCategoryCreator = true);
+                  } else {
+                    setState(() => _selectedCategory = value);
+                  }
                 },
                 validator: (value) => value == null ? 'Requerido' : null,
               ),
@@ -131,7 +250,8 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
               const SizedBox(height: 16),
               ListTile(
                 title: const Text('Fecha'),
-                subtitle: Text(DateFormat('dd/MM/yyyy').format(_selectedDate)),
+                subtitle:
+                    Text(DateFormat('dd/MM/yyyy').format(_selectedDate)),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: () async {
                   final picked = await showDatePicker(
@@ -163,9 +283,7 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
     if (_formKey.currentState?.validate() ?? false) {
       if (_selectedCategory == null) return;
 
-      ref
-          .read(financeProvider.notifier)
-          .addTransaction(
+      ref.read(financeProvider.notifier).addTransaction(
             title: _titleController.text,
             amount: double.parse(_amountController.text),
             date: _selectedDate,
@@ -211,13 +329,47 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
       case 'add_circle':
         iconData = Icons.add_circle;
         break;
+      case 'shopping_cart':
+        iconData = Icons.shopping_cart;
+        break;
+      case 'bolt':
+        iconData = Icons.bolt;
+        break;
+      case 'school':
+        iconData = Icons.school;
+        break;
+      case 'flight':
+        iconData = Icons.flight;
+        break;
+      case 'local_restaurant':
+        iconData = Icons.local_restaurant;
+        break;
+      case 'person':
+        iconData = Icons.person;
+        break;
+      case 'subscriptions':
+        iconData = Icons.subscriptions;
+        break;
+      case 'category':
+        iconData = Icons.category;
+        break;
+      case 'work':
+        iconData = Icons.work;
+        break;
+      case 'star':
+        iconData = Icons.star;
+        break;
       default:
         iconData = Icons.category;
     }
 
     return Icon(
       iconData,
-      color: Color(int.parse(colorHex.replaceFirst('#', 'FF'), radix: 16)),
+      color: Color(
+          int.parse(colorHex.replaceFirst('#', 'FF'), radix: 16)),
     );
   }
 }
+
+
+

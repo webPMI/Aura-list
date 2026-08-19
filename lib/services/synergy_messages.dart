@@ -214,3 +214,6 @@ List<({String guide1, String guide2, String message})> getAllSynergyPairs() {
 bool hasSynergyMessage(String guideId1, String guideId2) {
   return getSynergyMessage(guideId1, guideId2) != null;
 }
+
+
+

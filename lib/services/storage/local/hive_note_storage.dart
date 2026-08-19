@@ -528,3 +528,6 @@ class HiveNoteStorage implements ILocalStorage<Note> {
     }
   }
 }
+
+
+

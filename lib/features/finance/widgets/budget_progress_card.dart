@@ -41,19 +41,19 @@ class BudgetProgressCard extends StatelessWidget {
     if (percentage < 0.75) {
       // Verde: menos del 75%
       progressColor = Colors.green;
-      backgroundColor = Colors.green.withOpacity(0.1);
+      backgroundColor = Colors.green.withValues(alpha: 0.1);
       alertIcon = Icons.check_circle;
       alertMessage = null;
     } else if (percentage < 0.90) {
       // Amarillo: 75-90%
       progressColor = Colors.orange;
-      backgroundColor = Colors.orange.withOpacity(0.1);
+      backgroundColor = Colors.orange.withValues(alpha: 0.1);
       alertIcon = Icons.warning;
       alertMessage = 'Te acercas al límite del presupuesto';
     } else {
       // Rojo: más del 90%
       progressColor = Colors.red;
-      backgroundColor = Colors.red.withOpacity(0.1);
+      backgroundColor = Colors.red.withValues(alpha: 0.1);
       alertIcon = Icons.error;
       alertMessage = percentage >= 1.0
           ? 'Presupuesto excedido'
@@ -99,7 +99,7 @@ class BudgetProgressCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 child: LinearProgressIndicator(
                   value: percentage.clamp(0.0, 1.0),
-                  backgroundColor: Colors.grey.withOpacity(0.2),
+                  backgroundColor: Colors.grey.withValues(alpha: 0.2),
                   color: progressColor,
                   minHeight: 12,
                 ),
@@ -190,9 +190,9 @@ class BudgetProgressCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: progressColor.withOpacity(0.1),
+                    color: progressColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: progressColor.withOpacity(0.3)),
+                    border: Border.all(color: progressColor.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
@@ -227,8 +227,8 @@ class BudgetProgressCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
                           value: daysElapsed / totalDays,
-                          backgroundColor: Colors.grey.withOpacity(0.2),
-                          color: Colors.blue.withOpacity(0.5),
+                          backgroundColor: Colors.grey.withValues(alpha: 0.2),
+                          color: Colors.blue.withValues(alpha: 0.5),
                           minHeight: 4,
                         ),
                       ),
@@ -273,7 +273,7 @@ class _InfoChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -308,3 +308,6 @@ class _InfoChip extends StatelessWidget {
     );
   }
 }
+
+
+

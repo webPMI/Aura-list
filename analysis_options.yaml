@@ -15,6 +15,14 @@ analyzer:
     # This is necessary because Isar generates large integer IDs that exceed
     # JavaScript's safe integer range (±2^53), which is a known limitation
     avoid_js_rounded_ints: ignore
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
 
 linter:
   # The lint rules applied to this project can be customized in the

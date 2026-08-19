@@ -18,7 +18,7 @@ class Transaction extends HiveObject {
   late DateTime date;
 
   @HiveField(4)
-  late String categoryId;
+  String? categoryId;
 
   @HiveField(5)
   late FinanceCategoryType type;
@@ -43,12 +43,13 @@ class Transaction extends HiveObject {
     required this.title,
     required this.amount,
     required this.date,
-    required this.categoryId,
+    this.categoryId,
     required this.type,
     this.note,
     required this.createdAt,
     this.lastUpdatedAt,
     this.deleted = false,
+    this.deletedAt,
   });
 
   Map<String, dynamic> toFirestore() {
@@ -84,9 +85,15 @@ class Transaction extends HiveObject {
           ? DateTime.fromMillisecondsSinceEpoch(data['lastUpdatedAt'])
           : null,
       deleted: data['deleted'] ?? false,
+      deletedAt: data['deletedAt'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(data['deletedAt'])
+          : null,
     );
   }
 
   bool get isIncome => type == FinanceCategoryType.income;
   bool get isExpense => type == FinanceCategoryType.expense;
 }
+
+
+

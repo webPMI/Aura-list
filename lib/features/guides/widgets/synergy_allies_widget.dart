@@ -436,3 +436,6 @@ class SynergyInfoDialog extends StatelessWidget {
     );
   }
 }
+
+
+

@@ -127,3 +127,6 @@ const String termsSummaryEs = '''
 - Puedes eliminar tu cuenta y datos en cualquier momento
 - Nos reservamos el derecho de modificar el servicio
 ''';
+
+
+

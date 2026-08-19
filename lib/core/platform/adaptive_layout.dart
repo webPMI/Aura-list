@@ -364,3 +364,6 @@ extension AdaptiveLayoutExtension on BuildContext {
   /// Get adaptive compact padding
   EdgeInsets get adaptiveCompactPadding => AdaptivePadding.compact(this);
 }
+
+
+

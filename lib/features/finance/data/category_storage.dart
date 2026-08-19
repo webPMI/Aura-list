@@ -36,8 +36,25 @@ class CategoryStorage {
       _initialized = true;
 
       if (_box!.isEmpty) {
-        await _box!.addAll(FinanceCategory.defaultCategories);
+        final defaults = FinanceCategory.defaultCategories;
+        await _box!.putAll({for (final cat in defaults) cat.id: cat});
         _logger.debug('Finance', 'Seeded default finance categories');
+      } else {
+        // Migrate old integer-keyed entries to use category.id as key.
+        // This handles installations where categories were stored with
+        // Hive auto-incremented integer keys.
+        final entries = _box!.toMap();
+        final hasIntKey = entries.keys.any((k) => k is int);
+        if (hasIntKey) {
+          _logger.info('Finance', '[CategoryStorage] Migrating to id-keyed storage');
+          final allCats = entries.values.toList();
+          await _box!.clear();
+          await _box!.putAll({for (final cat in allCats) cat.id: cat});
+          _logger.info(
+            'Finance',
+            '[CategoryStorage] Migration complete: ${allCats.length} categories',
+          );
+        }
       }
     } catch (e, stack) {
       _errorHandler.handle(
@@ -81,11 +98,9 @@ class CategoryStorage {
         );
         return;
       }
-      if (category.isInBox) {
-        await category.save();
-      } else {
-        await _box!.add(category);
-      }
+      // Use category.id as the Hive key so that updates replace the existing
+      // entry and deletions by id work correctly.
+      await _box!.put(category.id, category);
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -117,3 +132,6 @@ class CategoryStorage {
     }
   }
 }
+
+
+

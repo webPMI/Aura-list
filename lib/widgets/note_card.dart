@@ -370,3 +370,6 @@ class CompactNoteCard extends StatelessWidget {
     );
   }
 }
+
+
+

@@ -126,7 +126,7 @@ class CashFlowChart extends StatelessWidget {
                                       projection.projectedBalance,
                                       projections,
                                     ),
-                                    backgroundColor: Colors.grey.withOpacity(0.2),
+                                    backgroundColor: Colors.grey.withValues(alpha: 0.2),
                                     color: isNegative ? Colors.red : Colors.green,
                                     minHeight: 8,
                                   ),
@@ -176,7 +176,7 @@ class CashFlowChart extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -192,7 +192,7 @@ class CashFlowChart extends StatelessWidget {
                   Container(
                     width: 1,
                     height: 40,
-                    color: Colors.grey.withOpacity(0.3),
+                    color: Colors.grey.withValues(alpha: 0.3),
                   ),
                   Expanded(
                     child: _SummaryItem(
@@ -251,9 +251,9 @@ class CashFlowChart extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.1),
+            color: Colors.red.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.red.withOpacity(0.3)),
+            border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
@@ -324,3 +324,6 @@ class _SummaryItem extends StatelessWidget {
     );
   }
 }
+
+
+

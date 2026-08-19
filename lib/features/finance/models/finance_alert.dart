@@ -166,3 +166,6 @@ class FinanceAlert extends HiveObject {
 
   bool get isActive => !isDismissed && !deleted;
 }
+
+
+

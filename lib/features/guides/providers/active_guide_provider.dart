@@ -49,3 +49,6 @@ final activeGuideProvider = Provider<Guide?>((ref) {
 final availableGuidesProvider = Provider<List<Guide>>((ref) {
   return kGuideCatalog;
 });
+
+
+

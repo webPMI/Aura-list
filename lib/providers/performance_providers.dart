@@ -175,3 +175,6 @@ final performanceSummaryProvider = Provider.autoDispose<Map<String, dynamic>>((
     'totalItems': dbService.lastIntegrityReport?.totalItems ?? 0,
   };
 });
+
+
+

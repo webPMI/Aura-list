@@ -66,7 +66,7 @@ class TransactionList extends ConsumerWidget {
           },
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: _getColor(category.color).withOpacity(0.1),
+              backgroundColor: _getColor(category.color).withValues(alpha: 0.1),
               child: Icon(
                 _getIconData(category.icon),
                 color: _getColor(category.color),
@@ -119,3 +119,6 @@ class TransactionList extends ConsumerWidget {
     }
   }
 }
+
+
+

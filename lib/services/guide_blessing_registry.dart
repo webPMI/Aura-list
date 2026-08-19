@@ -260,3 +260,6 @@ final Map<String, BlessingDefinition> kGuideBlessingRegistry = {
 
 /// Devuelve la definición de una bendición por ID, o null.
 BlessingDefinition? getBlessingById(String id) => kGuideBlessingRegistry[id];
+
+
+

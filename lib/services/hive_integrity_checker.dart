@@ -578,3 +578,6 @@ final allBoxesHealthyProvider = Provider<bool>((ref) {
   final checker = ref.watch(hiveIntegrityCheckerProvider);
   return checker.lastReport?.allHealthy ?? true;
 });
+
+
+

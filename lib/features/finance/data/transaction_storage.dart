@@ -77,11 +77,8 @@ class TransactionStorage {
         );
         return;
       }
-      if (transaction.isInBox) {
-        await transaction.save();
-      } else {
-        await _box!.add(transaction);
-      }
+      // Use transaction.id as Hive key for consistent lookups and deletions.
+      await _box!.put(transaction.id, transaction);
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -102,11 +99,12 @@ class TransactionStorage {
         );
         return;
       }
+      // Key is the transaction.id string; fetch directly by that key.
       final transaction = _box!.get(key);
       if (transaction != null) {
         transaction.deleted = true;
         transaction.deletedAt = DateTime.now();
-        await transaction.save();
+        await _box!.put(key, transaction);
       }
     } catch (e, stack) {
       _errorHandler.handle(
@@ -132,3 +130,6 @@ class TransactionStorage {
     }
   }
 }
+
+
+

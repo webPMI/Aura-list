@@ -82,7 +82,7 @@ class _BalanceCard extends StatelessWidget {
             Text(
               'Balance Total',
               style: theme.textTheme.titleMedium?.copyWith(
-                color: colorScheme.onPrimary.withOpacity(0.8),
+                color: colorScheme.onPrimary.withValues(alpha: 0.8),
               ),
             ),
             const SizedBox(height: 8),
@@ -147,7 +147,7 @@ class _SummaryItem extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
                 fontSize: 14,
               ),
             ),
@@ -218,7 +218,7 @@ class _MonthlySummary extends StatelessWidget {
             const SizedBox(height: 8),
             LinearProgressIndicator(
               value: expensePercent,
-              backgroundColor: Colors.grey.withOpacity(0.2),
+              backgroundColor: Colors.grey.withValues(alpha: 0.2),
               color: expensePercent > 0.8 ? Colors.red : Colors.blue,
               minHeight: 8,
               borderRadius: BorderRadius.circular(4),
@@ -229,3 +229,6 @@ class _MonthlySummary extends StatelessWidget {
     );
   }
 }
+
+
+

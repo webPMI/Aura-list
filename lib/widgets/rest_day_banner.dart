@@ -37,7 +37,7 @@ class RestDayBanner extends ConsumerWidget {
             ),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: colorScheme.primary.withOpacity(0.3),
+              color: colorScheme.primary.withValues(alpha: 0.3),
               width: 2,
             ),
           ),
@@ -46,7 +46,7 @@ class RestDayBanner extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.15),
+                  color: colorScheme.primary.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -71,7 +71,7 @@ class RestDayBanner extends ConsumerWidget {
                     Text(
                       'Las tareas son opcionales. El descanso también es productivo.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onPrimaryContainer.withOpacity(0.8),
+                        color: colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -81,7 +81,7 @@ class RestDayBanner extends ConsumerWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: colorScheme.primary.withOpacity(0.2),
+                        color: colorScheme.primary.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -116,3 +116,6 @@ class RestDayBanner extends ConsumerWidget {
     );
   }
 }
+
+
+

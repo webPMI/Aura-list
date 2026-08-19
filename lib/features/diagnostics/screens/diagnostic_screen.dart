@@ -90,9 +90,9 @@ class DiagnosticScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.1),
+              color: Colors.red.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: Colors.red.withOpacity(0.3)),
+              border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
             ),
             child: Text(
               lastError,
@@ -139,7 +139,7 @@ class DiagnosticScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: color.withValues(alpha: 0.05),
         border: Border(left: BorderSide(color: color, width: 4)),
       ),
       child: Column(
@@ -191,3 +191,6 @@ class DiagnosticScreen extends ConsumerWidget {
     );
   }
 }
+
+
+

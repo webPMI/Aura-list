@@ -191,3 +191,6 @@ class GuideSynergyService {
     return '${guide1.name} y ${guide2.name} observan tu camino desde perspectivas distintas.';
   }
 }
+
+
+

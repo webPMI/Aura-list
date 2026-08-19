@@ -33,11 +33,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Future<void> _initAuth() async {
-    // Auto-login anónimo si no hay usuario
-    final authService = ref.read(authServiceProvider);
-    if (authService.currentUser == null) {
-      await authService.signInAnonymously();
-    }
+    // Modo local por defecto si no hay usuario autenticado
   }
 
   Future<void> _updateSyncCount() async {
@@ -281,3 +277,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 }
+
+
+

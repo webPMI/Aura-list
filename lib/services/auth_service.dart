@@ -150,7 +150,12 @@ class AuthService {
     return _firebaseAvailable;
   }
 
+  /// Inicio de sesion anonimo desactivado.
   Future<UserCredential?> signInAnonymously() async {
+    // Autenticación anónima desactivada (no se usa en este proyecto)
+    _logger.info('AuthService', 'Inicio de sesión anónimo desactivado - modo local');
+    return null;
+    /*
     _ensureFirebaseAvailable();
 
     if (!_firebaseAvailable || _auth == null) {
@@ -158,71 +163,16 @@ class AuthService {
         'AuthService',
         'Firebase no configurado, omitiendo login anonimo',
       );
-      _logger.info('AuthService', 'La app funcionara en modo local (Hive)');
       return null;
     }
 
     try {
-      _logger.info('AuthService', 'Intentando login anonimo...');
-      final result =
-          null; //es null porqueno queremos auth anonimo await _auth!.signInAnonymously();
-      _logger.info('AuthService', 'Login anonimo exitoso: ${result.user?.uid}');
+      final result = await _auth!.signInAnonymously();
       return result;
-    } on FirebaseAuthException catch (e, stack) {
-      // Handle specific Firebase Auth errors
-      String userMessage = 'No se pudo iniciar sesión.';
-
-      switch (e.code) {
-        case 'operation-not-allowed':
-          _logger.error(
-            'AuthService',
-            'Autenticación anónima no está habilitada en Firebase Console',
-          );
-          userMessage =
-              'Autenticación anónima no habilitada. Contacta al administrador.';
-          break;
-        case 'network-request-failed':
-          _logger.error('AuthService', 'No hay conexión a Internet');
-          userMessage =
-              'Sin conexión a Internet. La app funcionará en modo local.';
-          break;
-        default:
-          _logger.error(
-            'AuthService',
-            'Firebase Auth error: ${e.code}',
-            metadata: {'message': e.message},
-          );
-          userMessage =
-              'Error de autenticación. La app funcionará en modo local.';
-      }
-
-      _errorHandler.handle(
-        e,
-        type: ErrorType.auth,
-        severity: e.code == 'network-request-failed'
-            ? ErrorSeverity.warning
-            : ErrorSeverity.error,
-        message: 'Error al iniciar sesión anónima: ${e.code}',
-        userMessage: userMessage,
-        stackTrace: stack,
-      );
-      return null;
-    } catch (e, stack) {
-      _logger.error(
-        'AuthService',
-        'Error inesperado en login anónimo',
-        error: e,
-      );
-      _errorHandler.handle(
-        e,
-        type: ErrorType.auth,
-        severity: ErrorSeverity.error,
-        message: 'Error inesperado al iniciar sesión anónima',
-        userMessage: 'La app funcionará en modo local.',
-        stackTrace: stack,
-      );
+    } catch (e) {
       return null;
     }
+    */
   }
 
   /// Cierra la sesion del usuario.
@@ -744,3 +694,6 @@ class AuthService {
   /// Check if the service has been disposed
   bool get isDisposed => _disposed;
 }
+
+
+

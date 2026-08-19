@@ -25,12 +25,11 @@ class OverdueTasksBanner extends ConsumerWidget {
         return _buildBanner(context, tasks);
       },
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 
   Widget _buildBanner(BuildContext context, List<Task> overdueTasks) {
-    final theme = Theme.of(context);
     final count = overdueTasks.length;
     final visibleTasks = overdueTasks.take(3).toList();
     final hasMore = overdueTasks.length > 3;
@@ -275,3 +274,6 @@ class OverdueTasksBanner extends ConsumerWidget {
     );
   }
 }
+
+
+

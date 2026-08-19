@@ -200,3 +200,6 @@ class RemoteConfigService {
   /// Check if Remote Config is available
   bool get isAvailable => _firebaseAvailable && _initialized;
 }
+
+
+

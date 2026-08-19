@@ -21,13 +21,14 @@ class TransactionAdapter extends TypeAdapter<Transaction> {
       title: fields[1] as String,
       amount: fields[2] as double,
       date: fields[3] as DateTime,
-      categoryId: fields[4] as String,
+      categoryId: fields[4] as String?,
       type: fields[5] as FinanceCategoryType,
       note: fields[6] as String?,
       createdAt: fields[7] as DateTime,
       lastUpdatedAt: fields[8] as DateTime?,
       deleted: fields[9] == null ? false : fields[9] as bool,
-    )..deletedAt = fields[10] as DateTime?;
+      deletedAt: fields[10] as DateTime?,
+    );
   }
 
   @override

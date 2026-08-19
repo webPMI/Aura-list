@@ -61,6 +61,12 @@ class FinanceNotifier extends StateNotifier<FinanceState> {
 
   Future<void> _init() async {
     try {
+      // Ensure DatabaseService has been initialized so all Hive adapters are
+      // registered before CategoryStorage / TransactionStorage attempt to open
+      // their typed boxes.
+      final dbService = _ref.read(databaseServiceProvider);
+      await dbService.init();
+
       await _repository.init();
 
       final categories = await _repository.getCategories();
@@ -109,7 +115,7 @@ class FinanceNotifier extends StateNotifier<FinanceState> {
     required String title,
     required double amount,
     required DateTime date,
-    required String categoryId,
+    String? categoryId,
     required FinanceCategoryType type,
     String? note,
   }) async {
@@ -143,6 +149,24 @@ class FinanceNotifier extends StateNotifier<FinanceState> {
     final user = authState.valueOrNull;
     final userId = user?.uid ?? '';
     await _repository.saveCategory(category, userId);
+    final categories = await _repository.getCategories();
+    state = state.copyWith(categories: categories);
+  }
+
+  Future<void> updateCategory(FinanceCategory category) async {
+    final authState = _ref.read(authStateProvider);
+    final user = authState.valueOrNull;
+    final userId = user?.uid ?? '';
+    await _repository.saveCategory(category, userId);
+    final categories = await _repository.getCategories();
+    state = state.copyWith(categories: categories);
+  }
+
+  Future<void> deleteCategory(dynamic key) async {
+    final authState = _ref.read(authStateProvider);
+    final user = authState.valueOrNull;
+    final userId = user?.uid ?? '';
+    await _repository.deleteCategory(key, userId);
     final categories = await _repository.getCategories();
     state = state.copyWith(categories: categories);
   }
@@ -251,3 +275,6 @@ final financeProvider = StateNotifierProvider<FinanceNotifier, FinanceState>((
     rethrow;
   }
 });
+
+
+

@@ -300,3 +300,6 @@ class NoteRepository implements INoteRepository {
     await _localStorage.close();
   }
 }
+
+
+

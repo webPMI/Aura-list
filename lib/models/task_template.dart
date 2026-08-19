@@ -334,3 +334,6 @@ class TaskTemplate extends HiveObject {
         (tags?.any((tag) => tag.toLowerCase().contains(lowerQuery)) ?? false);
   }
 }
+
+
+

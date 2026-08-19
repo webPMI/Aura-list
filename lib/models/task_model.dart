@@ -488,3 +488,6 @@ class Task extends HiveObject {
   // Alias for netFinancialImpact (requested name)
   double get netFinancialValue => netFinancialImpact ?? 0;
 }
+
+
+

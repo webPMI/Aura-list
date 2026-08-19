@@ -63,18 +63,9 @@ class AuthManager {
 
   // ==================== Operaciones Unificadas ====================
 
-  /// Login anonimo
+  /// Login anonimo (desactivado)
   Future<AuthResult> signInAnonymously() async {
-    try {
-      final result = await _authService.signInAnonymously();
-      if (result == null) {
-        return AuthResult.error('No se pudo iniciar sesion anonima');
-      }
-      return AuthResult.success();
-    } catch (e) {
-      _logger.error('AuthManager', 'Error en signInAnonymously', error: e);
-      return AuthResult.error('Error inesperado: $e');
-    }
+    return AuthResult.error('El inicio de sesión anónimo está desactivado');
   }
 
   /// Login con email/password (cuenta existente)
@@ -389,3 +380,6 @@ class AuthManager {
     }
   }
 }
+
+
+

@@ -21,7 +21,7 @@ class RecurringTransaction extends HiveObject {
 
   /// ID de la categoria de finanzas
   @HiveField(3)
-  late String categoryId;
+  String? categoryId;
 
   /// Tipo de transaccion (ingreso o gasto)
   @HiveField(4)
@@ -75,7 +75,7 @@ class RecurringTransaction extends HiveObject {
     required this.id,
     required this.title,
     required this.amount,
-    required this.categoryId,
+    this.categoryId,
     required this.type,
     required this.recurrence,
     this.autoGenerate = true,
@@ -230,3 +230,6 @@ class RecurringTransaction extends HiveObject {
         'type: $type, active: $active, recurrence: ${recurrence.toDisplayString()})';
   }
 }
+
+
+

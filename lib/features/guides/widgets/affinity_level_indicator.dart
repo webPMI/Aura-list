@@ -739,3 +739,6 @@ class _AffinityDetailsDialog extends StatelessWidget {
     );
   }
 }
+
+
+

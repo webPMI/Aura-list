@@ -131,7 +131,7 @@ void main() {
 
       expect(prefs.hasAcceptedAll, true);
       expect(prefs.notificationsEnabled, true);
-      expect(prefs.cloudSyncEnabled, false); // Default
+      expect(prefs.cloudSyncEnabled, true); // Default is true (enabled by default)
     });
 
     test('TaskHistory model can be created', () {

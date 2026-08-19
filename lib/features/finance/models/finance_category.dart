@@ -65,12 +65,20 @@ class FinanceCategory extends HiveObject {
   }
 
   static List<FinanceCategory> get defaultCategories => [
-    // Expenses
+    // --- Gastos (14) ---
     FinanceCategory(
       id: 'exp_food',
       name: 'Alimentación',
       icon: 'restaurant',
       color: '#FF7043',
+      type: FinanceCategoryType.expense,
+      isDefault: true,
+    ),
+    FinanceCategory(
+      id: 'exp_groceries',
+      name: 'Supermercado',
+      icon: 'shopping_cart',
+      color: '#FFB74D',
       type: FinanceCategoryType.expense,
       isDefault: true,
     ),
@@ -87,6 +95,14 @@ class FinanceCategory extends HiveObject {
       name: 'Vivienda',
       icon: 'home',
       color: '#66BB6A',
+      type: FinanceCategoryType.expense,
+      isDefault: true,
+    ),
+    FinanceCategory(
+      id: 'exp_utilities',
+      name: 'Servicios',
+      icon: 'bolt',
+      color: '#26A69A',
       type: FinanceCategoryType.expense,
       isDefault: true,
     ),
@@ -114,12 +130,68 @@ class FinanceCategory extends HiveObject {
       type: FinanceCategoryType.expense,
       isDefault: true,
     ),
-    // Incomes
+    FinanceCategory(
+      id: 'exp_education',
+      name: 'Educación',
+      icon: 'school',
+      color: '#5C6BC0',
+      type: FinanceCategoryType.expense,
+      isDefault: true,
+    ),
+    FinanceCategory(
+      id: 'exp_travel',
+      name: 'Viajes',
+      icon: 'flight',
+      color: '#29B6F6',
+      type: FinanceCategoryType.expense,
+      isDefault: true,
+    ),
+    FinanceCategory(
+      id: 'exp_dining',
+      name: 'Restaurantes',
+      icon: 'local_restaurant',
+      color: '#FF7043',
+      type: FinanceCategoryType.expense,
+      isDefault: true,
+    ),
+    FinanceCategory(
+      id: 'exp_personal',
+      name: 'Personal',
+      icon: 'person',
+      color: '#78909C',
+      type: FinanceCategoryType.expense,
+      isDefault: true,
+    ),
+    FinanceCategory(
+      id: 'exp_subscriptions',
+      name: 'Suscripciones',
+      icon: 'subscriptions',
+      color: '#26C6DA',
+      type: FinanceCategoryType.expense,
+      isDefault: true,
+    ),
+    FinanceCategory(
+      id: 'exp_other',
+      name: 'Otros Gastos',
+      icon: 'category',
+      color: '#9E9E9E',
+      type: FinanceCategoryType.expense,
+      isDefault: true,
+    ),
+    // --- Ingresos (6) ---
     FinanceCategory(
       id: 'inc_salary',
       name: 'Salario',
       icon: 'payments',
       color: '#4CAF50',
+      type: FinanceCategoryType.income,
+      isDefault: true,
+    ),
+    FinanceCategory(
+      id: 'inc_freelance',
+      name: 'Freelance',
+      icon: 'work',
+      color: '#66BB6A',
       type: FinanceCategoryType.income,
       isDefault: true,
     ),
@@ -140,6 +212,14 @@ class FinanceCategory extends HiveObject {
       isDefault: true,
     ),
     FinanceCategory(
+      id: 'inc_side_income',
+      name: 'Ingresos Extra',
+      icon: 'star',
+      color: '#FFCA28',
+      type: FinanceCategoryType.income,
+      isDefault: true,
+    ),
+    FinanceCategory(
       id: 'inc_other',
       name: 'Otros Ingresos',
       icon: 'add_circle',
@@ -149,3 +229,6 @@ class FinanceCategory extends HiveObject {
     ),
   ];
 }
+
+
+

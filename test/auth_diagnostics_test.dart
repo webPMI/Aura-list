@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:checklist_app/services/auth_service.dart';
 import 'package:checklist_app/services/auth_manager.dart';
 import 'package:checklist_app/services/database_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mocktail/mocktail.dart';
 
 // Mock classes using mocktail

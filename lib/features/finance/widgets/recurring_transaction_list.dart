@@ -161,8 +161,8 @@ class _RecurringTransactionTile extends StatelessWidget {
         child: ListTile(
           leading: CircleAvatar(
             backgroundColor: type == FinanceCategoryType.income
-                ? Colors.green.withOpacity(0.2)
-                : Colors.red.withOpacity(0.2),
+                ? Colors.green.withValues(alpha: 0.2)
+                : Colors.red.withValues(alpha: 0.2),
             child: Icon(
               type == FinanceCategoryType.income
                   ? Icons.arrow_upward
@@ -188,7 +188,7 @@ class _RecurringTransactionTile extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.2),
+                    color: Colors.orange.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Text(
@@ -218,7 +218,7 @@ class _RecurringTransactionTile extends StatelessWidget {
                 'Próxima: ${DateFormat('dd/MM/yyyy').format(nextOccurrence)}',
                 style: TextStyle(
                   fontSize: 12,
-                  color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                  color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -269,3 +269,6 @@ class _RecurringTransactionTile extends StatelessWidget {
     }
   }
 }
+
+
+

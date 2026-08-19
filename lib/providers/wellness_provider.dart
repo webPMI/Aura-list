@@ -692,3 +692,6 @@ final hasSuggestionBeenUsedProvider = Provider.autoDispose
       final state = ref.watch(wellnessProvider);
       return state.hasBeenUsed(suggestionId);
     });
+
+
+

@@ -36,3 +36,6 @@ final shouldShowWelcomeProvider = FutureProvider<bool>((ref) async {
   final hasSeenWelcome = await service.hasSeenWelcome();
   return !hasSeenWelcome;
 });
+
+
+

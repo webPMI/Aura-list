@@ -272,3 +272,6 @@ final checkDailyActivityProvider = Provider<Future<void> Function()>((ref) {
         .checkAndRecordDailyActivity();
   };
 });
+
+
+

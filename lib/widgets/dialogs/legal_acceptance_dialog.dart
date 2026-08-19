@@ -449,3 +449,6 @@ class _LegalAcceptanceDialogState extends ConsumerState<_LegalAcceptanceDialog>
     );
   }
 }
+
+
+

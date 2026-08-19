@@ -129,3 +129,6 @@ class CashFlowProjection extends HiveObject {
     return 1.0 - (variance.abs() / projectedBalance.abs()).clamp(0.0, 1.0);
   }
 }
+
+
+

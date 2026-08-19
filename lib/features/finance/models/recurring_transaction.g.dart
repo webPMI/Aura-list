@@ -20,7 +20,7 @@ class RecurringTransactionAdapter extends TypeAdapter<RecurringTransaction> {
       id: fields[0] as String,
       title: fields[1] as String,
       amount: fields[2] as double,
-      categoryId: fields[3] as String,
+      categoryId: fields[3] as String?,
       type: fields[4] as FinanceCategoryType,
       recurrence: fields[5] as RecurrenceRule,
       autoGenerate: fields[6] as bool,

@@ -12,7 +12,7 @@ final tasksProvider = StateNotifierProvider.family
       final dbService = ref.read(databaseServiceProvider);
       final authService = ref.read(authServiceProvider);
       final errorHandler = ref.read(errorHandlerProvider);
-      return TaskNotifier(dbService, authService, errorHandler, type, ref);
+      return TaskNotifier(dbService, authService, errorHandler, type);
     });
 
 class TaskNotifier extends StateNotifier<List<Task>> {
@@ -20,7 +20,6 @@ class TaskNotifier extends StateNotifier<List<Task>> {
   final AuthService _auth;
   final ErrorHandler _errorHandler;
   final String _type;
-  final Ref _ref;
   StreamSubscription? _subscription;
 
   TaskNotifier(
@@ -28,7 +27,6 @@ class TaskNotifier extends StateNotifier<List<Task>> {
     this._auth,
     this._errorHandler,
     this._type,
-    this._ref,
   ) : super([]) {
     _init();
   }
@@ -580,3 +578,6 @@ final filteredTasksProvider = Provider.autoDispose.family<List<Task>, String>((
     return titleMatch || categoryMatch || motivationMatch || rewardMatch;
   }).toList();
 });
+
+
+

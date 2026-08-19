@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_quill/flutter_quill.dart';
+// import 'package:flutter_quill/flutter_quill.dart'; // Temporarily disabled
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -195,7 +195,7 @@ class _ChecklistAppState extends ConsumerState<ChecklistApp> {
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
-          FlutterQuillLocalizations.delegate,
+          // FlutterQuillLocalizations.delegate, // Temporarily disabled
         ],
         supportedLocales: const [Locale('en', ''), Locale('es', '')],
         theme: ThemeData(
@@ -227,3 +227,6 @@ class _ChecklistAppState extends ConsumerState<ChecklistApp> {
     );
   }
 }
+
+
+

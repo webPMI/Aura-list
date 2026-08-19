@@ -60,7 +60,7 @@ class TaskFinancialImpactBadge extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.white.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -143,3 +143,6 @@ class TaskFinancialImpactBadge extends ConsumerWidget {
     }
   }
 }
+
+
+

@@ -25,7 +25,7 @@ class _RestDayTileState extends ConsumerState<RestDayTile> {
     final prefs = await dbService.getUserPreferences();
     if (mounted) {
       setState(() {
-        _selectedRestDay = prefs?.restDayOfWeek;
+        _selectedRestDay = prefs.restDayOfWeek;
         _isLoading = false;
       });
     }
@@ -35,27 +35,25 @@ class _RestDayTileState extends ConsumerState<RestDayTile> {
     final dbService = ref.read(databaseServiceProvider);
     final prefs = await dbService.getUserPreferences();
 
-    if (prefs != null) {
-      final updated = prefs.copyWith(restDayOfWeek: dayOfWeek);
-      updated.touch();
-      await updated.save();
+    final updated = prefs.copyWith(restDayOfWeek: dayOfWeek);
+    updated.touch();
+    await updated.save();
 
-      if (mounted) {
-        setState(() {
-          _selectedRestDay = dayOfWeek;
-        });
+    if (mounted) {
+      setState(() {
+        _selectedRestDay = dayOfWeek;
+      });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              dayOfWeek == null
-                  ? 'Dia de descanso desactivado'
-                  : 'Dia de descanso configurado: ${_getDayName(dayOfWeek)}',
-            ),
-            duration: const Duration(seconds: 2),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            dayOfWeek == null
+                ? 'Dia de descanso desactivado'
+                : 'Dia de descanso configurado: ${_getDayName(dayOfWeek)}',
           ),
-        );
-      }
+          duration: const Duration(seconds: 2),
+        ),
+      );
     }
   }
 
@@ -188,7 +186,7 @@ class _RestDayTileState extends ConsumerState<RestDayTile> {
             text,
             style: TextStyle(
               fontSize: 14,
-              color: colorScheme.onSurface.withOpacity(0.8),
+              color: colorScheme.onSurface.withValues(alpha: 0.8),
             ),
           ),
         ),
@@ -196,3 +194,6 @@ class _RestDayTileState extends ConsumerState<RestDayTile> {
     );
   }
 }
+
+
+

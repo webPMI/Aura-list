@@ -187,18 +187,14 @@ class AppBootstrap {
         authService.refreshFirebaseAvailability();
 
         if (authService.isFirebaseAvailable) {
-          User? user = authService.currentUser;
-
-          if (user == null) {
-            _logger.info('AppBootstrap', 'Iniciando sesion anonima...');
-            final result = await authService.signInAnonymously();
-            user = result?.user;
-          }
+          final User? user = authService.currentUser;
 
           if (user != null) {
             isAuthenticated = true;
             userId = user.uid;
             _logger.info('AppBootstrap', 'Usuario autenticado: $userId');
+          } else {
+            _logger.info('AppBootstrap', 'Sin sesión iniciada - modo local');
           }
         }
       }
@@ -396,3 +392,6 @@ final bootstrapResultProvider = FutureProvider<BootstrapResult>((ref) async {
     error: 'Bootstrap must be invoked from UI',
   );
 });
+
+
+

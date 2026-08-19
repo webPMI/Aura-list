@@ -96,3 +96,6 @@ class DrawerAwareAppBar extends StatelessWidget implements PreferredSizeWidget {
         kToolbarHeight + (bottom?.preferredSize.height ?? 0),
       );
 }
+
+
+

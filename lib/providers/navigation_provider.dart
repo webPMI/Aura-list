@@ -159,3 +159,6 @@ class NavigationHistoryNotifier extends StateNotifier<List<AppRoute>> {
 
   bool get canGoBack => state.length > 1;
 }
+
+
+

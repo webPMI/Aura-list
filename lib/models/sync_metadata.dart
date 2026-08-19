@@ -201,3 +201,6 @@ class SyncMetadata extends HiveObject {
         'syncAttempts: $syncAttempts)';
   }
 }
+
+
+

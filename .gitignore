@@ -94,9 +94,12 @@ LIMPIAR_USUARIOS*.md
 *.pyc
 __pycache__/
 
-# Node modules
+# Node modules and scripts (do not commit)
 node_modules/
+package.json
 package-lock.json
+preinstall.js
+*.backup
 
 # Temporary user exports
 users.json

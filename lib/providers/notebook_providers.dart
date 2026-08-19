@@ -144,3 +144,6 @@ final notebookByStringIdProvider = FutureProvider.family<Notebook?, String>((ref
   await localStorage.init();
   return localStorage.getByStringId(id);
 });
+
+
+

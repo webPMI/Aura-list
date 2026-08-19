@@ -4,7 +4,6 @@ import '../data/transaction_storage.dart';
 import '../services/category_sync_service.dart';
 import '../services/transaction_sync_service.dart';
 import '../../../services/error_handler.dart';
-import '../../../services/logger_service.dart';
 import '../models/finance_category.dart';
 import '../models/transaction.dart';
 
@@ -13,8 +12,6 @@ class FinanceRepository {
   final TransactionStorage _transactionStorage;
   final CategorySyncService _categorySync;
   final TransactionSyncService _transactionSync;
-  final ErrorHandler _errorHandler;
-  final _logger = LoggerService();
 
   bool _initialized = false;
 
@@ -23,12 +20,11 @@ class FinanceRepository {
     required TransactionStorage transactionStorage,
     required CategorySyncService categorySync,
     required TransactionSyncService transactionSync,
-    required ErrorHandler errorHandler,
+    ErrorHandler? errorHandler,
   }) : _categoryStorage = categoryStorage,
        _transactionStorage = transactionStorage,
        _categorySync = categorySync,
-       _transactionSync = transactionSync,
-       _errorHandler = errorHandler;
+       _transactionSync = transactionSync;
 
   Future<void> init() async {
     if (_initialized) return;
@@ -49,6 +45,11 @@ class FinanceRepository {
           .syncToCloudDebounced(category, userId)
           .handleErrorsOrNull(type: ErrorType.network);
     }
+  }
+
+  Future<void> deleteCategory(dynamic key, String userId) async {
+    await _categoryStorage.delete(key);
+    // Optionally sync deletion to cloud if needed
   }
 
   // Transactions
@@ -95,3 +96,6 @@ class FinanceRepository {
     await _transactionSync.performFullSync(userId);
   }
 }
+
+
+

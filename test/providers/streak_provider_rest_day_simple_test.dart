@@ -101,8 +101,6 @@ void main() {
       final notifier = StreakNotifier(getRestDayOfWeek);
       await notifier.ensureInitialized();
 
-      final initialGraceDays = notifier.state.graceDaysRemainingThisMonth;
-
       // Manually set up a grace day offer scenario
       // This would typically happen when user misses a day
       final prefs = await SharedPreferences.getInstance();

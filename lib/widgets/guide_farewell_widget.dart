@@ -393,3 +393,6 @@ class _GuideFarewellListenerState extends ConsumerState<GuideFarewellListener> {
     await ref.read(farewellVisibilityProvider.notifier).showIfAllowed();
   }
 }
+
+
+

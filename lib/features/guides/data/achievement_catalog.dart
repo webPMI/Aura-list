@@ -338,3 +338,6 @@ GuideAchievement? getAchievementById(String id) {
 List<GuideAchievement> getAchievementsByCategory(String category) {
   return kAchievementCatalog.where((a) => a.category == category).toList();
 }
+
+
+

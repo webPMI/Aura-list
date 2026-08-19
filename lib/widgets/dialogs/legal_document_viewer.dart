@@ -232,3 +232,6 @@ class _LegalDocumentDialog extends StatelessWidget {
     );
   }
 }
+
+
+

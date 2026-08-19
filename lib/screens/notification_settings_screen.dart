@@ -238,7 +238,7 @@ class _NotificationSettingsScreenState
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
-            error: (_, __) => const Text('Error'),
+            error: (_, _) => const Text('Error'),
           ),
         ),
         ListTile(
@@ -253,7 +253,7 @@ class _NotificationSettingsScreenState
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
-            error: (_, __) => const Icon(Icons.error, color: Colors.red),
+            error: (_, _) => const Icon(Icons.error, color: Colors.red),
           ),
         ),
       ],
@@ -294,8 +294,6 @@ class _NotificationSettingsScreenState
           ),
         );
       }
-    } catch (e) {
-      // Error already handled above
     }
   }
 
@@ -309,21 +307,26 @@ class _NotificationSettingsScreenState
     int? notificationQuietHourEnd,
     List<int>? notificationEscalationDays,
   }) async {
-    final db = ref.read(databaseServiceProvider);
-    final currentPrefs = await db.getUserPreferences();
-
-    final updatedPrefs = currentPrefs.copyWith(
-      notificationsEnabled: notificationsEnabled,
-      notificationDeadlineReminders: notificationDeadlineReminders,
-      notificationHighPriorityOnly: notificationHighPriorityOnly,
-      notificationSound: notificationSound,
-      notificationVibration: notificationVibration,
-      notificationQuietHourStart: notificationQuietHourStart,
-      notificationQuietHourEnd: notificationQuietHourEnd,
-      notificationEscalationDays: notificationEscalationDays,
+    final prefs = await ref.read(userPreferencesProvider.future);
+    final updated = prefs.copyWith(
+      notificationsEnabled: notificationsEnabled ?? prefs.notificationsEnabled,
+      notificationDeadlineReminders:
+          notificationDeadlineReminders ?? prefs.notificationDeadlineReminders,
+      notificationHighPriorityOnly:
+          notificationHighPriorityOnly ?? prefs.notificationHighPriorityOnly,
+      notificationSound: notificationSound ?? prefs.notificationSound,
+      notificationVibration:
+          notificationVibration ?? prefs.notificationVibration,
+      notificationQuietHourStart:
+          notificationQuietHourStart ?? prefs.notificationQuietHourStart,
+      notificationQuietHourEnd:
+          notificationQuietHourEnd ?? prefs.notificationQuietHourEnd,
+      notificationEscalationDays:
+          notificationEscalationDays ?? prefs.notificationEscalationDays,
     );
 
-    await db.saveUserPreferences(updatedPrefs);
+    await ref.read(databaseServiceProvider).saveUserPreferences(updated);
+    ref.invalidate(userPreferencesProvider);
   }
 
   String _formatHour(int hour) {
@@ -338,7 +341,7 @@ class _NotificationSettingsScreenState
     return sorted.map((d) => d == 0 ? 'El día' : '$d días antes').join(', ');
   }
 
-  Future<void> _selectQuietHourStart(prefs) async {
+  Future<void> _selectQuietHourStart(dynamic prefs) async {
     final time = await showTimePicker(
       context: context,
       initialTime: TimeOfDay(hour: prefs.notificationQuietHourStart, minute: 0),
@@ -350,7 +353,7 @@ class _NotificationSettingsScreenState
     }
   }
 
-  Future<void> _selectQuietHourEnd(prefs) async {
+  Future<void> _selectQuietHourEnd(dynamic prefs) async {
     final time = await showTimePicker(
       context: context,
       initialTime: TimeOfDay(hour: prefs.notificationQuietHourEnd, minute: 0),
@@ -362,7 +365,7 @@ class _NotificationSettingsScreenState
     }
   }
 
-  Future<void> _editEscalationDays(prefs) async {
+  Future<void> _editEscalationDays(dynamic prefs) async {
     final result = await showDialog<List<int>>(
       context: context,
       builder: (context) => _EscalationDaysDialog(
@@ -442,3 +445,6 @@ class _EscalationDaysDialogState extends State<_EscalationDaysDialog> {
     return '$day días antes';
   }
 }
+
+
+

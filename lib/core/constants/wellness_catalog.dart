@@ -3688,3 +3688,6 @@ class WellnessCatalog {
   /// Total de sugerencias disponibles
   static int get totalSuggestions => allSuggestions.length;
 }
+
+
+

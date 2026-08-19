@@ -1,8 +1,6 @@
 import '../data/category_storage.dart';
 import '../data/firestore_category_storage.dart';
-import '../../../services/error_handler.dart';
 import '../models/finance_category.dart';
-import '../../../services/contracts/i_sync_service.dart';
 import 'base_sync_service.dart';
 
 /// Adapter to make CategoryStorage compatible with BaseSyncStorage
@@ -83,18 +81,15 @@ class CategorySyncService extends BaseSyncService<FinanceCategory> {
   CategorySyncService({
     required CategoryStorage localStorage,
     required FirestoreCategoryStorage cloudStorage,
-    required ErrorHandler errorHandler,
-    required Future<bool> Function() isCloudSyncEnabled,
-    SyncConfig config = const SyncConfig(),
+    required super.errorHandler,
+    required super.isCloudSyncEnabled,
+    super.config,
   }) : _localStorage = localStorage,
        super(
          localStorage: _CategoryStorageAdapter(localStorage),
          cloudStorage: _FirestoreCategoryStorageAdapter(cloudStorage),
-         errorHandler: errorHandler,
-         isCloudSyncEnabled: isCloudSyncEnabled,
          queueBoxName: 'finance_category_sync_queue',
          deadLetterBoxName: 'finance_category_dead_letter',
-         config: config,
        );
 
   @override
@@ -104,3 +99,6 @@ class CategorySyncService extends BaseSyncService<FinanceCategory> {
     await _localStorage.save(cloudItem);
   }
 }
+
+
+

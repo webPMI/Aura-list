@@ -324,3 +324,6 @@ class UserPreferences extends HiveObject {
     lastUpdatedAt = DateTime.now();
   }
 }
+
+
+

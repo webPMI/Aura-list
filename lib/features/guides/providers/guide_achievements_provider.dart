@@ -539,3 +539,6 @@ final activeGuidePendingAchievementsProvider =
   final achievements = ref.watch(activeGuideAchievementsProvider);
   return achievements.where((a) => !a.isEarned).toList();
 });
+
+
+

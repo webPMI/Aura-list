@@ -186,14 +186,15 @@ class RecurringTransactionService {
     final frequency = _detectFrequency(intervals);
     if (frequency == null) return null;
 
+    // Verificar nivel de confianza mínimo
+    final confidence = _calculatePatternConfidence(intervals, sorted);
+    if (confidence < 0.5) return null;
+
     // Calcular monto promedio
     final avgAmount = group.fold<double>(
       0,
       (sum, t) => sum + t.amount,
     ) / group.length;
-
-    // Calcular nivel de confianza basado en consistencia
-    final confidence = _calculatePatternConfidence(intervals, group);
 
     // Usar la primera transacción como base
     final first = sorted.first;
@@ -455,3 +456,6 @@ class RecurringTransactionService {
   Future<List<RecurringTransaction>> getByCategory(String categoryId) =>
       _storage.getByCategory(categoryId);
 }
+
+
+

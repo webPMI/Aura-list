@@ -99,11 +99,10 @@ void main() {
                     children: [
                       const Text('Custom Error UI'),
                       Text(error.displayMessage),
-                      if (retry != null)
-                        ElevatedButton(
-                          onPressed: retry,
-                          child: const Text('Try Again'),
-                        ),
+                      ElevatedButton(
+                        onPressed: retry,
+                        child: const Text('Try Again'),
+                      ),
                     ],
                   );
                 },
@@ -150,6 +149,7 @@ void main() {
 
       // No error initially
       expect(find.text('Retry'), findsNothing);
+      expect(retryWasCalled, false);
     });
 
     testWidgets('ErrorCard displays error compactly',

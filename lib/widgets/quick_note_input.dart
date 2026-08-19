@@ -173,3 +173,6 @@ class _QuickNoteInputState extends ConsumerState<QuickNoteInput> {
     );
   }
 }
+
+
+

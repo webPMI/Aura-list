@@ -119,3 +119,6 @@ abstract class INotebookRepository extends IRepository<dynamic> {
   /// Create default notebook if not exists
   Future<void> ensureDefaultExists(String userId);
 }
+
+
+

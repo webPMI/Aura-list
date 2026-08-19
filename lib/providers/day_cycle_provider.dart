@@ -109,3 +109,6 @@ final farewellVisibilityProvider =
     StateNotifierProvider.autoDispose<FarewellVisibilityNotifier, bool>((ref) {
   return FarewellVisibilityNotifier(ref);
 });
+
+
+

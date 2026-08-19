@@ -132,3 +132,6 @@ extension LoggerWidgetRefExtension on WidgetRef {
     logger.error(tag, message, error: error, stack: stack, metadata: metadata);
   }
 }
+
+
+

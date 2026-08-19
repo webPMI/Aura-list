@@ -134,8 +134,9 @@ class _AddRecurringTransactionDialogState
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) return 'Requerido';
-                    if (double.tryParse(value) == null)
+                    if (double.tryParse(value) == null) {
                       return 'Número inválido';
+                    }
                     return null;
                   },
                 ),
@@ -427,3 +428,6 @@ class _AddRecurringTransactionDialogState
     }
   }
 }
+
+
+

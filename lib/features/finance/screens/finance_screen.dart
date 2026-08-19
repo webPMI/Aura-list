@@ -8,6 +8,7 @@ import '../widgets/recurring_transaction_list.dart';
 import '../widgets/budget_progress_card.dart';
 import '../providers/forecast_provider.dart';
 import '../providers/finance_provider.dart';
+import '../screens/categories_management_screen.dart';
 import 'budget_management_screen.dart';
 import 'forecast_screen.dart';
 
@@ -77,6 +78,30 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
             ),
             onPressed: () => _showAlerts(context),
             tooltip: 'Alertas',
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.category),
+            tooltip: 'Categorías',
+            onSelected: (value) {
+              if (value == 'categories') {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const CategoriesManagementScreen(),
+                  ),
+                );
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'categories',
+                child: ListTile(
+                  leading: Icon(Icons.category),
+                  title: Text('Gestionar categorías'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
           ),
         ],
         bottom: TabBar(
@@ -328,3 +353,6 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
     }
   }
 }
+
+
+

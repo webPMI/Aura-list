@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/auth_service.dart';
 import '../core/responsive/breakpoints.dart';
-import 'register_screen.dart';
-import '../widgets/dialogs/forgot_password_dialog.dart';
-import '../widgets/auth/unified_google_auth_button.dart';
+import '../widgets/auth/auth_form.dart';
 import '../features/diagnostics/screens/diagnostic_screen.dart';
 import 'main_scaffold.dart';
 
@@ -18,92 +15,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-
-  bool _isLoading = false;
-  bool _obscurePassword = true;
   String? _errorMessage;
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  String? _validateEmail(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'El correo es obligatorio';
-    }
-    final emailRegex = RegExp(r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}$');
-    if (!emailRegex.hasMatch(value)) {
-      return 'Ingresa un correo electronico valido';
-    }
-    return null;
-  }
-
-  String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'La contrasena es obligatoria';
-    }
-    if (value.length < 6) {
-      return 'Minimo 6 caracteres';
-    }
-    return null;
-  }
-
-  Future<void> _handleLogin() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final authService = ref.read(authServiceProvider);
-      final result = await authService.signInWithEmailPassword(
-        _emailController.text.trim(),
-        _passwordController.text,
-      );
-
-      if (mounted) {
-        if (result != null) {
-          // Login exitoso, navegar a la pantalla principal
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const MainScaffold()),
-          );
-        } else {
-          setState(() {
-            _errorMessage =
-                'Credenciales invalidas. Verifica tu correo y contrasena.';
-            _isLoading = false;
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'Error al iniciar sesion: $e';
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _showForgotPasswordDialog() async {
-    await showForgotPasswordDialog(context: context, ref: ref);
-  }
-
-  void _navigateToRegister() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => const RegisterScreen()));
-  }
 
   void _navigateToMainScreen() {
     // Navegar a la pantalla principal sin iniciar sesion (modo anonimo)
@@ -221,148 +133,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
 
-                  // Formulario
-                  Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        // Campo de email
-                        TextFormField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          textInputAction: TextInputAction.next,
-                          validator: _validateEmail,
-                          enabled: !_isLoading,
-                          decoration: InputDecoration(
-                            labelText: 'Correo electronico',
-                            hintText: 'tu@correo.com',
-                            prefixIcon: const Icon(Icons.email_outlined),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            filled: true,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Campo de contrasena
-                        TextFormField(
-                          controller: _passwordController,
-                          obscureText: _obscurePassword,
-                          textInputAction: TextInputAction.done,
-                          validator: _validatePassword,
-                          enabled: !_isLoading,
-                          onFieldSubmitted: (_) => _handleLogin(),
-                          decoration: InputDecoration(
-                            labelText: 'Contrasena',
-                            hintText: 'Minimo 6 caracteres',
-                            prefixIcon: const Icon(Icons.lock_outlined),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-                              ),
-                              onPressed: () {
-                                setState(
-                                  () => _obscurePassword = !_obscurePassword,
-                                );
-                              },
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            filled: true,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-
-                        // Olvidaste tu contrasena
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: _isLoading
-                                ? null
-                                : _showForgotPasswordDialog,
-                            child: Text(
-                              'Olvidaste tu contrasena?',
-                              style: TextStyle(
-                                color: colorScheme.primary,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Boton de iniciar sesion
-                        FilledButton.icon(
-                          onPressed: _isLoading ? null : _handleLogin,
-                          icon: _isLoading
-                              ? SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: colorScheme.onPrimary,
-                                  ),
-                                )
-                              : const Icon(Icons.login),
-                          label: Text(
-                            _isLoading
-                                ? 'Iniciando sesion...'
-                                : 'Iniciar sesion',
-                          ),
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.all(16),
-                            minimumSize: const Size(double.infinity, 56),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Divider
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Divider(
-                          color: Colors.grey.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          'o continua con',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Divider(
-                          color: Colors.grey.withValues(alpha: 0.3),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Boton de Google
-                  UnifiedGoogleAuthButton(
-                    customLabel: 'Continuar con Google',
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.all(16),
-                      minimumSize: const Size(double.infinity, 56),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
+                  // Formulario unificado de autenticacion
+                  AuthForm(
+                    mode: AuthMode.login,
                     onSuccess: () {
                       Navigator.of(context).pushReplacement(
                         MaterialPageRoute(
@@ -373,26 +146,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Registrarse
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'No tienes cuenta?',
-                        style: TextStyle(
-                          color: colorScheme.onSurface.withValues(alpha: 0.6),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: _isLoading ? null : _navigateToRegister,
-                        child: const Text('Registrate'),
-                      ),
-                    ],
-                  ),
-
                   // Continuar sin cuenta
                   TextButton(
-                    onPressed: _isLoading ? null : _navigateToMainScreen,
+                    onPressed: _navigateToMainScreen,
                     child: Text(
                       'Continuar sin cuenta',
                       style: TextStyle(
@@ -411,3 +167,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 }
+
+
+

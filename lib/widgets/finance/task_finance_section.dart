@@ -352,11 +352,33 @@ class _TaskFinanceSectionState extends ConsumerState<TaskFinanceSection> {
   }
 
   IconData _getIconData(String iconString) {
-    try {
-      final codePoint = int.parse(iconString);
-      return IconData(codePoint, fontFamily: 'MaterialIcons');
-    } catch (e) {
-      return Icons.attach_money;
+    switch (iconString) {
+      case 'restaurant':
+        return Icons.restaurant;
+      case 'directions_car':
+        return Icons.directions_car;
+      case 'home':
+        return Icons.home;
+      case 'movie':
+        return Icons.movie;
+      case 'medical_services':
+        return Icons.medical_services;
+      case 'shopping_bag':
+        return Icons.shopping_bag;
+      case 'shopping_cart':
+        return Icons.shopping_cart;
+      case 'payments':
+        return Icons.payments;
+      case 'work':
+        return Icons.work;
+      case 'trending_up':
+        return Icons.trending_up;
+      case 'redeem':
+        return Icons.redeem;
+      case 'star':
+        return Icons.star;
+      default:
+        return Icons.category;
     }
   }
 
@@ -368,3 +390,6 @@ class _TaskFinanceSectionState extends ConsumerState<TaskFinanceSection> {
     }
   }
 }
+
+
+

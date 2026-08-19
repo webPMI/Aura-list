@@ -16,7 +16,10 @@ final userPreferencesProvider = StreamProvider<UserPreferences>((ref) async* {
   // Note: the box name 'user_prefs' is hardcoded in DatabaseService
   final box = Hive.box<UserPreferences>('user_prefs');
 
-  await for (final event in box.watch()) {
+  await for (final _ in box.watch()) {
     yield await db.getUserPreferences();
   }
 });
+
+
+

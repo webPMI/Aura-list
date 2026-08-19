@@ -144,3 +144,6 @@ final noteSearchProvider = FutureProvider.family<List<Note>, String>((ref, query
   await localStorage.init();
   return localStorage.search(query);
 });
+
+
+

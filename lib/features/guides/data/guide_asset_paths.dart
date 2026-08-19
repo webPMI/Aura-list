@@ -37,3 +37,6 @@ class GuideAssetPaths {
   static List<String> allAvatarPaths(List<String> guideIds) =>
       guideIds.map(avatar).toList();
 }
+
+
+

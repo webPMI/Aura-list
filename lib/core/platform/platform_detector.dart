@@ -278,3 +278,6 @@ extension PlatformExtension on BuildContext {
   /// Get platform name
   String get platformName => PlatformDetector.platformName;
 }
+
+
+

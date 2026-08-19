@@ -8,7 +8,6 @@ import '../core/constants/legal/privacy_policy.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
 import 'main_scaffold.dart';
-import '../services/auth_service.dart';
 
 /// Pantalla de bienvenida que se muestra la primera vez que se abre la app
 /// Permite elegir entre iniciar sesion, registrarse o continuar sin cuenta
@@ -32,14 +31,7 @@ class WelcomeScreen extends ConsumerWidget {
   }
 
   Future<void> _continueWithoutAccount(BuildContext context, WidgetRef ref) async {
-    // Iniciar sesion anonima y navegar a la pantalla principal
-    final authService = ref.read(authServiceProvider);
-
-    // Si Firebase esta disponible, iniciar sesion anonima
-    if (authService.isFirebaseAvailable) {
-      await authService.signInAnonymously();
-    }
-
+    // Continuar en modo local sin crear cuenta
     if (context.mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
@@ -305,3 +297,6 @@ class _FeatureItem extends StatelessWidget {
     );
   }
 }
+
+
+

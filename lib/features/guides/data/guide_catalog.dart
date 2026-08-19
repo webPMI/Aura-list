@@ -353,3 +353,6 @@ Guide? getGuideById(String id) {
 /// IDs de todos los guías disponibles (para selector y validación).
 List<String> get availableGuideIds =>
     kGuideCatalog.map((g) => g.id).toList();
+
+
+

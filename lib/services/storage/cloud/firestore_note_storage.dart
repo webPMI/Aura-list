@@ -500,3 +500,6 @@ class FirestoreNoteStorage implements ICloudStorageWithTimeout<Note> {
     _checkFirebaseAvailability();
   }
 }
+
+
+

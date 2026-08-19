@@ -313,3 +313,6 @@ int getNextMilestone(int currentStreak) {
   // Si supero todos los hitos definidos, cada 100 dias mas
   return ((currentStreak ~/ 100) + 1) * 100;
 }
+
+
+
