@@ -2,33 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/finance_category.dart';
+import '../models/recurring_transaction.dart';
+import '../providers/forecast_provider.dart';
+import 'unified_transaction_dialog.dart';
 
-/// Lista de transacciones recurrentes con acciones de swipe
+/// Lista reactiva de transacciones recurrentes conectada al estado real.
 class RecurringTransactionList extends ConsumerWidget {
   const RecurringTransactionList({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // TODO: Conectar con provider de transacciones recurrentes cuando esté disponible
-    // final recurringTransactions = ref.watch(recurringTransactionsProvider);
+    final forecastState = ref.watch(forecastProvider);
+    final recurringList = forecastState.activeRecurring;
 
-    // Datos de ejemplo mientras se implementa el provider
-    final exampleRecurringTransactions = <Map<String, dynamic>>[];
-
-    if (exampleRecurringTransactions.isEmpty) {
-      return const Center(
+    if (recurringList.isEmpty) {
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
+              const Icon(
                 Icons.repeat,
                 size: 64,
                 color: Colors.grey,
               ),
-              SizedBox(height: 16),
-              Text(
+              const SizedBox(height: 16),
+              const Text(
                 'Sin transacciones recurrentes',
                 style: TextStyle(
                   fontSize: 18,
@@ -36,14 +36,25 @@ class RecurringTransactionList extends ConsumerWidget {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              SizedBox(height: 8),
-              Text(
-                'Toca + para agregar una transacción recurrente',
+              const SizedBox(height: 8),
+              const Text(
+                'Programa gastos o ingresos recurrentes diarios, semanales o mensuales.',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey,
                 ),
                 textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => const UnifiedTransactionDialog(),
+                  );
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Programar Recurrente'),
               ),
             ],
           ),
@@ -52,210 +63,32 @@ class RecurringTransactionList extends ConsumerWidget {
     }
 
     return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: exampleRecurringTransactions.length,
+      padding: const EdgeInsets.all(16),
+      itemCount: recurringList.length,
       itemBuilder: (context, index) {
-        final transaction = exampleRecurringTransactions[index];
+        final item = recurringList[index];
         return _RecurringTransactionTile(
-          transaction: transaction,
-          onEdit: () => _showEditDialog(context, transaction),
-          onPause: () => _pauseTransaction(transaction),
-          onDelete: () => _deleteTransaction(context, transaction),
+          item: item,
+          onDelete: () => ref.read(forecastProvider.notifier).deleteRecurringTransaction(item.id),
         );
       },
     );
   }
-
-  void _showEditDialog(BuildContext context, Map<String, dynamic> transaction) {
-    // TODO: Abrir dialog de edición
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Editar transacción recurrente')),
-    );
-  }
-
-  void _pauseTransaction(Map<String, dynamic> transaction) {
-    // TODO: Pausar transacción recurrente
-  }
-
-  void _deleteTransaction(BuildContext context, Map<String, dynamic> transaction) {
-    // TODO: Eliminar transacción recurrente
-  }
 }
 
-/// Tile individual para transacción recurrente con swipe actions
+/// Tile para mostrar cada transacción recurrente activa
 class _RecurringTransactionTile extends StatelessWidget {
-  final Map<String, dynamic> transaction;
-  final VoidCallback onEdit;
-  final VoidCallback onPause;
+  final RecurringTransaction item;
   final VoidCallback onDelete;
 
   const _RecurringTransactionTile({
-    required this.transaction,
-    required this.onEdit,
-    required this.onPause,
+    required this.item,
     required this.onDelete,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final currencyFormat = NumberFormat.simpleCurrency(locale: 'es_ES');
-
-    final title = transaction['title'] as String? ?? 'Sin título';
-    final amount = transaction['amount'] as double? ?? 0.0;
-    final type = transaction['type'] as FinanceCategoryType? ?? FinanceCategoryType.expense;
-    final frequency = transaction['frequency'] as String? ?? 'monthly';
-    final nextOccurrence = transaction['nextOccurrence'] as DateTime? ?? DateTime.now();
-    final isPaused = transaction['isPaused'] as bool? ?? false;
-
-    return Dismissible(
-      key: Key(transaction['id']?.toString() ?? 'recurring_${DateTime.now().millisecondsSinceEpoch}'),
-      background: Container(
-        color: Colors.blue,
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: const Icon(Icons.edit, color: Colors.white),
-      ),
-      secondaryBackground: Container(
-        color: Colors.red,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
-      confirmDismiss: (direction) async {
-        if (direction == DismissDirection.startToEnd) {
-          onEdit();
-          return false;
-        } else {
-          return await showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Eliminar transacción recurrente'),
-              content: const Text('¿Estás seguro de que deseas eliminar esta transacción recurrente?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Cancelar'),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Eliminar'),
-                ),
-              ],
-            ),
-          );
-        }
-      },
-      onDismissed: (direction) {
-        if (direction == DismissDirection.endToStart) {
-          onDelete();
-        }
-      },
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        child: ListTile(
-          leading: CircleAvatar(
-            backgroundColor: type == FinanceCategoryType.income
-                ? Colors.green.withValues(alpha: 0.2)
-                : Colors.red.withValues(alpha: 0.2),
-            child: Icon(
-              type == FinanceCategoryType.income
-                  ? Icons.arrow_upward
-                  : Icons.arrow_downward,
-              color: type == FinanceCategoryType.income
-                  ? Colors.green
-                  : Colors.red,
-            ),
-          ),
-          title: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    decoration: isPaused ? TextDecoration.lineThrough : null,
-                    color: isPaused ? Colors.grey : null,
-                  ),
-                ),
-              ),
-              if (isPaused)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'Pausada',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.orange,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 4),
-              Text(
-                _getFrequencyText(frequency),
-                style: TextStyle(
-                  fontSize: 13,
-                  color: theme.textTheme.bodySmall?.color,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'Próxima: ${DateFormat('dd/MM/yyyy').format(nextOccurrence)}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
-                ),
-              ),
-            ],
-          ),
-          trailing: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                currencyFormat.format(amount),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: type == FinanceCategoryType.income
-                      ? Colors.green
-                      : Colors.red,
-                ),
-              ),
-              IconButton(
-                icon: Icon(
-                  isPaused ? Icons.play_arrow : Icons.pause,
-                  size: 20,
-                ),
-                onPressed: onPause,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-            ],
-          ),
-          onTap: onEdit,
-        ),
-      ),
-    );
-  }
-
-  String _getFrequencyText(String frequency) {
-    switch (frequency) {
+  String _formatFrequency(RecurringTransaction rt) {
+    final freq = rt.recurrence.frequency.name;
+    switch (freq) {
       case 'daily':
         return 'Diario';
       case 'weekly':
@@ -265,10 +98,96 @@ class _RecurringTransactionTile extends StatelessWidget {
       case 'yearly':
         return 'Anual';
       default:
-        return frequency;
+        return 'Recurrente';
     }
   }
+
+  @override
+  Widget build(BuildContext context) {
+    final currencyFormat = NumberFormat.simpleCurrency(locale: 'es_ES');
+    final isIncome = item.type == FinanceCategoryType.income;
+    final color = isIncome ? Colors.green : Colors.red;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: color.withAlpha(30),
+          child: Icon(
+            isIncome ? Icons.arrow_upward : Icons.arrow_downward,
+            color: color,
+          ),
+        ),
+        title: Text(
+          item.title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                _formatFrequency(item),
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade800, fontWeight: FontWeight.w600),
+              ),
+            ),
+            if (item.note != null) ...[
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  item.note!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ),
+            ],
+          ],
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '${isIncome ? '+' : '-'}${currencyFormat.format(item.amount)}',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Eliminar recurrencia'),
+                    content: Text('¿Deseas eliminar la regla recurrente "${item.title}"?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Cancelar'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                        child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) onDelete();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
-
-
-

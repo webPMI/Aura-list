@@ -62,7 +62,7 @@ class TransactionList extends ConsumerWidget {
           onDismissed: (_) {
             ref
                 .read(financeProvider.notifier)
-                .deleteTransaction(transaction.key);
+                .deleteTransaction(transaction.id);
           },
           child: ListTile(
             leading: CircleAvatar(

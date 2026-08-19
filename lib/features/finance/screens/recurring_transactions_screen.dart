@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/forecast_provider.dart';
 import '../widgets/recurring_transaction_list.dart';
-import '../widgets/add_recurring_transaction_dialog.dart';
+import '../widgets/unified_transaction_dialog.dart';
 
 /// Pantalla de gestión de transacciones recurrentes.
 /// Permite ver, crear, editar y eliminar transacciones recurrentes.
@@ -79,7 +79,7 @@ class RecurringTransactionsScreen extends ConsumerWidget {
   void _showAddDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => const AddRecurringTransactionDialog(),
+      builder: (context) => const UnifiedTransactionDialog(),
     );
   }
 

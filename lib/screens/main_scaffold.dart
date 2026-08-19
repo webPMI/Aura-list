@@ -17,7 +17,7 @@ import 'calendar_screen.dart';
 import 'settings_screen.dart';
 import 'profile_screen.dart';
 import '../features/finance/screens/finance_screen.dart';
-import '../features/finance/widgets/add_transaction_dialog.dart';
+import '../features/finance/widgets/unified_transaction_dialog.dart';
 import '../features/guides/providers/guide_onboarding_provider.dart';
 
 import '../features/guides/widgets/guide_intro_modal.dart';
@@ -167,7 +167,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
           HapticFeedback.mediumImpact();
           showDialog(
             context: context,
-            builder: (context) => const AddTransactionDialog(),
+            builder: (context) => const UnifiedTransactionDialog(),
           );
         },
         backgroundColor: colorScheme.secondary,
