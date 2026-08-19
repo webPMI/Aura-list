@@ -4,6 +4,7 @@ import '../core/responsive/breakpoints.dart';
 import '../widgets/auth/auth_form.dart';
 import '../features/diagnostics/screens/diagnostic_screen.dart';
 import 'main_scaffold.dart';
+import 'register_screen.dart';
 
 /// Pantalla de inicio de sesion con email y contrasena
 /// Tambien permite inicio de sesion con Google
@@ -144,7 +145,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       );
                     },
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
+
+                  // Enlace a registro
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '¿No tienes una cuenta?',
+                        style: TextStyle(
+                          color: colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const RegisterScreen(),
+                            ),
+                          );
+                        },
+                        child: const Text('Regístrate'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
 
                   // Continuar sin cuenta
                   TextButton(

@@ -103,6 +103,40 @@ class AuthManager {
     }
   }
 
+  /// Registro de nueva cuenta con email/password
+  Future<AuthResult> registerWithEmailPassword(
+    String email,
+    String password,
+  ) async {
+    try {
+      final result = await _authService.registerWithEmailPassword(
+        email,
+        password,
+      );
+      if (result == null) {
+        if (!_authService.isFirebaseAvailable) {
+          return AuthResult.error('Firebase no disponible en este momento');
+        }
+        return AuthResult.error('No se pudo crear la cuenta');
+      }
+
+      // Activar sync automáticamente tras registrarse
+      await _enableSyncAfterAuth();
+
+      return AuthResult.success();
+    } catch (e) {
+      _logger.error(
+        'AuthManager',
+        'Error en registerWithEmailPassword',
+        error: e,
+      );
+      if (e is FirebaseAuthException) {
+        return AuthResult.error(_getAuthErrorMessage(e.code));
+      }
+      return AuthResult.error('Error al crear la cuenta');
+    }
+  }
+
   /// Login con Google (directo, no vinculacion)
   Future<AuthResult> signInWithGoogle() async {
     try {

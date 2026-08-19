@@ -64,6 +64,12 @@ class MockAuthService implements AuthService {
   ) async => null;
 
   @override
+  Future<UserCredential?> registerWithEmailPassword(
+    String email,
+    String password,
+  ) async => null;
+
+  @override
   Future<UserCredential?> signInWithGoogle() async => null;
 
   @override

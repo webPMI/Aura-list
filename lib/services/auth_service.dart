@@ -611,6 +611,69 @@ class AuthService {
     }
   }
 
+  /// Registrar una nueva cuenta con email y contraseña
+  Future<UserCredential?> registerWithEmailPassword(
+    String email,
+    String password,
+  ) async {
+    _ensureFirebaseAvailable();
+    if (!_firebaseAvailable || _auth == null) {
+      _errorHandler.handle(
+        'Firebase no disponible',
+        type: ErrorType.auth,
+        severity: ErrorSeverity.error,
+        userMessage: 'Servicio no disponible en este momento',
+      );
+      return null;
+    }
+
+    try {
+      final credential = await _auth!.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      _logger.info('AuthService', 'Cuenta creada exitosamente para: $email');
+      return credential;
+    } on FirebaseAuthException catch (e, stack) {
+      String userMessage = 'No se pudo crear la cuenta';
+
+      switch (e.code) {
+        case 'email-already-in-use':
+          userMessage = 'Este correo ya está registrado. Inicia sesión.';
+          break;
+        case 'weak-password':
+          userMessage = 'La contraseña es demasiado débil';
+          break;
+        case 'invalid-email':
+          userMessage = 'El correo electrónico no es válido';
+          break;
+        case 'operation-not-allowed':
+          userMessage = 'El registro con email/contraseña no está habilitado';
+          break;
+      }
+
+      _errorHandler.handle(
+        e,
+        type: ErrorType.auth,
+        severity: ErrorSeverity.error,
+        message: 'Error al registrar usuario: ${e.code}',
+        userMessage: userMessage,
+        stackTrace: stack,
+      );
+      return null;
+    } catch (e, stack) {
+      _errorHandler.handle(
+        e,
+        type: ErrorType.auth,
+        severity: ErrorSeverity.error,
+        message: 'Error inesperado al registrar usuario',
+        userMessage: 'Ocurrió un error inesperado al registrar la cuenta',
+        stackTrace: stack,
+      );
+      return null;
+    }
+  }
+
   /// Sign in with Google (for existing linked accounts)
   Future<UserCredential?> signInWithGoogle() async {
     return await _googleSignIn.signInWithGoogle();

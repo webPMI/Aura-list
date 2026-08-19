@@ -162,8 +162,14 @@ class _AuthFormState extends ConsumerState<AuthForm> {
           email,
           password,
         ),
-        AuthMode.register || AuthMode.link =>
-          await authManager.linkWithEmailPassword(email, password),
+        AuthMode.register => await authManager.registerWithEmailPassword(
+          email,
+          password,
+        ),
+        AuthMode.link => await authManager.linkWithEmailPassword(
+          email,
+          password,
+        ),
       };
 
       if (!mounted) return;
