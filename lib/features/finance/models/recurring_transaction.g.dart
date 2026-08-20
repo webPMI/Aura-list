@@ -33,13 +33,21 @@ class RecurringTransactionAdapter extends TypeAdapter<RecurringTransaction> {
       deleted: fields[13] == null ? false : fields[13] as bool,
       deletedAt: fields[14] as DateTime?,
       firestoreId: fields[15] as String?,
+      totalInstallments: fields[16] as int?,
+      paidInstallments: fields[17] == null ? 0 : fields[17] as int,
+      deferredInstallments: fields[18] == null ? 0 : fields[18] as int,
+      installmentPaymentModeStr:
+          fields[19] == null ? 'automatic' : fields[19] as String,
+      paymentDateHistory: fields[20] == null
+          ? []
+          : (fields[20] as List).cast<int>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, RecurringTransaction obj) {
     writer
-      ..writeByte(16)
+      ..writeByte(21)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -71,7 +79,17 @@ class RecurringTransactionAdapter extends TypeAdapter<RecurringTransaction> {
       ..writeByte(14)
       ..write(obj.deletedAt)
       ..writeByte(15)
-      ..write(obj.firestoreId);
+      ..write(obj.firestoreId)
+      ..writeByte(16)
+      ..write(obj.totalInstallments)
+      ..writeByte(17)
+      ..write(obj.paidInstallments)
+      ..writeByte(18)
+      ..write(obj.deferredInstallments)
+      ..writeByte(19)
+      ..write(obj.installmentPaymentModeStr)
+      ..writeByte(20)
+      ..write(obj.paymentDateHistory);
   }
 
   @override

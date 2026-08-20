@@ -283,6 +283,76 @@ class ForecastNotifier extends StateNotifier<ForecastState> {
     }
   }
 
+  /// Registra el pago de una cuota (modo manual o confirmación manual).
+  /// Incrementa el contador de cuotas y, si se completaron todas, desactiva la recurrencia.
+  Future<void> payInstallment(RecurringTransaction transaction) async {
+    try {
+      final newPaid = transaction.paidInstallments + 1;
+      final history = List<int>.from(transaction.paymentDateHistory)
+        ..add(DateTime.now().millisecondsSinceEpoch);
+
+      final bool nowComplete = transaction.totalInstallments != null &&
+          newPaid >= transaction.totalInstallments!;
+
+      final updated = transaction.copyWith(
+        paidInstallments: newPaid,
+        paymentDateHistory: history,
+        lastGenerated: DateTime.now(),
+        active: !nowComplete,
+        lastUpdatedAt: DateTime.now(),
+      );
+      await _recurringStorage.save(updated);
+    } catch (e, stack) {
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al registrar pago de cuota',
+        stackTrace: stack,
+      );
+    }
+  }
+
+  /// Aplaza una cuota al siguiente período (no la paga, incrementa deferredInstallments).
+  Future<void> deferInstallment(RecurringTransaction transaction) async {
+    try {
+      final updated = transaction.copyWith(
+        deferredInstallments: transaction.deferredInstallments + 1,
+        lastUpdatedAt: DateTime.now(),
+      );
+      await _recurringStorage.save(updated);
+    } catch (e, stack) {
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al aplazar cuota',
+        stackTrace: stack,
+      );
+    }
+  }
+
+  /// Omite una cuota (la marca como saltada sin pagar ni aplazar).
+  /// Avanza el contador como si se hubiera pagado para no bloquear el flujo.
+  Future<void> skipInstallment(RecurringTransaction transaction) async {
+    try {
+      final newPaid = transaction.paidInstallments + 1;
+      final bool nowComplete = transaction.totalInstallments != null &&
+          newPaid >= transaction.totalInstallments!;
+      final updated = transaction.copyWith(
+        paidInstallments: newPaid,
+        active: !nowComplete,
+        lastUpdatedAt: DateTime.now(),
+      );
+      await _recurringStorage.save(updated);
+    } catch (e, stack) {
+      _errorHandler.handle(
+        e,
+        type: ErrorType.database,
+        message: 'Error al omitir cuota',
+        stackTrace: stack,
+      );
+    }
+  }
+
   /// Agrega un presupuesto.
   Future<void> addBudget(Budget budget) async {
     try {

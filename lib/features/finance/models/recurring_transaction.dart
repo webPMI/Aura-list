@@ -4,6 +4,22 @@ import 'finance_category.dart';
 
 part 'recurring_transaction.g.dart';
 
+/// Modo de pago de una cuota
+enum InstallmentPaymentMode {
+  /// El sistema genera la transacción automáticamente al llegar la fecha
+  automatic,
+  /// El usuario confirma manualmente el pago
+  manual,
+}
+
+/// Estado de una cuota individual
+enum InstallmentStatus {
+  pending,   // Pendiente de pago
+  paid,      // Pagada
+  deferred,  // Aplazada (se pospuso al siguiente periodo)
+  skipped,   // Omitida (no se pagará)
+}
+
 /// Transaccion recurrente que se genera automaticamente segun una regla de recurrencia.
 @HiveType(typeId: 17)
 class RecurringTransaction extends HiveObject {
@@ -71,6 +87,26 @@ class RecurringTransaction extends HiveObject {
   @HiveField(15)
   String? firestoreId;
 
+  /// Número total de cuotas (null = indefinido)
+  @HiveField(16)
+  int? totalInstallments;
+
+  /// Número de cuotas ya registradas/pagadas
+  @HiveField(17, defaultValue: 0)
+  int paidInstallments;
+
+  /// Número de cuotas aplazadas (no pagadas a tiempo)
+  @HiveField(18, defaultValue: 0)
+  int deferredInstallments;
+
+  /// Modo de pago de cuotas (auto o manual)
+  @HiveField(19)
+  String installmentPaymentModeStr;
+
+  /// Historial de fechas de pago efectivo (serializado como lista de milisegundos)
+  @HiveField(20)
+  List<int> paymentDateHistory;
+
   RecurringTransaction({
     required this.id,
     required this.title,
@@ -88,7 +124,12 @@ class RecurringTransaction extends HiveObject {
     this.deleted = false,
     this.deletedAt,
     this.firestoreId,
-  });
+    this.totalInstallments,
+    this.paidInstallments = 0,
+    this.deferredInstallments = 0,
+    this.installmentPaymentModeStr = 'automatic',
+    List<int>? paymentDateHistory,
+  }) : paymentDateHistory = paymentDateHistory ?? [];
 
   /// Calcula la proxima ocurrencia de esta transaccion recurrente.
   /// Retorna null si no hay mas ocurrencias o si esta inactiva.
@@ -132,6 +173,77 @@ class RecurringTransaction extends HiveObject {
   /// Obtiene la frecuencia de la recurrencia.
   String get frequency => recurrence.frequency.name;
 
+  // ─────────────── CUOTAS / INSTALLMENTS ───────────────
+
+  /// Si tiene un número fijo de cuotas (no es indefinida).
+  bool get hasFixedInstallments => totalInstallments != null;
+
+  /// Si se han completado todas las cuotas.
+  bool get isCompleted =>
+      hasFixedInstallments && paidInstallments >= totalInstallments!;
+
+  /// Cuotas pendientes de pago.
+  int? get remainingInstallments => hasFixedInstallments
+      ? (totalInstallments! - paidInstallments).clamp(0, totalInstallments!)
+      : null;
+
+  /// Monto total del compromiso (si tiene cuotas fijas).
+  double? get totalAmount =>
+      hasFixedInstallments ? totalInstallments! * amount : null;
+
+  /// Monto total que queda por pagar.
+  double? get remainingAmount =>
+      remainingInstallments != null ? remainingInstallments! * amount : null;
+
+  /// Monto ya pagado.
+  double get paidAmount => paidInstallments * amount;
+
+  /// Progreso de pago (0.0 a 1.0).
+  double get installmentProgress => hasFixedInstallments && totalInstallments! > 0
+      ? (paidInstallments / totalInstallments!).clamp(0.0, 1.0)
+      : 0.0;
+
+  /// Modo de pago como enum.
+  InstallmentPaymentMode get paymentMode =>
+      installmentPaymentModeStr == 'manual'
+          ? InstallmentPaymentMode.manual
+          : InstallmentPaymentMode.automatic;
+
+  /// Fecha estimada de finalización calculada dinámicamente.
+  DateTime? get expectedEndDate {
+    if (!hasFixedInstallments) return null;
+    final remaining = remainingInstallments!;
+    if (remaining <= 0) return lastGenerated;
+
+    DateTime cursor = lastGenerated ?? recurrence.startDate;
+    for (int i = 0; i < remaining; i++) {
+      final next = recurrence.nextOccurrence(cursor.add(const Duration(days: 1)));
+      if (next == null) break;
+      cursor = next;
+    }
+    return cursor;
+  }
+
+  /// Descripción compacta del estado de cuotas.
+  String get installmentSummary {
+    if (!hasFixedInstallments) return 'Indefinido';
+    if (isCompleted) return '✅ Completado ($totalInstallments cuotas)';
+    return 'Cuota ${paidInstallments + 1} de $totalInstallments';
+  }
+
+  /// Lista de fechas de pago como DateTime.
+  List<DateTime> get paymentDates =>
+      paymentDateHistory.map((ms) => DateTime.fromMillisecondsSinceEpoch(ms)).toList();
+
+  /// Si tiene cuotas con modo manual y hay cuotas pendientes hoy o vencidas.
+  bool get hasPendingManualPayment {
+    if (!hasFixedInstallments || isCompleted) return false;
+    if (paymentMode != InstallmentPaymentMode.manual) return false;
+    final next = nextOccurrence();
+    if (next == null) return false;
+    return DateTime.now().isAfter(next) || _isSameDay(DateTime.now(), next);
+  }
+
   /// Copia con campos modificados.
   RecurringTransaction copyWith({
     String? id,
@@ -153,6 +265,11 @@ class RecurringTransaction extends HiveObject {
     DateTime? deletedAt,
     String? firestoreId,
     bool clearFirestoreId = false,
+    Object? totalInstallments = _sentinel,
+    int? paidInstallments,
+    int? deferredInstallments,
+    String? installmentPaymentModeStr,
+    List<int>? paymentDateHistory,
   }) {
     return RecurringTransaction(
       id: id ?? this.id,
@@ -171,6 +288,14 @@ class RecurringTransaction extends HiveObject {
       deleted: deleted ?? this.deleted,
       deletedAt: deletedAt ?? this.deletedAt,
       firestoreId: clearFirestoreId ? null : (firestoreId ?? this.firestoreId),
+      totalInstallments: identical(totalInstallments, _sentinel)
+          ? this.totalInstallments
+          : totalInstallments as int?,
+      paidInstallments: paidInstallments ?? this.paidInstallments,
+      deferredInstallments: deferredInstallments ?? this.deferredInstallments,
+      installmentPaymentModeStr:
+          installmentPaymentModeStr ?? this.installmentPaymentModeStr,
+      paymentDateHistory: paymentDateHistory ?? List.from(this.paymentDateHistory),
     );
   }
 
@@ -192,6 +317,11 @@ class RecurringTransaction extends HiveObject {
       'lastUpdatedAt': lastUpdatedAt?.millisecondsSinceEpoch,
       'deleted': deleted,
       'deletedAt': deletedAt?.millisecondsSinceEpoch,
+      'totalInstallments': totalInstallments,
+      'paidInstallments': paidInstallments,
+      'deferredInstallments': deferredInstallments,
+      'installmentPaymentModeStr': installmentPaymentModeStr,
+      'paymentDateHistory': paymentDateHistory,
     };
   }
 
@@ -223,15 +353,24 @@ class RecurringTransaction extends HiveObject {
           ? DateTime.fromMillisecondsSinceEpoch(data['deletedAt'])
           : null,
       firestoreId: id,
+      totalInstallments: data['totalInstallments'] as int?,
+      paidInstallments: (data['paidInstallments'] ?? 0) as int,
+      deferredInstallments: (data['deferredInstallments'] ?? 0) as int,
+      installmentPaymentModeStr:
+          (data['installmentPaymentModeStr'] ?? 'automatic') as String,
+      paymentDateHistory: (data['paymentDateHistory'] as List<dynamic>? ?? [])
+          .map((e) => e as int)
+          .toList(),
     );
   }
 
   @override
   String toString() {
     return 'RecurringTransaction(id: $id, title: $title, amount: $amount, '
-        'type: $type, active: $active, recurrence: ${recurrence.toDisplayString()})';
+        'type: $type, active: $active, recurrence: ${recurrence.toDisplayString()}, '
+        'installments: $installmentSummary)';
   }
 }
 
-
-
+// Sentinel para distinguir null explícito de "no pasado" en copyWith
+const _sentinel = Object();

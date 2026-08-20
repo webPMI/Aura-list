@@ -10,6 +10,7 @@ import '../providers/finance_provider.dart';
 import '../screens/categories_management_screen.dart';
 import 'budget_management_screen.dart';
 import 'forecast_screen.dart';
+import 'installments_overview_screen.dart';
 
 /// Pantalla principal de finanzas con sistema de tabs.
 /// Incluye: Transacciones | Recurrentes | Presupuestos | Previsión
@@ -27,7 +28,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -111,6 +112,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
             Tab(text: 'Recurrentes', icon: Icon(Icons.repeat)),
             Tab(text: 'Presupuestos', icon: Icon(Icons.pie_chart)),
             Tab(text: 'Previsión', icon: Icon(Icons.trending_up)),
+            Tab(text: 'Cuotas', icon: Icon(Icons.credit_card)),
           ],
         ),
       ),
@@ -127,6 +129,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
                 _buildRecurrentTab(),
                 _buildBudgetsTab(),
                 _buildForecastTab(),
+                _buildInstallmentsTab(),
               ],
             ),
           ),
@@ -258,6 +261,10 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
 
   Widget _buildForecastTab() {
     return const ForecastScreen();
+  }
+
+  Widget _buildInstallmentsTab() {
+    return const InstallmentsOverviewScreen();
   }
 
   void _showAlerts(BuildContext context) {

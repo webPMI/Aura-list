@@ -36,6 +36,7 @@ class _UnifiedTransactionDialogState
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
+  final _customInstallmentsController = TextEditingController();
   final _uuid = const Uuid();
 
   late FinanceCategoryType _selectedType;
@@ -46,6 +47,11 @@ class _UnifiedTransactionDialogState
   // Parámetros de recurrencia semanal/mensual
   int _selectedDayOfWeek = DateTime.now().weekday;
   int _selectedDayOfMonth = DateTime.now().day;
+
+  // Cuotas (installments)
+  int? _totalInstallments; // null = indefinido
+  String _installmentPaymentMode = 'automatic';
+  bool _showCustomInstallments = false;
 
   // Creador inline de categoría
   bool _showCategoryCreator = false;
@@ -63,6 +69,7 @@ class _UnifiedTransactionDialogState
     _titleController.dispose();
     _amountController.dispose();
     _noteController.dispose();
+    _customInstallmentsController.dispose();
     _newCategoryName.dispose();
     super.dispose();
   }
@@ -116,11 +123,15 @@ class _UnifiedTransactionDialogState
         categoryId: _selectedCategory?.id,
         type: _selectedType,
         recurrence: rule,
-        autoGenerate: true,
+        autoGenerate: _installmentPaymentMode == 'automatic',
         active: true,
         note: note,
         lastGenerated: _selectedDate,
         createdAt: DateTime.now(),
+        totalInstallments: _totalInstallments,
+        paidInstallments: 0,
+        deferredInstallments: 0,
+        installmentPaymentModeStr: _installmentPaymentMode,
       );
 
       // Guardar regla recurrente
@@ -427,7 +438,157 @@ class _UnifiedTransactionDialogState
 
               const SizedBox(height: 12),
 
-              // 6. Nota opcional
+              // 6. Configuración de cuotas (solo si es recurrente)
+              if (_frequencyMode != TransactionFrequencyMode.oneTime) ...[  
+                const Divider(),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.credit_card, size: 16, color: Colors.grey),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Número de cuotas',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Chips rápidos de cuotas
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final n in [null, 3, 6, 9, 12, 24, 36])
+                      ChoiceChip(
+                        label: Text(n == null ? 'Sin límite' : '$n'),
+                        selected: n == null
+                            ? (_totalInstallments == null && !_showCustomInstallments)
+                            : (_totalInstallments == n && !_showCustomInstallments),
+                        onSelected: (_) => setState(() {
+                          _totalInstallments = n;
+                          _showCustomInstallments = false;
+                          _customInstallmentsController.clear();
+                        }),
+                        selectedColor: Colors.blue.shade100,
+                        labelStyle: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: (n == null
+                                  ? (_totalInstallments == null && !_showCustomInstallments)
+                                  : (_totalInstallments == n && !_showCustomInstallments))
+                              ? Colors.blue.shade800
+                              : null,
+                        ),
+                      ),
+                    ChoiceChip(
+                      label: const Text('Otro...'),
+                      selected: _showCustomInstallments,
+                      onSelected: (_) => setState(() {
+                        _showCustomInstallments = true;
+                        _totalInstallments = null;
+                      }),
+                      selectedColor: Colors.purple.shade100,
+                    ),
+                  ],
+                ),
+                // Campo personalizado
+                if (_showCustomInstallments) ...[  
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _customInstallmentsController,
+                    decoration: const InputDecoration(
+                      labelText: 'Número exacto de cuotas',
+                      prefixIcon: Icon(Icons.tag),
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                    onChanged: (val) {
+                      final parsed = int.tryParse(val);
+                      setState(() => _totalInstallments = parsed);
+                    },
+                    validator: (val) {
+                      if (!_showCustomInstallments) return null;
+                      final n = int.tryParse(val ?? '');
+                      if (n == null || n < 1) return 'Ingresa un número válido (mínimo 1)';
+                      return null;
+                    },
+                  ),
+                ],
+                // Modo de pago
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.auto_mode, size: 16, color: Colors.grey),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Modo de pago',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(
+                      value: 'automatic',
+                      label: Text('Automático'),
+                      icon: Icon(Icons.bolt, size: 16),
+                    ),
+                    ButtonSegment(
+                      value: 'manual',
+                      label: Text('Manual'),
+                      icon: Icon(Icons.touch_app, size: 16),
+                    ),
+                  ],
+                  selected: {_installmentPaymentMode},
+                  onSelectionChanged: (s) =>
+                      setState(() => _installmentPaymentMode = s.first),
+                ),
+                // Preview de resumen
+                if (_amountController.text.isNotEmpty && _totalInstallments != null) ...[  
+                  const SizedBox(height: 10),
+                  Builder(builder: (ctx) {
+                    final amount = double.tryParse(
+                            _amountController.text.replaceAll(',', '.')) ??
+                        0;
+                    final total = amount * _totalInstallments!;
+                    return Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.blue.shade100),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.info_outline,
+                              size: 16, color: Colors.blue),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Total: ${NumberFormat.simpleCurrency(locale: 'es_ES').format(total)} en $_totalInstallments cuotas',
+                              style: const TextStyle(
+                                  color: Colors.blue,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+                const SizedBox(height: 8),
+              ],
+
+              // 7. Nota opcional
               TextFormField(
                 controller: _noteController,
                 decoration: const InputDecoration(
