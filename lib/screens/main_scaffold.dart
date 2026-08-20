@@ -31,6 +31,7 @@ class MainScaffold extends ConsumerStatefulWidget {
 
 class _MainScaffoldState extends ConsumerState<MainScaffold> {
   bool _hasCheckedIntro = false;
+  DateTime? _lastBackPressTime;
 
   @override
   void initState() {
@@ -57,6 +58,54 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     }
   }
 
+  void _handlePop(BuildContext context) {
+    // 1. If search is active, close search
+    if (ref.read(isSearchActiveProvider)) {
+      ref.read(isSearchActiveProvider.notifier).state = false;
+      ref.read(taskSearchQueryProvider.notifier).state = '';
+      return;
+    }
+
+    // 2. If a task detail is selected in master-detail on mobile, clear it
+    if (ref.read(selectedTaskIdProvider) != null) {
+      ref.read(selectedTaskIdProvider.notifier).state = null;
+      return;
+    }
+
+    // 3. If navigation history can go back, pop history
+    final popped = ref.read(navigationHistoryProvider.notifier).goBack();
+    if (popped) {
+      return;
+    }
+
+    // 4. If on another root tab without history, return to dashboard
+    final currentRoute = ref.read(selectedRouteProvider);
+    if (currentRoute != AppRoute.dashboard) {
+      ref.read(navigationHistoryProvider.notifier).goTo(AppRoute.dashboard);
+      return;
+    }
+
+    // 5. If already on Dashboard, implement double-back-to-exit
+    final now = DateTime.now();
+    if (_lastBackPressTime == null ||
+        now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
+      _lastBackPressTime = now;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Presiona atrás de nuevo para salir'),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+      return;
+    }
+
+    // Double pressed within 2 seconds -> close the app
+    SystemNavigator.pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     // Watch the auth initialization provider to ensure anonymous sign-in happens
@@ -65,14 +114,22 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     final selectedRoute = ref.watch(selectedRouteProvider);
 
     // Show loading screen while initializing auth
-    return authInit.when(
-      data: (_) => _buildScaffold(context, ref, selectedRoute),
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (error, stack) {
-        // Even if auth fails, show the app (offline mode)
-        return _buildScaffold(context, ref, selectedRoute);
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          _handlePop(context);
+        }
       },
+      child: authInit.when(
+        data: (_) => _buildScaffold(context, ref, selectedRoute),
+        loading: () =>
+            const Scaffold(body: Center(child: CircularProgressIndicator())),
+        error: (error, stack) {
+          // Even if auth fails, show the app (offline mode)
+          return _buildScaffold(context, ref, selectedRoute);
+        },
+      ),
     );
   }
 

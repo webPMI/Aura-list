@@ -136,25 +136,58 @@ final isSearchActiveProvider = StateProvider.autoDispose<bool>((ref) => false);
 /// Provider for navigation history (for back navigation)
 final navigationHistoryProvider =
     StateNotifierProvider<NavigationHistoryNotifier, List<AppRoute>>((ref) {
-      return NavigationHistoryNotifier();
+      return NavigationHistoryNotifier(ref);
     });
 
-class NavigationHistoryNotifier extends StateNotifier<List<AppRoute>> {
-  NavigationHistoryNotifier() : super([AppRoute.dashboard]);
+/// Provider indicating whether we can navigate back in the AppRoute history
+final canGoBackProvider = Provider<bool>((ref) {
+  return ref.watch(navigationHistoryProvider).length > 1;
+});
 
-  void push(AppRoute route) {
-    if (state.isEmpty || state.last != route) {
-      state = [...state, route];
+class NavigationHistoryNotifier extends StateNotifier<List<AppRoute>> {
+  final Ref _ref;
+
+  NavigationHistoryNotifier(this._ref) : super([AppRoute.dashboard]);
+
+  /// Navigates to a new route, appending to history if different from current
+  void goTo(AppRoute route, {bool replace = false}) {
+    if (replace) {
+      if (state.isNotEmpty) {
+        state = [...state.sublist(0, state.length - 1), route];
+      } else {
+        state = [route];
+      }
+    } else {
+      if (state.isEmpty || state.last != route) {
+        // If navigating back to dashboard, we can keep dashboard as the root
+        if (route == AppRoute.dashboard) {
+          state = [AppRoute.dashboard];
+        } else {
+          // Avoid duplicate consecutive entries
+          state = [...state, route];
+        }
+      }
     }
+    _ref.read(selectedRouteProvider.notifier).state = route;
   }
 
-  AppRoute? pop() {
+  /// Pops the top route from history and navigates to the previous route.
+  /// Returns true if navigation occurred, false if at root.
+  bool goBack() {
     if (state.length > 1) {
-      final last = state.last;
-      state = state.sublist(0, state.length - 1);
-      return last;
+      final updatedHistory = state.sublist(0, state.length - 1);
+      state = updatedHistory;
+      final previousRoute = updatedHistory.last;
+      _ref.read(selectedRouteProvider.notifier).state = previousRoute;
+      return true;
     }
-    return null;
+    return false;
+  }
+
+  /// Clears history and resets to given route (defaults to dashboard)
+  void reset([AppRoute route = AppRoute.dashboard]) {
+    state = [route];
+    _ref.read(selectedRouteProvider.notifier).state = route;
   }
 
   bool get canGoBack => state.length > 1;

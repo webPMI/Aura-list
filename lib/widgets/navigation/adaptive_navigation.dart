@@ -53,7 +53,7 @@ class _MobileNavigation extends ConsumerWidget {
         selectedIndex: selectedRoute.index.clamp(0, 4),
         onDestinationSelected: (index) {
           final route = AppRouteExtension.fromIndex(index);
-          ref.read(selectedRouteProvider.notifier).state = route;
+          ref.read(navigationHistoryProvider.notifier).goTo(route);
         },
         destinations: const [
           NavigationDestination(
@@ -107,7 +107,7 @@ class _TabletNavigation extends ConsumerWidget {
             selectedIndex: selectedRoute.index.clamp(0, 5),
             onDestinationSelected: (index) {
               final route = AppRouteExtension.fromIndex(index);
-              ref.read(selectedRouteProvider.notifier).state = route;
+              ref.read(navigationHistoryProvider.notifier).goTo(route);
             },
             labelType: NavigationRailLabelType.selected,
             leading: Column(

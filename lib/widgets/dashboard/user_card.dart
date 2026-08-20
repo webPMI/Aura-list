@@ -29,7 +29,9 @@ class UserCard extends ConsumerWidget {
             displayName: displayName,
             email: email,
             photoUrl: photoUrl,
-            onTap: () => ref.read(selectedRouteProvider.notifier).state = AppRoute.profile,
+            onTap: () => ref
+                .read(navigationHistoryProvider.notifier)
+                .goTo(AppRoute.profile),
           );
         } else {
           return _AnonymousCard(
@@ -39,7 +41,9 @@ class UserCard extends ConsumerWidget {
       },
       loading: () => const _LoadingCard(),
       error: (error, stack) => _ErrorCard(
-        onTap: () => ref.read(selectedRouteProvider.notifier).state = AppRoute.profile,
+        onTap: () => ref
+            .read(navigationHistoryProvider.notifier)
+            .goTo(AppRoute.profile),
       ),
     );
   }

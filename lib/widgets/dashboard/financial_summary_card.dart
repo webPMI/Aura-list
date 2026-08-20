@@ -61,7 +61,9 @@ class FinancialSummaryCard extends ConsumerWidget {
                 ),
                 TextButton(
                   onPressed: () {
-                    ref.read(selectedRouteProvider.notifier).state = AppRoute.finance;
+                    ref
+                        .read(navigationHistoryProvider.notifier)
+                        .goTo(AppRoute.finance);
                   },
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,

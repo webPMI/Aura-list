@@ -370,7 +370,7 @@ class _TodayProgressCard extends ConsumerWidget {
       progress: progress,
       color: Colors.orange,
       onTap: () {
-        ref.read(selectedRouteProvider.notifier).state = AppRoute.tasks;
+        ref.read(navigationHistoryProvider.notifier).goTo(AppRoute.tasks);
       },
     );
   }
@@ -418,7 +418,7 @@ class _TodayTasksCard extends ConsumerWidget {
       title: 'Pendientes de Hoy',
       icon: Icons.checklist,
       onMoreTap: () {
-        ref.read(selectedRouteProvider.notifier).state = AppRoute.tasks;
+        ref.read(navigationHistoryProvider.notifier).goTo(AppRoute.tasks);
       },
       height: 240,
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
@@ -717,7 +717,7 @@ class _WeeklyProgressCard extends ConsumerWidget {
       color: Colors.blue,
       onTap: () {
         ref.read(selectedTaskTypeProvider.notifier).state = 'weekly';
-        ref.read(selectedRouteProvider.notifier).state = AppRoute.tasks;
+        ref.read(navigationHistoryProvider.notifier).goTo(AppRoute.tasks);
       },
     );
   }
@@ -734,7 +734,7 @@ class _QuickNotesCard extends ConsumerWidget {
       title: 'Notas Recientes',
       icon: Icons.note,
       onMoreTap: () {
-        ref.read(selectedRouteProvider.notifier).state = AppRoute.notes;
+        ref.read(navigationHistoryProvider.notifier).goTo(AppRoute.notes);
       },
       height: 160,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -815,7 +815,9 @@ class _StatsOverviewCard extends ConsumerWidget {
               icon: Icons.calendar_month,
               onTap: () {
                 ref.read(selectedTaskTypeProvider.notifier).state = 'monthly';
-                ref.read(selectedRouteProvider.notifier).state = AppRoute.tasks;
+                ref
+                    .read(navigationHistoryProvider.notifier)
+                    .goTo(AppRoute.tasks);
               },
             ),
           ),
@@ -826,7 +828,9 @@ class _StatsOverviewCard extends ConsumerWidget {
               icon: Icons.event,
               onTap: () {
                 ref.read(selectedTaskTypeProvider.notifier).state = 'yearly';
-                ref.read(selectedRouteProvider.notifier).state = AppRoute.tasks;
+                ref
+                    .read(navigationHistoryProvider.notifier)
+                    .goTo(AppRoute.tasks);
               },
             ),
           ),
@@ -837,7 +841,9 @@ class _StatsOverviewCard extends ConsumerWidget {
               icon: Icons.push_pin,
               onTap: () {
                 ref.read(selectedTaskTypeProvider.notifier).state = 'once';
-                ref.read(selectedRouteProvider.notifier).state = AppRoute.tasks;
+                ref
+                    .read(navigationHistoryProvider.notifier)
+                    .goTo(AppRoute.tasks);
               },
             ),
           ),
@@ -1242,7 +1248,7 @@ class _TaskSearchDelegate extends SearchDelegate<Task?> {
           onTap: () {
             // Navigate to the task's type list
             ref.read(selectedTaskTypeProvider.notifier).state = task.type;
-            ref.read(selectedRouteProvider.notifier).state = AppRoute.tasks;
+            ref.read(navigationHistoryProvider.notifier).goTo(AppRoute.tasks);
             close(context, task);
           },
         );

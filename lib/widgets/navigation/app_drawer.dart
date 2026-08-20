@@ -26,7 +26,7 @@ class AppDrawer extends ConsumerWidget {
       selectedIndex: selectedRoute.index,
       onDestinationSelected: (index) {
         final route = AppRouteExtension.fromIndex(index);
-        ref.read(selectedRouteProvider.notifier).state = route;
+        ref.read(navigationHistoryProvider.notifier).goTo(route);
         onNavigate?.call();
       },
       children: [
@@ -638,7 +638,9 @@ class _AccountSection extends ConsumerWidget {
             ),
             trailing: const Icon(Icons.chevron_right, size: 20),
             onTap: () {
-              ref.read(selectedRouteProvider.notifier).state = AppRoute.profile;
+              ref
+                  .read(navigationHistoryProvider.notifier)
+                  .goTo(AppRoute.profile);
               onNavigate?.call();
             },
           );
@@ -660,7 +662,9 @@ class _AccountSection extends ConsumerWidget {
           ),
           trailing: const Icon(Icons.chevron_right, size: 20),
           onTap: () {
-            ref.read(selectedRouteProvider.notifier).state = AppRoute.profile;
+            ref
+                .read(navigationHistoryProvider.notifier)
+                .goTo(AppRoute.profile);
             onNavigate?.call();
           },
         ),
