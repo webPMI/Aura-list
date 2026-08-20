@@ -4,12 +4,15 @@ import 'auth_service.dart';
 import 'database_service.dart';
 import 'error_handler.dart';
 import 'logger_service.dart';
+import '../features/finance/providers/finance_provider.dart';
+import '../features/finance/repositories/finance_repository.dart';
 
 /// Provider del AuthManager centralizado
 final authManagerProvider = Provider<AuthManager>((ref) {
   return AuthManager(
     authService: ref.read(authServiceProvider),
     dbService: ref.read(databaseServiceProvider),
+    financeRepository: ref.read(financeRepositoryProvider),
   );
 });
 
@@ -29,13 +32,16 @@ class AuthResult {
 class AuthManager {
   final AuthService _authService;
   final DatabaseService _dbService;
+  final FinanceRepository? _financeRepository;
   final _logger = LoggerService();
 
   AuthManager({
     required AuthService authService,
     required DatabaseService dbService,
+    FinanceRepository? financeRepository,
   }) : _authService = authService,
-       _dbService = dbService;
+       _dbService = dbService,
+       _financeRepository = financeRepository;
 
   // ==================== Estado ====================
 
@@ -270,6 +276,13 @@ class AuthManager {
       final user = currentUser;
       if (user != null) {
         final result = await _dbService.performFullSync(user.uid);
+        if (_financeRepository != null) {
+          try {
+            await _financeRepository.performFullSync(user.uid);
+          } catch (e) {
+            _logger.warning('AuthManager', 'Error al sincronizar finanzas: $e');
+          }
+        }
         if (result.hasErrors) {
           _logger.warning(
             'AuthManager',
@@ -307,6 +320,13 @@ class AuthManager {
         final user = currentUser;
         if (user != null) {
           final result = await _dbService.performFullSync(user.uid);
+          if (_financeRepository != null) {
+            try {
+              await _financeRepository.performFullSync(user.uid);
+            } catch (e) {
+              _logger.warning('AuthManager', 'Error al sincronizar finanzas: $e');
+            }
+          }
           if (result.hasErrors) {
             ErrorHandler().handle(
               Exception('Error al sincronizar datos'),

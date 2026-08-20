@@ -1109,12 +1109,25 @@ class DatabaseService {
       return SyncResult(tasksDownloaded: 0, notesDownloaded: 0, errors: 0);
     }
 
-    _logger.debug('Service', '[SYNC] Starting full bidirectional sync');
+    _logger.debug('Service', '[SYNC] Starting full bidirectional sync for user: $userId');
 
-    // First, download from cloud
+    // Touch user document in Firestore to establish root doc
+    try {
+      if (firestore != null) {
+        await firestore!.collection('users').doc(userId).set({
+          'lastSyncTimestamp': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+    } catch (e) {
+      _logger.warning('Service', 'Error updating user root doc in Firestore: $e');
+    }
+
+    // First, download and merge from cloud (which also uploads local-only items in repositories)
     final downloadResult = await syncFromCloud(userId);
 
-    // Then, upload pending local changes
+    // Then, flush and upload pending local changes
+    await flushPendingSyncs();
     await forceSyncAll();
 
     return downloadResult;

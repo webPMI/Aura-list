@@ -8,7 +8,8 @@ import '../../../services/sync/sync_utils.dart';
 
 /// Base storage interface for generic sync operations
 abstract class BaseSyncStorage<T extends HiveObject> {
-  T? getByKey(dynamic key);
+  Future<T?> getByKey(dynamic key);
+  Future<List<T>> getAll();
   Future<void> save(T item);
   bool get isAvailable;
 }
@@ -169,6 +170,17 @@ abstract class BaseSyncService<T extends HiveObject>
     try {
       await flushPendingSyncs();
       await processQueue();
+
+      // Upload local items to cloud
+      try {
+        final localItems = await localStorage.getAll();
+        if (localItems.isNotEmpty) {
+          await cloudStorage.batchWrite(localItems, userId);
+        }
+      } catch (e) {
+        logger.warning('BaseSyncService', 'Error uploading local items during full sync: $e');
+      }
+
       return await syncFromCloud(userId);
     } finally {
       _isSyncing = false;
@@ -210,7 +222,7 @@ abstract class BaseSyncService<T extends HiveObject>
       final keys = entry.value;
       final list = <T>[];
       for (final key in keys) {
-        final item = localStorage.getByKey(key);
+        final item = await localStorage.getByKey(key);
         if (item != null) list.add(item);
       }
       if (list.isNotEmpty) {

@@ -24,6 +24,7 @@ import 'sync_watcher_service.dart';
 import 'error_handler.dart';
 import 'logger_service.dart';
 import 'deadline_notification_service.dart';
+import '../features/finance/providers/finance_provider.dart';
 
 /// Bootstrap state representing initialization progress
 class BootstrapState {
@@ -278,6 +279,15 @@ class AppBootstrap {
         // Perform initial sync
         try {
           final result = await dbService.performFullSync(userId);
+          try {
+            final financeRepo = ref.read(financeRepositoryProvider);
+            await financeRepo.performFullSync(userId);
+          } catch (fe) {
+            _logger.warning(
+              'AppBootstrap',
+              'Error en sincronizacion inicial de finanzas: $fe',
+            );
+          }
           if (result.hasChanges) {
             _logger.info(
               'AppBootstrap',

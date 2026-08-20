@@ -6,31 +6,17 @@ import 'base_sync_service.dart';
 /// Adapter to make CategoryStorage compatible with BaseSyncStorage
 class _CategoryStorageAdapter implements BaseSyncStorage<FinanceCategory> {
   final CategoryStorage _storage;
-  final Map<dynamic, FinanceCategory?> _cache = {};
 
   _CategoryStorageAdapter(this._storage);
 
   @override
-  FinanceCategory? getByKey(dynamic key) {
-    // Hive's get is synchronous, but getByKey is async for consistency
-    // Use a cache to avoid async/sync mismatch
-    if (_cache.containsKey(key)) {
-      return _cache[key];
-    }
-    // Schedule async load and return cached value
-    _storage.getByKey(key).then((value) {
-      _cache[key] = value;
-    });
-    return _cache[key];
-  }
+  Future<FinanceCategory?> getByKey(dynamic key) => _storage.getByKey(key);
 
   @override
-  Future<void> save(FinanceCategory item) async {
-    await _storage.save(item);
-    if (item.key != null) {
-      _cache[item.key] = item;
-    }
-  }
+  Future<List<FinanceCategory>> getAll() => _storage.getAll();
+
+  @override
+  Future<void> save(FinanceCategory item) => _storage.save(item);
 
   @override
   bool get isAvailable => true;

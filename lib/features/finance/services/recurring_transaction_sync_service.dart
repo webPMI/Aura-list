@@ -7,28 +7,17 @@ import 'base_sync_service.dart';
 class _RecurringTransactionStorageAdapter
     implements BaseSyncStorage<RecurringTransaction> {
   final RecurringTransactionStorage _storage;
-  final Map<dynamic, RecurringTransaction?> _cache = {};
 
   _RecurringTransactionStorageAdapter(this._storage);
 
   @override
-  RecurringTransaction? getByKey(dynamic key) {
-    if (_cache.containsKey(key)) {
-      return _cache[key];
-    }
-    _storage.getById(key.toString()).then((value) {
-      _cache[key] = value;
-    });
-    return _cache[key];
-  }
+  Future<RecurringTransaction?> getByKey(dynamic key) => _storage.getByKey(key);
 
   @override
-  Future<void> save(RecurringTransaction item) async {
-    await _storage.save(item);
-    if (item.key != null) {
-      _cache[item.key] = item;
-    }
-  }
+  Future<List<RecurringTransaction>> getAll() => _storage.getAll();
+
+  @override
+  Future<void> save(RecurringTransaction item) => _storage.save(item);
 
   @override
   bool get isAvailable => true;

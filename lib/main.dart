@@ -15,6 +15,7 @@ import 'services/logger_service.dart';
 import 'features/guides/services/avatar_preload_service.dart';
 import 'widgets/global_error_listener.dart';
 import 'providers/notification_provider.dart';
+import 'features/finance/providers/finance_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -169,6 +170,12 @@ class _ChecklistAppState extends ConsumerState<ChecklistApp> {
 
       _logger.info('Sync', 'Iniciando sincronizacion inicial con Firebase...');
       final result = await dbService.performFullSync(userId);
+      try {
+        final financeRepo = ref.read(financeRepositoryProvider);
+        await financeRepo.performFullSync(userId);
+      } catch (fe) {
+        _logger.warning('Sync', 'Error en sincronizacion inicial de finanzas: $fe');
+      }
       if (result.hasChanges) {
         _logger.info(
           'Sync',
