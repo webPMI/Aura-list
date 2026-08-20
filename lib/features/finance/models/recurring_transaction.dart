@@ -213,10 +213,19 @@ class RecurringTransaction extends HiveObject {
   DateTime? get expectedEndDate {
     if (!hasFixedInstallments) return null;
     final remaining = remainingInstallments!;
-    if (remaining <= 0) return lastGenerated;
+    if (remaining <= 0) return lastGenerated ?? recurrence.startDate;
 
-    DateTime cursor = lastGenerated ?? recurrence.startDate;
-    for (int i = 0; i < remaining; i++) {
+    DateTime cursor;
+    int steps;
+    if (lastGenerated != null) {
+      cursor = lastGenerated!;
+      steps = remaining;
+    } else {
+      cursor = recurrence.startDate;
+      steps = remaining - 1;
+    }
+
+    for (int i = 0; i < steps; i++) {
       final next = recurrence.nextOccurrence(cursor.add(const Duration(days: 1)));
       if (next == null) break;
       cursor = next;

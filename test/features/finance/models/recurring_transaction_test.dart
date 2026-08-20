@@ -342,5 +342,105 @@ void main() {
       expect(freqAdapter.typeId, 10);
       expect(catTypeAdapter.typeId, 14);
     });
+
+    group('Installment and Cuotas calculations', () {
+      test('should calculate remaining installments and amounts correctly', () {
+        final tx = RecurringTransaction(
+          id: 'tx-installments',
+          title: 'Préstamo coche',
+          amount: 250.0,
+          type: FinanceCategoryType.expense,
+          recurrence: monthlyRule,
+          createdAt: DateTime(2024, 1, 1),
+          totalInstallments: 12,
+          paidInstallments: 4,
+        );
+
+        expect(tx.hasFixedInstallments, true);
+        expect(tx.isCompleted, false);
+        expect(tx.totalAmount, 3000.0);
+        expect(tx.paidAmount, 1000.0);
+        expect(tx.remainingInstallments, 8);
+        expect(tx.remainingAmount, 2000.0);
+        expect(tx.installmentProgress, closeTo(4 / 12, 0.001));
+        expect(tx.installmentSummary, 'Cuota 5 de 12');
+      });
+
+      test('should mark as completed when all installments are paid', () {
+        final tx = RecurringTransaction(
+          id: 'tx-completed',
+          title: 'Curso completado',
+          amount: 100.0,
+          type: FinanceCategoryType.expense,
+          recurrence: monthlyRule,
+          createdAt: DateTime(2024, 1, 1),
+          totalInstallments: 6,
+          paidInstallments: 6,
+        );
+
+        expect(tx.isCompleted, true);
+        expect(tx.remainingInstallments, 0);
+        expect(tx.remainingAmount, 0.0);
+        expect(tx.installmentProgress, 1.0);
+        expect(tx.installmentSummary, contains('Completado'));
+      });
+
+      test('should calculate expected end date accurately for monthly installments', () {
+        final tx = RecurringTransaction(
+          id: 'tx-enddate',
+          title: 'Muebles 6 cuotas',
+          amount: 50.0,
+          type: FinanceCategoryType.expense,
+          recurrence: RecurrenceRule(
+            frequency: RecurrenceFrequency.monthly,
+            interval: 1,
+            startDate: DateTime(2024, 1, 15),
+          ),
+          createdAt: DateTime(2024, 1, 1),
+          totalInstallments: 6,
+          paidInstallments: 0,
+        );
+
+        final endDate = tx.expectedEndDate;
+        expect(endDate, isNotNull);
+        expect(endDate?.year, 2024);
+        expect(endDate?.month, 6);
+        expect(endDate?.day, 15);
+      });
+
+      test('should serialize and deserialize installment fields with Firestore', () {
+        final tx = RecurringTransaction(
+          id: 'tx-firestore-installments',
+          title: 'Seguro anual en 3 cuotas',
+          amount: 120.0,
+          type: FinanceCategoryType.expense,
+          recurrence: monthlyRule,
+          createdAt: DateTime(2024, 1, 1),
+          totalInstallments: 3,
+          paidInstallments: 1,
+          deferredInstallments: 1,
+          installmentPaymentModeStr: 'manual',
+          paymentDateHistory: [DateTime(2024, 1, 15).millisecondsSinceEpoch],
+        );
+
+        final data = tx.toFirestore();
+        expect(data['totalInstallments'], 3);
+        expect(data['paidInstallments'], 1);
+        expect(data['deferredInstallments'], 1);
+        expect(data['installmentPaymentModeStr'], 'manual');
+        expect((data['paymentDateHistory'] as List).length, 1);
+
+        final restored = RecurringTransaction.fromFirestore(
+          'tx-firestore-installments',
+          data,
+        );
+        expect(restored.totalInstallments, 3);
+        expect(restored.paidInstallments, 1);
+        expect(restored.deferredInstallments, 1);
+        expect(restored.installmentPaymentModeStr, 'manual');
+        expect(restored.paymentMode, InstallmentPaymentMode.manual);
+        expect(restored.paymentDates.length, 1);
+      });
+    });
   });
 }

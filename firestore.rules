@@ -48,11 +48,12 @@ service cloud.firestore {
         && data.type in ['daily', 'weekly', 'monthly', 'yearly', 'once']
         && data.isCompleted is bool
         && data.priority in [0, 1, 2]
-        && data.category in ['Personal', 'Trabajo', 'Hogar', 'Salud', 'Otros']
-        // Optional soft delete fields
+        && data.category is string
+        && data.category.size() <= 100
+        // Optional soft delete and timestamp fields
         && (!('deleted' in data.keys()) || data.deleted is bool)
-        && (!('deletedAt' in data.keys()) || data.deletedAt is string)
-        && (!('lastUpdatedAt' in data.keys()) || data.lastUpdatedAt is string);
+        && (!('deletedAt' in data.keys()) || data.deletedAt == null || data.deletedAt is string || data.deletedAt is number)
+        && (!('lastUpdatedAt' in data.keys()) || data.lastUpdatedAt == null || data.lastUpdatedAt is string || data.lastUpdatedAt is number);
     }
 
     // Helper function to validate note data
@@ -63,9 +64,9 @@ service cloud.firestore {
         && data.content is string
         && data.content.size() <= 10000
         && data.isPinned is bool
-        // Optional soft delete fields
+        // Optional soft delete and timestamp fields
         && (!('deleted' in data.keys()) || data.deleted is bool)
-        && (!('deletedAt' in data.keys()) || data.deletedAt is string);
+        && (!('deletedAt' in data.keys()) || data.deletedAt == null || data.deletedAt is string || data.deletedAt is number);
     }
 
     // Helper function to validate transaction data
@@ -73,13 +74,42 @@ service cloud.firestore {
       let data = request.resource.data;
       return data.title is string
         && data.title.size() > 0
+        && data.title.size() <= 500
         && data.amount is number
         && data.amount > 0
         && data.type in ['expense', 'income']
-        && data.categoryId is string
-        // Optional fields
+        && (!('categoryId' in data.keys()) || data.categoryId == null || data.categoryId is string)
+        // Optional soft delete and timestamp fields
         && (!('deleted' in data.keys()) || data.deleted is bool)
-        && (!('deletedAt' in data.keys()) || data.deletedAt is string);
+        && (!('deletedAt' in data.keys()) || data.deletedAt == null || data.deletedAt is number || data.deletedAt is string)
+        && (!('lastUpdatedAt' in data.keys()) || data.lastUpdatedAt == null || data.lastUpdatedAt is number || data.lastUpdatedAt is string);
+    }
+
+    // Helper function to validate recurring transaction data (including installments)
+    function isValidRecurringTransaction() {
+      let data = request.resource.data;
+      return data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 500
+        && data.amount is number
+        && data.amount > 0
+        && data.type in ['expense', 'income']
+        && data.recurrence is map
+        && (!('totalInstallments' in data.keys()) || data.totalInstallments == null || (data.totalInstallments is number && data.totalInstallments >= 1))
+        && (!('paidInstallments' in data.keys()) || data.paidInstallments is number)
+        && (!('deferredInstallments' in data.keys()) || data.deferredInstallments is number)
+        && (!('deleted' in data.keys()) || data.deleted is bool);
+    }
+
+    // Helper function to validate budget data
+    function isValidBudget() {
+      let data = request.resource.data;
+      return data.name is string
+        && data.name.size() > 0
+        && data.name.size() <= 500
+        && data.amount is number
+        && data.amount > 0
+        && (!('deleted' in data.keys()) || data.deleted is bool);
     }
 
     // Helper function to validate finance category data
@@ -179,7 +209,8 @@ service cloud.firestore {
       // Recurring transactions subcollections (supports both finance_recurring_transactions and recurringTransactions)
       match /recurringTransactions/{docId} {
         allow read: if isAuthenticated() && isOwner(userId);
-        allow write: if isAuthenticated() && isOwner(userId);
+        allow create, update: if isAuthenticated() && isOwner(userId) && isValidRecurringTransaction();
+        allow delete: if isAuthenticated() && isOwner(userId);
         // Allow shared access if user is in sharedWith array
         allow read: if isAuthenticated() &&
                       exists(/databases/$(database)/documents/users/$(userId)) &&
@@ -187,7 +218,8 @@ service cloud.firestore {
       }
       match /finance_recurring_transactions/{docId} {
         allow read: if isAuthenticated() && isOwner(userId);
-        allow write: if isAuthenticated() && isOwner(userId);
+        allow create, update: if isAuthenticated() && isOwner(userId) && isValidRecurringTransaction();
+        allow delete: if isAuthenticated() && isOwner(userId);
         // Allow shared access if user is in sharedWith array
         allow read: if isAuthenticated() &&
                       exists(/databases/$(database)/documents/users/$(userId)) &&
@@ -197,7 +229,8 @@ service cloud.firestore {
       // Budgets subcollections (supports both finance_budgets and budgets)
       match /budgets/{docId} {
         allow read: if isAuthenticated() && isOwner(userId);
-        allow write: if isAuthenticated() && isOwner(userId);
+        allow create, update: if isAuthenticated() && isOwner(userId) && isValidBudget();
+        allow delete: if isAuthenticated() && isOwner(userId);
         // Allow shared access if user is in sharedWith array
         allow read: if isAuthenticated() &&
                       exists(/databases/$(database)/documents/users/$(userId)) &&
@@ -205,7 +238,8 @@ service cloud.firestore {
       }
       match /finance_budgets/{docId} {
         allow read: if isAuthenticated() && isOwner(userId);
-        allow write: if isAuthenticated() && isOwner(userId);
+        allow create, update: if isAuthenticated() && isOwner(userId) && isValidBudget();
+        allow delete: if isAuthenticated() && isOwner(userId);
         // Allow shared access if user is in sharedWith array
         allow read: if isAuthenticated() &&
                       exists(/databases/$(database)/documents/users/$(userId)) &&
