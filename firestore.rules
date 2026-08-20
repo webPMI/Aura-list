@@ -148,23 +148,35 @@ service cloud.firestore {
         allow write: if isAuthenticated() && isOwner(userId);
       }
 
-      // Finance transactions subcollection
+      // Finance transactions subcollections (supports both finance_transactions and transactions)
       match /transactions/{transactionId} {
         allow read: if isAuthenticated() && isOwner(userId);
         allow create: if isAuthenticated() && isOwner(userId) && isValidTransaction();
         allow update: if isAuthenticated() && isOwner(userId) && isValidTransaction();
         allow delete: if isAuthenticated() && isOwner(userId);
       }
+      match /finance_transactions/{transactionId} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow create: if isAuthenticated() && isOwner(userId) && isValidTransaction();
+        allow update: if isAuthenticated() && isOwner(userId) && isValidTransaction();
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
 
-      // Finance categories subcollection
+      // Finance categories subcollections (supports both finance_categories and categories)
       match /categories/{categoryId} {
         allow read: if isAuthenticated() && isOwner(userId);
         allow create: if isAuthenticated() && isOwner(userId) && isValidFinanceCategory();
         allow update: if isAuthenticated() && isOwner(userId) && isValidFinanceCategory();
         allow delete: if isAuthenticated() && isOwner(userId);
       }
+      match /finance_categories/{categoryId} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow create: if isAuthenticated() && isOwner(userId) && isValidFinanceCategory();
+        allow update: if isAuthenticated() && isOwner(userId) && isValidFinanceCategory();
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
 
-      // Recurring transactions subcollection
+      // Recurring transactions subcollections (supports both finance_recurring_transactions and recurringTransactions)
       match /recurringTransactions/{docId} {
         allow read: if isAuthenticated() && isOwner(userId);
         allow write: if isAuthenticated() && isOwner(userId);
@@ -173,9 +185,7 @@ service cloud.firestore {
                       exists(/databases/$(database)/documents/users/$(userId)) &&
                       request.auth.uid in get(/databases/$(database)/documents/users/$(userId)).data.sharedWith;
       }
-
-      // Budgets subcollection
-      match /budgets/{docId} {
+      match /finance_recurring_transactions/{docId} {
         allow read: if isAuthenticated() && isOwner(userId);
         allow write: if isAuthenticated() && isOwner(userId);
         // Allow shared access if user is in sharedWith array
@@ -184,24 +194,60 @@ service cloud.firestore {
                       request.auth.uid in get(/databases/$(database)/documents/users/$(userId)).data.sharedWith;
       }
 
-      // Cash flow projections subcollection
+      // Budgets subcollections (supports both finance_budgets and budgets)
+      match /budgets/{docId} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow write: if isAuthenticated() && isOwner(userId);
+        // Allow shared access if user is in sharedWith array
+        allow read: if isAuthenticated() &&
+                      exists(/databases/$(database)/documents/users/$(userId)) &&
+                      request.auth.uid in get(/databases/$(database)/documents/users/$(userId)).data.sharedWith;
+      }
+      match /finance_budgets/{docId} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow write: if isAuthenticated() && isOwner(userId);
+        // Allow shared access if user is in sharedWith array
+        allow read: if isAuthenticated() &&
+                      exists(/databases/$(database)/documents/users/$(userId)) &&
+                      request.auth.uid in get(/databases/$(database)/documents/users/$(userId)).data.sharedWith;
+      }
+
+      // Cash flow projections subcollections (supports both finance_cash_flow_projections and cashFlowProjections)
       match /cashFlowProjections/{docId} {
         allow read: if isAuthenticated() && isOwner(userId);
         allow create: if isAuthenticated() && isOwner(userId);
         allow update: if isAuthenticated() && isOwner(userId);
         allow delete: if isAuthenticated() && isOwner(userId);
       }
-
-      // Task finance links subcollection
-      match /taskFinanceLinks/{docId} {
+      match /finance_cash_flow_projections/{docId} {
         allow read: if isAuthenticated() && isOwner(userId);
         allow create: if isAuthenticated() && isOwner(userId);
         allow update: if isAuthenticated() && isOwner(userId);
         allow delete: if isAuthenticated() && isOwner(userId);
       }
 
-      // Finance alerts subcollection
+      // Task finance links subcollections (supports both finance_task_links and taskFinanceLinks)
+      match /taskFinanceLinks/{docId} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow create: if isAuthenticated() && isOwner(userId);
+        allow update: if isAuthenticated() && isOwner(userId);
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
+      match /finance_task_links/{docId} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow create: if isAuthenticated() && isOwner(userId);
+        allow update: if isAuthenticated() && isOwner(userId);
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
+
+      // Finance alerts subcollections (supports both finance_alerts and financeAlerts)
       match /financeAlerts/{docId} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow create: if isAuthenticated() && isOwner(userId);
+        allow update: if isAuthenticated() && isOwner(userId);
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
+      match /finance_alerts/{docId} {
         allow read: if isAuthenticated() && isOwner(userId);
         allow create: if isAuthenticated() && isOwner(userId);
         allow update: if isAuthenticated() && isOwner(userId);

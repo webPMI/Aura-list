@@ -210,7 +210,7 @@ class AppBootstrap {
         progress: 0.6,
       ));
 
-      if (firebaseAvailable && isAuthenticated) {
+      if (firebaseAvailable) {
         final syncOrchestrator = ref.read(syncOrchestratorProvider);
         final connectivity = ref.read(connectivityServiceProvider);
 
@@ -220,9 +220,11 @@ class AppBootstrap {
           auth: FirebaseAuth.instance,
         );
 
-        // Start SyncWatcher
-        final syncWatcher = ref.read(syncWatcherProvider);
-        await syncWatcher.startWatching();
+        // Start SyncWatcher if user is already authenticated
+        if (isAuthenticated) {
+          final syncWatcher = ref.read(syncWatcherProvider);
+          await syncWatcher.startWatching();
+        }
 
         _logger.info('AppBootstrap', 'SyncOrchestrator inicializado');
       }

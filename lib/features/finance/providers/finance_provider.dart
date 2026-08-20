@@ -6,8 +6,11 @@ import '../data/transaction_storage.dart';
 import '../repositories/finance_repository.dart';
 import '../services/category_sync_service.dart';
 import '../services/transaction_sync_service.dart';
+import '../services/recurring_transaction_sync_service.dart';
 import '../data/firestore_category_storage.dart';
 import '../data/firestore_transaction_storage.dart';
+import '../data/firestore_recurring_transaction_storage.dart';
+import '../data/recurring_transaction_storage.dart';
 import '../../../services/error_handler.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/database_service.dart';
@@ -216,11 +219,26 @@ final financeRepositoryProvider = Provider<FinanceRepository>((ref) {
       },
     );
 
+    final recurringStorage = RecurringTransactionStorage(errorHandler);
+
+    final recurringSync = RecurringTransactionSyncService(
+      localStorage: recurringStorage,
+      cloudStorage: FirestoreRecurringTransactionStorage(errorHandler),
+      errorHandler: errorHandler,
+      isCloudSyncEnabled: () async {
+        final db = ref.read(databaseServiceProvider);
+        final prefs = await db.getUserPreferences();
+        return prefs.cloudSyncEnabled;
+      },
+    );
+
     return FinanceRepository(
       categoryStorage: categoryStorage,
       transactionStorage: transactionStorage,
+      recurringStorage: recurringStorage,
       categorySync: categorySync,
       transactionSync: transactionSync,
+      recurringSync: recurringSync,
       errorHandler: errorHandler,
     );
   } catch (e, stack) {

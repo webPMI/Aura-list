@@ -12,7 +12,8 @@ import '../data/finance_alert_storage.dart';
 import '../data/task_finance_link_storage.dart';
 import '../services/recurring_transaction_service.dart';
 import '../../../services/error_handler.dart';
-import 'finance_provider.dart' show transactionStorageProvider;
+import '../../../services/auth_service.dart';
+import 'finance_provider.dart' show transactionStorageProvider, financeRepositoryProvider;
 
 /// Estado del provider de previsiones financieras.
 class ForecastState {
@@ -82,6 +83,8 @@ class ForecastNotifier extends StateNotifier<ForecastState> {
   StreamSubscription? _budgetSubscription;
   StreamSubscription? _alertSubscription;
 
+  final Ref _ref;
+
   ForecastNotifier({
     required RecurringTransactionStorage recurringStorage,
     required BudgetStorage budgetStorage,
@@ -98,6 +101,7 @@ class ForecastNotifier extends StateNotifier<ForecastState> {
        _linkStorage = linkStorage,
        _recurringService = recurringService,
        _errorHandler = errorHandler,
+       _ref = ref,
        super(ForecastState(isLoading: true)) {
     _init();
   }
@@ -164,6 +168,13 @@ class ForecastNotifier extends StateNotifier<ForecastState> {
 
       // Load initial data
       await refreshAll();
+
+      // Initial sync if user is authenticated
+      final authState = _ref.read(authStateProvider);
+      final user = authState.valueOrNull;
+      if (user != null) {
+        _ref.read(financeRepositoryProvider).performFullSync(user.uid);
+      }
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -226,6 +237,13 @@ class ForecastNotifier extends StateNotifier<ForecastState> {
   Future<void> addRecurringTransaction(RecurringTransaction transaction) async {
     try {
       await _recurringStorage.save(transaction);
+      final authState = _ref.read(authStateProvider);
+      final userId = authState.valueOrNull?.uid ?? '';
+      if (userId.isNotEmpty) {
+        await _ref
+            .read(financeRepositoryProvider)
+            .saveRecurringTransaction(transaction, userId);
+      }
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -242,6 +260,13 @@ class ForecastNotifier extends StateNotifier<ForecastState> {
   ) async {
     try {
       await _recurringStorage.save(transaction);
+      final authState = _ref.read(authStateProvider);
+      final userId = authState.valueOrNull?.uid ?? '';
+      if (userId.isNotEmpty) {
+        await _ref
+            .read(financeRepositoryProvider)
+            .saveRecurringTransaction(transaction, userId);
+      }
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -302,6 +327,13 @@ class ForecastNotifier extends StateNotifier<ForecastState> {
         lastUpdatedAt: DateTime.now(),
       );
       await _recurringStorage.save(updated);
+      final authState = _ref.read(authStateProvider);
+      final userId = authState.valueOrNull?.uid ?? '';
+      if (userId.isNotEmpty) {
+        await _ref
+            .read(financeRepositoryProvider)
+            .saveRecurringTransaction(updated, userId);
+      }
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -320,6 +352,13 @@ class ForecastNotifier extends StateNotifier<ForecastState> {
         lastUpdatedAt: DateTime.now(),
       );
       await _recurringStorage.save(updated);
+      final authState = _ref.read(authStateProvider);
+      final userId = authState.valueOrNull?.uid ?? '';
+      if (userId.isNotEmpty) {
+        await _ref
+            .read(financeRepositoryProvider)
+            .saveRecurringTransaction(updated, userId);
+      }
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -343,6 +382,13 @@ class ForecastNotifier extends StateNotifier<ForecastState> {
         lastUpdatedAt: DateTime.now(),
       );
       await _recurringStorage.save(updated);
+      final authState = _ref.read(authStateProvider);
+      final userId = authState.valueOrNull?.uid ?? '';
+      if (userId.isNotEmpty) {
+        await _ref
+            .read(financeRepositoryProvider)
+            .saveRecurringTransaction(updated, userId);
+      }
     } catch (e, stack) {
       _errorHandler.handle(
         e,
