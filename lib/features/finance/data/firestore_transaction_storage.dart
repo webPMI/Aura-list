@@ -40,7 +40,9 @@ class FirestoreTransactionStorage
   ) async {
     try {
       final docRef = _collection(userId).doc(item.id);
-      await docRef.set(item.toFirestore()).timeout(timeout);
+      await docRef
+          .set(item.toFirestore(), SetOptions(merge: true))
+          .timeout(timeout);
       return CloudOperationResult.success(data: item, documentId: docRef.id);
     } catch (e, stack) {
       _errorHandler.handle(e, type: ErrorType.network, stackTrace: stack);
@@ -67,7 +69,7 @@ class FirestoreTransactionStorage
     try {
       await _collection(
         userId,
-      ).doc(documentId).update(item.toFirestore()).timeout(timeout);
+      ).doc(documentId).set(item.toFirestore(), SetOptions(merge: true)).timeout(timeout);
       return CloudOperationResult.success();
     } catch (e, stack) {
       _errorHandler.handle(e, type: ErrorType.network, stackTrace: stack);
@@ -150,7 +152,11 @@ class FirestoreTransactionStorage
     try {
       final batch = FirebaseFirestore.instance.batch();
       for (final item in items) {
-        batch.set(_collection(userId).doc(item.id), item.toFirestore());
+        batch.set(
+          _collection(userId).doc(item.id),
+          item.toFirestore(),
+          SetOptions(merge: true),
+        );
       }
       await batch.commit();
       return CloudOperationResult.success();

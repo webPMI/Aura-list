@@ -170,10 +170,9 @@ class ForecastNotifier extends StateNotifier<ForecastState> {
       await refreshAll();
 
       // Initial sync if user is authenticated
-      final authState = _ref.read(authStateProvider);
-      final user = authState.valueOrNull;
-      if (user != null) {
-        _ref.read(financeRepositoryProvider).performFullSync(user.uid);
+      final userId = _getUserId();
+      if (userId.isNotEmpty) {
+        unawaited(_ref.read(financeRepositoryProvider).performFullSync(userId));
       }
     } catch (e, stack) {
       _errorHandler.handle(
@@ -185,6 +184,16 @@ class ForecastNotifier extends StateNotifier<ForecastState> {
       );
       state = state.copyWith(isLoading: false, error: e.toString());
     }
+  }
+
+  String _getUserId() {
+    try {
+      final authService = _ref.read(authServiceProvider);
+      if (authService.currentUser != null) {
+        return authService.currentUser!.uid;
+      }
+    } catch (_) {}
+    return '';
   }
 
   /// Refresca todos los datos.
@@ -237,8 +246,7 @@ class ForecastNotifier extends StateNotifier<ForecastState> {
   Future<void> addRecurringTransaction(RecurringTransaction transaction) async {
     try {
       await _recurringStorage.save(transaction);
-      final authState = _ref.read(authStateProvider);
-      final userId = authState.valueOrNull?.uid ?? '';
+      final userId = _getUserId();
       if (userId.isNotEmpty) {
         await _ref
             .read(financeRepositoryProvider)
@@ -260,8 +268,7 @@ class ForecastNotifier extends StateNotifier<ForecastState> {
   ) async {
     try {
       await _recurringStorage.save(transaction);
-      final authState = _ref.read(authStateProvider);
-      final userId = authState.valueOrNull?.uid ?? '';
+      final userId = _getUserId();
       if (userId.isNotEmpty) {
         await _ref
             .read(financeRepositoryProvider)
@@ -298,6 +305,12 @@ class ForecastNotifier extends StateNotifier<ForecastState> {
     try {
       final updated = transaction.copyWith(active: !transaction.active);
       await _recurringStorage.save(updated);
+      final userId = _getUserId();
+      if (userId.isNotEmpty) {
+        await _ref
+            .read(financeRepositoryProvider)
+            .saveRecurringTransaction(updated, userId);
+      }
     } catch (e, stack) {
       _errorHandler.handle(
         e,
@@ -327,8 +340,7 @@ class ForecastNotifier extends StateNotifier<ForecastState> {
         lastUpdatedAt: DateTime.now(),
       );
       await _recurringStorage.save(updated);
-      final authState = _ref.read(authStateProvider);
-      final userId = authState.valueOrNull?.uid ?? '';
+      final userId = _getUserId();
       if (userId.isNotEmpty) {
         await _ref
             .read(financeRepositoryProvider)
@@ -352,8 +364,7 @@ class ForecastNotifier extends StateNotifier<ForecastState> {
         lastUpdatedAt: DateTime.now(),
       );
       await _recurringStorage.save(updated);
-      final authState = _ref.read(authStateProvider);
-      final userId = authState.valueOrNull?.uid ?? '';
+      final userId = _getUserId();
       if (userId.isNotEmpty) {
         await _ref
             .read(financeRepositoryProvider)
@@ -382,8 +393,7 @@ class ForecastNotifier extends StateNotifier<ForecastState> {
         lastUpdatedAt: DateTime.now(),
       );
       await _recurringStorage.save(updated);
-      final authState = _ref.read(authStateProvider);
-      final userId = authState.valueOrNull?.uid ?? '';
+      final userId = _getUserId();
       if (userId.isNotEmpty) {
         await _ref
             .read(financeRepositoryProvider)

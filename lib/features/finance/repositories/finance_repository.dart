@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../data/category_storage.dart';
 import '../data/transaction_storage.dart';
 import '../data/recurring_transaction_storage.dart';
@@ -35,6 +36,15 @@ class FinanceRepository {
         _transactionSync = transactionSync,
         _recurringSync = recurringSync;
 
+  String _resolveUserId(String userId) {
+    if (userId.isNotEmpty) return userId;
+    try {
+      return FirebaseAuth.instance.currentUser?.uid ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
+
   Future<void> init() async {
     if (_initialized) return;
     await _categoryStorage.init();
@@ -50,11 +60,13 @@ class FinanceRepository {
   Future<List<FinanceCategory>> getCategories() => _categoryStorage.getAll();
 
   Future<void> saveCategory(FinanceCategory category, String userId) async {
+    final effectiveUserId = _resolveUserId(userId);
     await _categoryStorage.save(category);
-    if (userId.isNotEmpty) {
+    if (effectiveUserId.isNotEmpty) {
       await _categorySync
-          .syncToCloudDebounced(category, userId)
+          .syncToCloudDebounced(category, effectiveUserId)
           .handleErrorsOrNull(type: ErrorType.network);
+      unawaited(_categorySync.flushPendingSyncs());
     }
   }
 
@@ -68,23 +80,26 @@ class FinanceRepository {
   Stream<List<Transaction>> watchTransactions() => _transactionStorage.watch();
 
   Future<void> saveTransaction(Transaction transaction, String userId) async {
+    final effectiveUserId = _resolveUserId(userId);
     await _transactionStorage
         .save(transaction)
         .handleErrors(
           type: ErrorType.database,
           userMessage: 'Error al guardar transacción localmente',
         );
-    if (userId.isNotEmpty) {
+    if (effectiveUserId.isNotEmpty) {
       await _transactionSync
-          .syncToCloudDebounced(transaction, userId)
+          .syncToCloudDebounced(transaction, effectiveUserId)
           .handleErrorsOrNull(
             type: ErrorType.network,
             userMessage: 'Error al programar sincronización de transacción',
           );
+      unawaited(_transactionSync.flushPendingSyncs());
     }
   }
 
   Future<void> deleteTransaction(dynamic key, String userId) async {
+    final effectiveUserId = _resolveUserId(userId);
     final transaction = await _transactionStorage.getByKey(key);
     await _transactionStorage
         .delete(key)
@@ -93,10 +108,11 @@ class FinanceRepository {
           userMessage: 'Error al eliminar transacción',
         );
 
-    if (transaction != null && userId.isNotEmpty) {
+    if (transaction != null && effectiveUserId.isNotEmpty) {
       await _transactionSync
-          .syncToCloudDebounced(transaction, userId)
+          .syncToCloudDebounced(transaction, effectiveUserId)
           .handleErrorsOrNull(type: ErrorType.network);
+      unawaited(_transactionSync.flushPendingSyncs());
     }
   }
 
@@ -105,25 +121,28 @@ class FinanceRepository {
     RecurringTransaction recurring,
     String userId,
   ) async {
+    final effectiveUserId = _resolveUserId(userId);
     if (_recurringStorage != null) {
       await _recurringStorage.save(recurring);
     }
-    if (_recurringSync != null && userId.isNotEmpty) {
+    if (_recurringSync != null && effectiveUserId.isNotEmpty) {
       await _recurringSync
-          .syncToCloudDebounced(recurring, userId)
+          .syncToCloudDebounced(recurring, effectiveUserId)
           .handleErrorsOrNull(
             type: ErrorType.network,
             userMessage: 'Error al sincronizar cuota/recurrente',
           );
+      unawaited(_recurringSync.flushPendingSyncs());
     }
   }
 
   Future<void> performFullSync(String userId) async {
-    if (userId.isEmpty) return;
-    await _categorySync.performFullSync(userId);
-    await _transactionSync.performFullSync(userId);
+    final effectiveUserId = _resolveUserId(userId);
+    if (effectiveUserId.isEmpty) return;
+    await _categorySync.performFullSync(effectiveUserId);
+    await _transactionSync.performFullSync(effectiveUserId);
     if (_recurringSync != null) {
-      await _recurringSync.performFullSync(userId);
+      await _recurringSync.performFullSync(effectiveUserId);
     }
   }
 }

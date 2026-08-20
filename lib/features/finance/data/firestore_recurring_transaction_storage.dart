@@ -42,7 +42,9 @@ class FirestoreRecurringTransactionStorage
   ) async {
     try {
       final docRef = _collection(userId).doc(item.id);
-      await docRef.set(item.toFirestore()).timeout(timeout);
+      await docRef
+          .set(item.toFirestore(), SetOptions(merge: true))
+          .timeout(timeout);
       _logger.debug(
         'Finance',
         '[FirestoreRecurringTransactionStorage] Created: ${item.id}',
@@ -73,7 +75,7 @@ class FirestoreRecurringTransactionStorage
     try {
       await _collection(userId)
           .doc(documentId)
-          .update(item.toFirestore())
+          .set(item.toFirestore(), SetOptions(merge: true))
           .timeout(timeout);
       _logger.debug(
         'Finance',
@@ -170,7 +172,11 @@ class FirestoreRecurringTransactionStorage
     try {
       final batch = FirebaseFirestore.instance.batch();
       for (final item in items) {
-        batch.set(_collection(userId).doc(item.id), item.toFirestore());
+        batch.set(
+          _collection(userId).doc(item.id),
+          item.toFirestore(),
+          SetOptions(merge: true),
+        );
       }
       await batch.commit();
       _logger.debug(

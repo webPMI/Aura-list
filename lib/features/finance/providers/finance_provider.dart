@@ -107,10 +107,9 @@ class FinanceNotifier extends StateNotifier<FinanceState> {
       );
 
       // Initial sync if user is logged in
-      final authState = _ref.read(authStateProvider);
-      final user = authState.valueOrNull;
-      if (user != null) {
-        _repository.performFullSync(user.uid);
+      final userId = _getUserId();
+      if (userId.isNotEmpty) {
+        unawaited(_repository.performFullSync(userId));
       }
     } catch (e, stack) {
       ErrorHandler().handle(
@@ -123,6 +122,16 @@ class FinanceNotifier extends StateNotifier<FinanceState> {
     }
   }
 
+  String _getUserId() {
+    try {
+      final authService = _ref.read(authServiceProvider);
+      if (authService.currentUser != null) {
+        return authService.currentUser!.uid;
+      }
+    } catch (_) {}
+    return '';
+  }
+
   Future<void> addTransaction({
     required String title,
     required double amount,
@@ -131,9 +140,7 @@ class FinanceNotifier extends StateNotifier<FinanceState> {
     required FinanceCategoryType type,
     String? note,
   }) async {
-    final authState = _ref.read(authStateProvider);
-    final user = authState.valueOrNull;
-    final userId = user?.uid ?? '';
+    final userId = _getUserId();
 
     final transaction = Transaction(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -150,34 +157,26 @@ class FinanceNotifier extends StateNotifier<FinanceState> {
   }
 
   Future<void> deleteTransaction(dynamic key) async {
-    final authState = _ref.read(authStateProvider);
-    final user = authState.valueOrNull;
-    final userId = user?.uid ?? '';
+    final userId = _getUserId();
     await _repository.deleteTransaction(key, userId);
   }
 
   Future<void> addCategory(FinanceCategory category) async {
-    final authState = _ref.read(authStateProvider);
-    final user = authState.valueOrNull;
-    final userId = user?.uid ?? '';
+    final userId = _getUserId();
     await _repository.saveCategory(category, userId);
     final categories = await _repository.getCategories();
     state = state.copyWith(categories: categories);
   }
 
   Future<void> updateCategory(FinanceCategory category) async {
-    final authState = _ref.read(authStateProvider);
-    final user = authState.valueOrNull;
-    final userId = user?.uid ?? '';
+    final userId = _getUserId();
     await _repository.saveCategory(category, userId);
     final categories = await _repository.getCategories();
     state = state.copyWith(categories: categories);
   }
 
   Future<void> deleteCategory(dynamic key) async {
-    final authState = _ref.read(authStateProvider);
-    final user = authState.valueOrNull;
-    final userId = user?.uid ?? '';
+    final userId = _getUserId();
     await _repository.deleteCategory(key, userId);
     final categories = await _repository.getCategories();
     state = state.copyWith(categories: categories);
