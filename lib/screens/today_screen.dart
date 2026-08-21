@@ -8,6 +8,7 @@ import '../core/responsive/breakpoints.dart';
 import '../widgets/task_tile.dart';
 import '../widgets/dialogs/task_form_dialog.dart';
 import '../widgets/rest_day_banner.dart';
+import '../widgets/pomodoro_timer_card.dart';
 
 /// Focus Mode / Today View.
 ///
@@ -57,6 +58,7 @@ class TodayScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _TodayProgressHeader(completed: completed, total: total),
+              const PomodoroTimerCard(),
               const Divider(height: 1),
               const RestDayBanner(),
               Expanded(
