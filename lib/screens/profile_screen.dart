@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/responsive/breakpoints.dart';
 import '../core/utils/color_utils.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
+import '../services/encryption/encryption_service.dart';
 import '../core/constants/legal/terms_of_service.dart';
 import '../core/constants/legal/privacy_policy.dart';
 import '../providers/task_provider.dart';
@@ -80,7 +82,31 @@ class ProfileScreen extends ConsumerWidget {
               const Divider(),
 
               // Privacy Controls Section
-              _SectionHeader('Privacidad'),
+              _SectionHeader('Privacidad y Seguridad'),
+              ListTile(
+                leading: const Icon(
+                  Icons.shield_outlined,
+                  color: Colors.green,
+                ),
+                title: const Text('Cifrado de Extremo a Extremo (E2EE)'),
+                subtitle: const Text('Tus datos se guardan cifrados con clave local'),
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'AES-256',
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+                onTap: () => _showEncryptionKeyDialog(context),
+              ),
               const SyncToggleTile(),
               ListTile(
                 leading: Icon(
@@ -121,6 +147,113 @@ class ProfileScreen extends ConsumerWidget {
               _AboutSection(),
 
               const SizedBox(height: 32),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showEncryptionKeyDialog(BuildContext context) {
+    final encryption = EncryptionService();
+    final key = encryption.exportableKey;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.lock_outline, color: Colors.green, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Cifrado Zero-Knowledge',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Tus tareas, notas y finanzas se cifran localmente con el algoritmo militar AES-256 antes de salir de tu teléfono. Ni Google ni los servidores pueden leer tus datos.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: colorScheme.onSurface.withValues(alpha: 0.7),
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Tu Clave Maestra de Seguridad:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  ),
+                ),
+                child: SelectableText(
+                  key,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: key));
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Clave copiada al portapapeles'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.copy, size: 18),
+                      label: const Text('Copiar Clave'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Entendido'),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),

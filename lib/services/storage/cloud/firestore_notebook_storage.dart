@@ -11,6 +11,7 @@ import '../../../models/notebook_model.dart';
 import '../../contracts/i_cloud_storage.dart';
 import '../../error_handler.dart';
 import '../../logger_service.dart';
+import '../../encryption/encryption_service.dart';
 
 /// Firestore-based cloud storage for notebooks
 class FirestoreNotebookStorage implements ICloudStorageWithTimeout<Notebook> {
@@ -18,6 +19,7 @@ class FirestoreNotebookStorage implements ICloudStorageWithTimeout<Notebook> {
 
   final ErrorHandler _errorHandler;
   final LoggerService _logger = LoggerService();
+  final EncryptionService _encryption = EncryptionService();
 
   FirebaseFirestore? _firestore;
   bool _firebaseAvailable = false;
@@ -79,7 +81,7 @@ class FirestoreNotebookStorage implements ICloudStorageWithTimeout<Notebook> {
     try {
       final docRef = _notebooksCollection(userId).doc();
 
-      await docRef.set(notebook.toFirestore()).timeout(
+      await docRef.set(_encryption.encryptMap(notebook.toFirestore())).timeout(
             timeout,
             onTimeout: () => throw TimeoutException('Create notebook timeout'),
           );
@@ -141,7 +143,7 @@ class FirestoreNotebookStorage implements ICloudStorageWithTimeout<Notebook> {
     }
 
     try {
-      await _notebooksCollection(userId).doc(documentId).update(notebook.toFirestore()).timeout(
+      await _notebooksCollection(userId).doc(documentId).update(_encryption.encryptMap(notebook.toFirestore())).timeout(
             timeout,
             onTimeout: () => throw TimeoutException('Update notebook timeout'),
           );
@@ -238,7 +240,7 @@ class FirestoreNotebookStorage implements ICloudStorageWithTimeout<Notebook> {
         return CloudOperationResult.failure('Notebook not found');
       }
 
-      final notebook = Notebook.fromFirestore(doc.id, doc.data()!);
+      final notebook = Notebook.fromFirestore(doc.id, _encryption.decryptMap(doc.data()!));
       return CloudOperationResult.success(data: notebook, documentId: doc.id);
     } on FirebaseException catch (e, stack) {
       _errorHandler.handle(
@@ -278,7 +280,7 @@ class FirestoreNotebookStorage implements ICloudStorageWithTimeout<Notebook> {
           );
 
       final notebooks = snapshot.docs.map((doc) {
-        return Notebook.fromFirestore(doc.id, doc.data());
+        return Notebook.fromFirestore(doc.id, _encryption.decryptMap(doc.data()));
       }).toList();
 
       _logger.debug(
@@ -331,7 +333,7 @@ class FirestoreNotebookStorage implements ICloudStorageWithTimeout<Notebook> {
           );
 
       final notebooks = snapshot.docs.map((doc) {
-        return Notebook.fromFirestore(doc.id, doc.data());
+        return Notebook.fromFirestore(doc.id, _encryption.decryptMap(doc.data()));
       }).toList();
 
       _logger.debug(
@@ -391,7 +393,7 @@ class FirestoreNotebookStorage implements ICloudStorageWithTimeout<Notebook> {
           notebook.firestoreId = docRef.id;
         }
 
-        batch.set(docRef, notebook.toFirestore(), SetOptions(merge: true));
+        batch.set(docRef, _encryption.encryptMap(notebook.toFirestore()), SetOptions(merge: true));
       }
 
       await batch.commit().timeout(
@@ -434,7 +436,7 @@ class FirestoreNotebookStorage implements ICloudStorageWithTimeout<Notebook> {
 
     return _notebooksCollection(userId).snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
-        return Notebook.fromFirestore(doc.id, doc.data());
+        return Notebook.fromFirestore(doc.id, _encryption.decryptMap(doc.data()));
       }).toList();
     }).handleError((error, stackTrace) {
       _errorHandler.handle(
@@ -459,7 +461,7 @@ class FirestoreNotebookStorage implements ICloudStorageWithTimeout<Notebook> {
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
-        return Notebook.fromFirestore(doc.id, doc.data());
+        return Notebook.fromFirestore(doc.id, _encryption.decryptMap(doc.data()));
       }).toList();
     }).handleError((error, stackTrace) {
       _errorHandler.handle(

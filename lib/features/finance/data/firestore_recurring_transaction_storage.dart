@@ -4,12 +4,14 @@ import '../models/recurring_transaction.dart';
 import '../../../services/contracts/i_cloud_storage.dart';
 import '../../../services/error_handler.dart';
 import '../../../services/logger_service.dart';
+import '../../../services/encryption/encryption_service.dart';
 
 class FirestoreRecurringTransactionStorage
     implements ICloudStorageWithTimeout<RecurringTransaction> {
   static const String collectionName = 'finance_recurring_transactions';
   final ErrorHandler _errorHandler;
   final LoggerService _logger = LoggerService();
+  final EncryptionService _encryption = EncryptionService();
 
   FirestoreRecurringTransactionStorage(this._errorHandler);
 
@@ -17,7 +19,7 @@ class FirestoreRecurringTransactionStorage
   Duration get defaultTimeout => const Duration(seconds: 10);
 
   @override
-  bool get isAvailable => true; // Firebase is initialized in main
+  bool get isAvailable => true;
 
   CollectionReference<Map<String, dynamic>> _collection(String userId) {
     return FirebaseFirestore.instance
@@ -43,7 +45,7 @@ class FirestoreRecurringTransactionStorage
     try {
       final docRef = _collection(userId).doc(item.id);
       await docRef
-          .set(item.toFirestore(), SetOptions(merge: true))
+          .set(_encryption.encryptMap(item.toFirestore()), SetOptions(merge: true))
           .timeout(timeout);
       _logger.debug(
         'Finance',
@@ -75,7 +77,7 @@ class FirestoreRecurringTransactionStorage
     try {
       await _collection(userId)
           .doc(documentId)
-          .set(item.toFirestore(), SetOptions(merge: true))
+          .set(_encryption.encryptMap(item.toFirestore()), SetOptions(merge: true))
           .timeout(timeout);
       _logger.debug(
         'Finance',
@@ -115,7 +117,7 @@ class FirestoreRecurringTransactionStorage
       final doc = await _collection(userId).doc(documentId).get();
       if (!doc.exists) return CloudOperationResult.failure('Not found');
       return CloudOperationResult.success(
-        data: RecurringTransaction.fromFirestore(doc.id, doc.data()!),
+        data: RecurringTransaction.fromFirestore(doc.id, _encryption.decryptMap(doc.data()!)),
         documentId: doc.id,
       );
     } catch (e, stack) {
@@ -129,10 +131,10 @@ class FirestoreRecurringTransactionStorage
     String userId,
   ) async {
     try {
-      final query =
-          await _collection(userId).where('deleted', isEqualTo: false).get();
+      final query = await _collection(userId).get();
       final items = query.docs
-          .map((doc) => RecurringTransaction.fromFirestore(doc.id, doc.data()))
+          .map((doc) => RecurringTransaction.fromFirestore(doc.id, _encryption.decryptMap(doc.data())))
+          .where((t) => !t.deleted)
           .toList();
       _logger.debug(
         'Finance',
@@ -155,7 +157,7 @@ class FirestoreRecurringTransactionStorage
           .where('lastUpdatedAt', isGreaterThan: since.millisecondsSinceEpoch)
           .get();
       final items = query.docs
-          .map((doc) => RecurringTransaction.fromFirestore(doc.id, doc.data()))
+          .map((doc) => RecurringTransaction.fromFirestore(doc.id, _encryption.decryptMap(doc.data())))
           .toList();
       return CloudOperationResult.success(data: items);
     } catch (e, stack) {
@@ -174,7 +176,7 @@ class FirestoreRecurringTransactionStorage
       for (final item in items) {
         batch.set(
           _collection(userId).doc(item.id),
-          item.toFirestore(),
+          _encryption.encryptMap(item.toFirestore()),
           SetOptions(merge: true),
         );
       }
@@ -193,13 +195,13 @@ class FirestoreRecurringTransactionStorage
   @override
   Stream<List<RecurringTransaction>> watchAll(String userId) {
     return _collection(userId)
-        .where('deleted', isEqualTo: false)
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
               .map(
-                (doc) => RecurringTransaction.fromFirestore(doc.id, doc.data()),
+                (doc) => RecurringTransaction.fromFirestore(doc.id, _encryption.decryptMap(doc.data())),
               )
+              .where((t) => !t.deleted)
               .toList(),
         );
   }
@@ -215,12 +217,9 @@ class FirestoreRecurringTransactionStorage
         .map(
           (snapshot) => snapshot.docs
               .map(
-                (doc) => RecurringTransaction.fromFirestore(doc.id, doc.data()),
+                (doc) => RecurringTransaction.fromFirestore(doc.id, _encryption.decryptMap(doc.data())),
               )
               .toList(),
         );
   }
 }
-
-
-

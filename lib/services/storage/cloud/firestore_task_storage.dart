@@ -11,6 +11,7 @@ import '../../../models/task_model.dart';
 import '../../contracts/i_cloud_storage.dart';
 import '../../error_handler.dart';
 import '../../logger_service.dart';
+import '../../encryption/encryption_service.dart';
 
 /// Firestore-based cloud storage for tasks
 class FirestoreTaskStorage implements ICloudStorageWithTimeout<Task> {
@@ -18,6 +19,7 @@ class FirestoreTaskStorage implements ICloudStorageWithTimeout<Task> {
 
   final ErrorHandler _errorHandler;
   final LoggerService _logger = LoggerService();
+  final EncryptionService _encryption = EncryptionService();
 
   FirebaseFirestore? _firestore;
   bool _firebaseAvailable = false;
@@ -80,7 +82,7 @@ class FirestoreTaskStorage implements ICloudStorageWithTimeout<Task> {
     try {
       final docRef = _tasksCollection(userId).doc();
 
-      await docRef.set(task.toFirestore()).timeout(
+      await docRef.set(_encryption.encryptMap(task.toFirestore())).timeout(
             timeout,
             onTimeout: () => throw TimeoutException('Create task timeout'),
           );
@@ -142,7 +144,7 @@ class FirestoreTaskStorage implements ICloudStorageWithTimeout<Task> {
     }
 
     try {
-      await _tasksCollection(userId).doc(documentId).update(task.toFirestore()).timeout(
+      await _tasksCollection(userId).doc(documentId).update(_encryption.encryptMap(task.toFirestore())).timeout(
             timeout,
             onTimeout: () => throw TimeoutException('Update task timeout'),
           );
@@ -239,7 +241,7 @@ class FirestoreTaskStorage implements ICloudStorageWithTimeout<Task> {
         return CloudOperationResult.failure('Task not found');
       }
 
-      final task = Task.fromFirestore(doc.id, doc.data()!);
+      final task = Task.fromFirestore(doc.id, _encryption.decryptMap(doc.data()!));
       return CloudOperationResult.success(data: task, documentId: doc.id);
     } on FirebaseException catch (e, stack) {
       _errorHandler.handle(
@@ -279,7 +281,7 @@ class FirestoreTaskStorage implements ICloudStorageWithTimeout<Task> {
           );
 
       final tasks = snapshot.docs.map((doc) {
-        return Task.fromFirestore(doc.id, doc.data());
+        return Task.fromFirestore(doc.id, _encryption.decryptMap(doc.data()));
       }).toList();
 
       _logger.debug(
@@ -332,7 +334,7 @@ class FirestoreTaskStorage implements ICloudStorageWithTimeout<Task> {
           );
 
       final tasks = snapshot.docs.map((doc) {
-        return Task.fromFirestore(doc.id, doc.data());
+        return Task.fromFirestore(doc.id, _encryption.decryptMap(doc.data()));
       }).toList();
 
       _logger.debug(
@@ -392,7 +394,7 @@ class FirestoreTaskStorage implements ICloudStorageWithTimeout<Task> {
           task.firestoreId = docRef.id;
         }
 
-        batch.set(docRef, task.toFirestore(), SetOptions(merge: true));
+        batch.set(docRef, _encryption.encryptMap(task.toFirestore()), SetOptions(merge: true));
       }
 
       await batch.commit().timeout(
@@ -435,7 +437,7 @@ class FirestoreTaskStorage implements ICloudStorageWithTimeout<Task> {
 
     return _tasksCollection(userId).snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
-        return Task.fromFirestore(doc.id, doc.data());
+        return Task.fromFirestore(doc.id, _encryption.decryptMap(doc.data()));
       }).toList();
     }).handleError((error, stackTrace) {
       _errorHandler.handle(
@@ -460,7 +462,7 @@ class FirestoreTaskStorage implements ICloudStorageWithTimeout<Task> {
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
-        return Task.fromFirestore(doc.id, doc.data());
+        return Task.fromFirestore(doc.id, _encryption.decryptMap(doc.data()));
       }).toList();
     }).handleError((error, stackTrace) {
       _errorHandler.handle(

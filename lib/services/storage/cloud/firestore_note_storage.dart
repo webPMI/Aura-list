@@ -11,6 +11,7 @@ import '../../../models/note_model.dart';
 import '../../contracts/i_cloud_storage.dart';
 import '../../error_handler.dart';
 import '../../logger_service.dart';
+import '../../encryption/encryption_service.dart';
 
 /// Firestore-based cloud storage for notes
 class FirestoreNoteStorage implements ICloudStorageWithTimeout<Note> {
@@ -18,6 +19,7 @@ class FirestoreNoteStorage implements ICloudStorageWithTimeout<Note> {
 
   final ErrorHandler _errorHandler;
   final LoggerService _logger = LoggerService();
+  final EncryptionService _encryption = EncryptionService();
 
   FirebaseFirestore? _firestore;
   bool _firebaseAvailable = false;
@@ -79,7 +81,7 @@ class FirestoreNoteStorage implements ICloudStorageWithTimeout<Note> {
     try {
       final docRef = _notesCollection(userId).doc();
 
-      await docRef.set(note.toFirestore()).timeout(
+      await docRef.set(_encryption.encryptMap(note.toFirestore())).timeout(
             timeout,
             onTimeout: () => throw TimeoutException('Create note timeout'),
           );
@@ -141,7 +143,7 @@ class FirestoreNoteStorage implements ICloudStorageWithTimeout<Note> {
     }
 
     try {
-      await _notesCollection(userId).doc(documentId).update(note.toFirestore()).timeout(
+      await _notesCollection(userId).doc(documentId).update(_encryption.encryptMap(note.toFirestore())).timeout(
             timeout,
             onTimeout: () => throw TimeoutException('Update note timeout'),
           );
@@ -238,7 +240,7 @@ class FirestoreNoteStorage implements ICloudStorageWithTimeout<Note> {
         return CloudOperationResult.failure('Note not found');
       }
 
-      final note = Note.fromFirestore(doc.id, doc.data()!);
+      final note = Note.fromFirestore(doc.id, _encryption.decryptMap(doc.data()!));
       return CloudOperationResult.success(data: note, documentId: doc.id);
     } on FirebaseException catch (e, stack) {
       _errorHandler.handle(
@@ -278,7 +280,7 @@ class FirestoreNoteStorage implements ICloudStorageWithTimeout<Note> {
           );
 
       final notes = snapshot.docs.map((doc) {
-        return Note.fromFirestore(doc.id, doc.data());
+        return Note.fromFirestore(doc.id, _encryption.decryptMap(doc.data()));
       }).toList();
 
       _logger.debug(
@@ -331,7 +333,7 @@ class FirestoreNoteStorage implements ICloudStorageWithTimeout<Note> {
           );
 
       final notes = snapshot.docs.map((doc) {
-        return Note.fromFirestore(doc.id, doc.data());
+        return Note.fromFirestore(doc.id, _encryption.decryptMap(doc.data()));
       }).toList();
 
       _logger.debug(
@@ -391,7 +393,7 @@ class FirestoreNoteStorage implements ICloudStorageWithTimeout<Note> {
           note.firestoreId = docRef.id;
         }
 
-        batch.set(docRef, note.toFirestore(), SetOptions(merge: true));
+        batch.set(docRef, _encryption.encryptMap(note.toFirestore()), SetOptions(merge: true));
       }
 
       await batch.commit().timeout(
@@ -434,7 +436,7 @@ class FirestoreNoteStorage implements ICloudStorageWithTimeout<Note> {
 
     return _notesCollection(userId).snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
-        return Note.fromFirestore(doc.id, doc.data());
+        return Note.fromFirestore(doc.id, _encryption.decryptMap(doc.data()));
       }).toList();
     }).handleError((error, stackTrace) {
       _errorHandler.handle(
@@ -459,7 +461,7 @@ class FirestoreNoteStorage implements ICloudStorageWithTimeout<Note> {
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
-        return Note.fromFirestore(doc.id, doc.data());
+        return Note.fromFirestore(doc.id, _encryption.decryptMap(doc.data()));
       }).toList();
     }).handleError((error, stackTrace) {
       _errorHandler.handle(

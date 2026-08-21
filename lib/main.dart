@@ -16,6 +16,7 @@ import 'features/guides/services/avatar_preload_service.dart';
 import 'widgets/global_error_listener.dart';
 import 'providers/notification_provider.dart';
 import 'features/finance/providers/finance_provider.dart';
+import 'services/encryption/encryption_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,6 +41,9 @@ void main() async {
 
   // Initialize date formatting for Spanish
   await initializeDateFormatting('es', null);
+
+  // Initialize End-to-End Encryption Service
+  await EncryptionService().initialize();
 
   runApp(
     ProviderScope(

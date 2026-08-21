@@ -3,11 +3,13 @@ import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import '../models/transaction.dart';
 import '../../../services/contracts/i_cloud_storage.dart';
 import '../../../services/error_handler.dart';
+import '../../../services/encryption/encryption_service.dart';
 
 class FirestoreTransactionStorage
     implements ICloudStorageWithTimeout<Transaction> {
   static const String collectionName = 'finance_transactions';
   final ErrorHandler _errorHandler;
+  final EncryptionService _encryption = EncryptionService();
 
   FirestoreTransactionStorage(this._errorHandler);
 
@@ -15,7 +17,7 @@ class FirestoreTransactionStorage
   Duration get defaultTimeout => const Duration(seconds: 10);
 
   @override
-  bool get isAvailable => true; // Firebase is initialized in main
+  bool get isAvailable => true;
 
   CollectionReference<Map<String, dynamic>> _collection(String userId) {
     return FirebaseFirestore.instance
@@ -41,7 +43,7 @@ class FirestoreTransactionStorage
     try {
       final docRef = _collection(userId).doc(item.id);
       await docRef
-          .set(item.toFirestore(), SetOptions(merge: true))
+          .set(_encryption.encryptMap(item.toFirestore()), SetOptions(merge: true))
           .timeout(timeout);
       return CloudOperationResult.success(data: item, documentId: docRef.id);
     } catch (e, stack) {
@@ -69,7 +71,7 @@ class FirestoreTransactionStorage
     try {
       await _collection(
         userId,
-      ).doc(documentId).set(item.toFirestore(), SetOptions(merge: true)).timeout(timeout);
+      ).doc(documentId).set(_encryption.encryptMap(item.toFirestore()), SetOptions(merge: true)).timeout(timeout);
       return CloudOperationResult.success();
     } catch (e, stack) {
       _errorHandler.handle(e, type: ErrorType.network, stackTrace: stack);
@@ -100,7 +102,7 @@ class FirestoreTransactionStorage
       final doc = await _collection(userId).doc(documentId).get();
       if (!doc.exists) return CloudOperationResult.failure('Not found');
       return CloudOperationResult.success(
-        data: Transaction.fromFirestore(doc.id, doc.data()!),
+        data: Transaction.fromFirestore(doc.id, _encryption.decryptMap(doc.data()!)),
         documentId: doc.id,
       );
     } catch (e, stack) {
@@ -114,9 +116,10 @@ class FirestoreTransactionStorage
     try {
       final query = await _collection(
         userId,
-      ).where('deleted', isEqualTo: false).get();
+      ).get();
       final items = query.docs
-          .map((doc) => Transaction.fromFirestore(doc.id, doc.data()))
+          .map((doc) => Transaction.fromFirestore(doc.id, _encryption.decryptMap(doc.data())))
+          .where((t) => !t.deleted)
           .toList();
       return CloudOperationResult.success(data: items);
     } catch (e, stack) {
@@ -135,7 +138,7 @@ class FirestoreTransactionStorage
           .where('lastUpdatedAt', isGreaterThan: since.millisecondsSinceEpoch)
           .get();
       final items = query.docs
-          .map((doc) => Transaction.fromFirestore(doc.id, doc.data()))
+          .map((doc) => Transaction.fromFirestore(doc.id, _encryption.decryptMap(doc.data())))
           .toList();
       return CloudOperationResult.success(data: items);
     } catch (e, stack) {
@@ -154,7 +157,7 @@ class FirestoreTransactionStorage
       for (final item in items) {
         batch.set(
           _collection(userId).doc(item.id),
-          item.toFirestore(),
+          _encryption.encryptMap(item.toFirestore()),
           SetOptions(merge: true),
         );
       }
@@ -169,11 +172,11 @@ class FirestoreTransactionStorage
   @override
   Stream<List<Transaction>> watchAll(String userId) {
     return _collection(userId)
-        .where('deleted', isEqualTo: false)
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
-              .map((doc) => Transaction.fromFirestore(doc.id, doc.data()))
+              .map((doc) => Transaction.fromFirestore(doc.id, _encryption.decryptMap(doc.data())))
+              .where((t) => !t.deleted)
               .toList(),
         );
   }
@@ -185,11 +188,8 @@ class FirestoreTransactionStorage
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
-              .map((doc) => Transaction.fromFirestore(doc.id, doc.data()))
+              .map((doc) => Transaction.fromFirestore(doc.id, _encryption.decryptMap(doc.data())))
               .toList(),
         );
   }
 }
-
-
-

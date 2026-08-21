@@ -3,11 +3,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/finance_category.dart';
 import '../../../services/contracts/i_cloud_storage.dart';
 import '../../../services/error_handler.dart';
+import '../../../services/encryption/encryption_service.dart';
 
 class FirestoreCategoryStorage
     implements ICloudStorageWithTimeout<FinanceCategory> {
   static const String collectionName = 'finance_categories';
   final ErrorHandler _errorHandler;
+  final EncryptionService _encryption = EncryptionService();
 
   FirestoreCategoryStorage(this._errorHandler);
 
@@ -15,7 +17,7 @@ class FirestoreCategoryStorage
   Duration get defaultTimeout => const Duration(seconds: 10);
 
   @override
-  bool get isAvailable => true; // Firebase is initialized in main
+  bool get isAvailable => true;
 
   CollectionReference<Map<String, dynamic>> _collection(String userId) {
     return FirebaseFirestore.instance
@@ -41,7 +43,7 @@ class FirestoreCategoryStorage
     try {
       final docRef = _collection(userId).doc(item.id);
       await docRef
-          .set(item.toFirestore(), SetOptions(merge: true))
+          .set(_encryption.encryptMap(item.toFirestore()), SetOptions(merge: true))
           .timeout(timeout);
       return CloudOperationResult.success(data: item, documentId: docRef.id);
     } catch (e, stack) {
@@ -69,7 +71,7 @@ class FirestoreCategoryStorage
     try {
       await _collection(
         userId,
-      ).doc(documentId).set(item.toFirestore(), SetOptions(merge: true)).timeout(timeout);
+      ).doc(documentId).set(_encryption.encryptMap(item.toFirestore()), SetOptions(merge: true)).timeout(timeout);
       return CloudOperationResult.success();
     } catch (e, stack) {
       _errorHandler.handle(e, type: ErrorType.network, stackTrace: stack);
@@ -100,7 +102,7 @@ class FirestoreCategoryStorage
       final doc = await _collection(userId).doc(documentId).get();
       if (!doc.exists) return CloudOperationResult.failure('Not found');
       return CloudOperationResult.success(
-        data: FinanceCategory.fromFirestore(doc.id, doc.data()!),
+        data: FinanceCategory.fromFirestore(doc.id, _encryption.decryptMap(doc.data()!)),
         documentId: doc.id,
       );
     } catch (e, stack) {
@@ -116,7 +118,7 @@ class FirestoreCategoryStorage
     try {
       final query = await _collection(userId).get();
       final items = query.docs
-          .map((doc) => FinanceCategory.fromFirestore(doc.id, doc.data()))
+          .map((doc) => FinanceCategory.fromFirestore(doc.id, _encryption.decryptMap(doc.data())))
           .toList();
       return CloudOperationResult.success(data: items);
     } catch (e, stack) {
@@ -130,8 +132,6 @@ class FirestoreCategoryStorage
     String userId,
     DateTime since,
   ) async {
-    // Current models don't have a reliable server-side timestamp for categories yet
-    // but we can filter by client-side if needed. For categories, getAll is usually fine.
     return getAll(userId);
   }
 
@@ -145,7 +145,7 @@ class FirestoreCategoryStorage
       for (final item in items) {
         batch.set(
           _collection(userId).doc(item.id),
-          item.toFirestore(),
+          _encryption.encryptMap(item.toFirestore()),
           SetOptions(merge: true),
         );
       }
@@ -161,7 +161,7 @@ class FirestoreCategoryStorage
   Stream<List<FinanceCategory>> watchAll(String userId) {
     return _collection(userId).snapshots().map(
       (snapshot) => snapshot.docs
-          .map((doc) => FinanceCategory.fromFirestore(doc.id, doc.data()))
+          .map((doc) => FinanceCategory.fromFirestore(doc.id, _encryption.decryptMap(doc.data())))
           .toList(),
     );
   }
@@ -174,6 +174,3 @@ class FirestoreCategoryStorage
     return watchAll(userId);
   }
 }
-
-
-
