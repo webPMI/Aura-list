@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/responsive/breakpoints.dart';
-import '../core/utils/color_utils.dart';
 import '../models/note_model.dart';
 import '../providers/notes_provider.dart';
 import '../widgets/notes_list.dart';
@@ -16,11 +15,36 @@ class NotesScreen extends ConsumerStatefulWidget {
 }
 
 class _NotesScreenState extends ConsumerState<NotesScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  bool _isSearchActive = false;
+  bool _isGridView = true;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      _isSearchActive = !_isSearchActive;
+      if (!_isSearchActive) {
+        _searchController.clear();
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _searchFocusNode.requestFocus();
+        });
+      }
+    });
   }
 
   void _showNoteEditor([Note? note]) {
@@ -29,32 +53,18 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
       MaterialPageRoute(
         builder: (context) => NoteEditor(
           note: note,
-          onSave:
-              (
-                title,
-                content,
-                color,
-                tags,
-                checklist, {
-                String? richContent,
-                String contentType = 'plain',
-              }) async {
-                try {
-                  if (note == null) {
-                    await ref
-                        .read(independentNotesProvider.notifier)
-                        .addNote(
-                          title: title,
-                          content: content,
-                          color: color,
-                          tags: tags,
-                          checklist: checklist,
-                          richContent: richContent,
-                          contentType: contentType,
-                        );
-                    _showSnackBar('Nota creada');
-                  } else {
-                    final updatedNote = note.copyWith(
+          onSave: (
+            title,
+            content,
+            color,
+            tags,
+            checklist, {
+            String? richContent,
+            String contentType = 'plain',
+          }) async {
+            try {
+              if (note == null) {
+                await ref.read(independentNotesProvider.notifier).addNote(
                       title: title,
                       content: content,
                       color: color,
@@ -63,61 +73,125 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                       richContent: richContent,
                       contentType: contentType,
                     );
-                    await ref
-                        .read(independentNotesProvider.notifier)
-                        .updateNote(updatedNote);
-                    _showSnackBar('Nota actualizada');
-                  }
-                } catch (e) {
-                  _showSnackBar('Error al guardar nota');
-                }
-              },
+                _showSnackBar('Nota creada');
+              } else {
+                final updatedNote = note.copyWith(
+                  title: title,
+                  content: content,
+                  color: color,
+                  tags: tags,
+                  checklist: checklist,
+                  richContent: richContent,
+                  contentType: contentType,
+                );
+                await ref
+                    .read(independentNotesProvider.notifier)
+                    .updateNote(updatedNote);
+                _showSnackBar('Nota actualizada');
+              }
+            } catch (e) {
+              _showSnackBar('Error al guardar nota');
+            }
+          },
         ),
       ),
     );
   }
 
+  PreferredSizeWidget _buildAppBar(BuildContext context, int noteCount, bool isMobile) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    if (_isSearchActive) {
+      return AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: _toggleSearch,
+          tooltip: 'Cerrar búsqueda',
+        ),
+        title: TextField(
+          controller: _searchController,
+          focusNode: _searchFocusNode,
+          onChanged: (_) => setState(() {}),
+          decoration: InputDecoration(
+            hintText: 'Buscar notas y etiquetas...',
+            border: InputBorder.none,
+            hintStyle: TextStyle(
+              color: colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+          ),
+          style: TextStyle(
+            color: colorScheme.onSurface,
+            fontSize: 16,
+          ),
+        ),
+        actions: [
+          if (_searchController.text.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.clear),
+              onPressed: () {
+                _searchController.clear();
+                setState(() {});
+              },
+              tooltip: 'Limpiar',
+            ),
+        ],
+      );
+    }
+
+    return DrawerAwareAppBar(
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Mis Notas',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: isMobile ? 18 : 20,
+            ),
+          ),
+          if (noteCount > 0)
+            Text(
+              '$noteCount nota${noteCount > 1 ? 's' : ''}',
+              style: TextStyle(
+                fontSize: isMobile ? 11 : 12,
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+        ],
+      ),
+      centerTitle: false,
+      actions: [
+        IconButton(
+          icon: Icon(_isGridView ? Icons.view_agenda_outlined : Icons.grid_view),
+          onPressed: () {
+            setState(() {
+              _isGridView = !_isGridView;
+            });
+          },
+          tooltip: _isGridView ? 'Vista en lista' : 'Vista en cuadrícula',
+        ),
+        IconButton(
+          icon: const Icon(Icons.search),
+          onPressed: _toggleSearch,
+          tooltip: 'Buscar notas',
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final notes = ref.watch(independentNotesProvider);
     final isMobile = context.isMobile;
 
     return Scaffold(
-      appBar: DrawerAwareAppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Mis Notas',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: isMobile ? 18 : 20,
-              ),
-            ),
-            if (notes.isNotEmpty)
-              Text(
-                '${notes.length} nota${notes.length > 1 ? 's' : ''}',
-                style: TextStyle(
-                  fontSize: isMobile ? 11 : 12,
-                  color: colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
-              ),
-          ],
-        ),
-        centerTitle: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () => _showSearchSheet(context),
-            tooltip: 'Buscar',
-          ),
-        ],
-      ),
+      appBar: _buildAppBar(context, notes.length, isMobile),
       body: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: Breakpoints.maxContentWidth),
           child: NotesList(
+            searchQuery: _isSearchActive ? _searchController.text : null,
+            isGridView: _isGridView,
             onNoteEdit: _showNoteEditor,
             onFeedback: _showSnackBar,
           ),
@@ -125,176 +199,4 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
       ),
     );
   }
-
-  void _showSearchSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => _NoteSearchSheet(
-        onNoteSelected: (note) {
-          Navigator.pop(context);
-          _showNoteEditor(note);
-        },
-      ),
-    );
-  }
 }
-
-class _NoteSearchSheet extends ConsumerStatefulWidget {
-  final void Function(Note note) onNoteSelected;
-
-  const _NoteSearchSheet({required this.onNoteSelected});
-
-  @override
-  ConsumerState<_NoteSearchSheet> createState() => _NoteSearchSheetState();
-}
-
-class _NoteSearchSheetState extends ConsumerState<_NoteSearchSheet> {
-  final _searchController = TextEditingController();
-  String _query = '';
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final searchResults = ref.watch(noteSearchProvider(_query));
-
-    return DraggableScrollableSheet(
-      initialChildSize: 0.9,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) => Column(
-        children: [
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: colorScheme.onSurface.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TextField(
-              controller: _searchController,
-              autofocus: true,
-              decoration: InputDecoration(
-                hintText: 'Buscar notas...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _query.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        tooltip: 'Limpiar búsqueda',
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _query = '');
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-              ),
-              onChanged: (value) => setState(() => _query = value),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: searchResults.when(
-              data: (notes) {
-                if (_query.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'Escribe para buscar',
-                      style: TextStyle(
-                        color: colorScheme.onSurface.withValues(alpha: 0.5),
-                      ),
-                    ),
-                  );
-                }
-                if (notes.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.search_off,
-                          size: 48,
-                          color: colorScheme.onSurface.withValues(alpha: 0.3),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Sin resultados para "$_query"',
-                          style: TextStyle(
-                            color: colorScheme.onSurface.withValues(alpha: 0.5),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                return ListView.builder(
-                  controller: scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: notes.length,
-                  itemBuilder: (context, index) {
-                    final note = notes[index];
-                    return ListTile(
-                      leading: Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: parseHexColor(note.color) ?? Colors.grey,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: colorScheme.outline),
-                        ),
-                      ),
-                      title: Text(note.title),
-                      subtitle: note.content.isNotEmpty
-                          ? Text(
-                              note.contentPreview,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            )
-                          : null,
-                      trailing: note.isPinned
-                          ? Icon(
-                              Icons.push_pin,
-                              size: 16,
-                              color: colorScheme.primary,
-                            )
-                          : null,
-                      onTap: () => widget.onNoteSelected(note),
-                    );
-                  },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (_, _) => Center(
-                child: Text(
-                  'Error al buscar',
-                  style: TextStyle(color: colorScheme.error),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-
-

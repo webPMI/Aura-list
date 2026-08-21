@@ -18,6 +18,7 @@ import 'settings_screen.dart';
 import 'profile_screen.dart';
 import '../features/finance/screens/finance_screen.dart';
 import '../features/finance/widgets/unified_transaction_dialog.dart';
+import '../features/finance/models/finance_category.dart';
 import '../features/guides/providers/guide_onboarding_provider.dart';
 
 import '../features/guides/widgets/guide_intro_modal.dart';
@@ -184,24 +185,18 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
       );
     }
 
-    // Tasks: FAB directo que usa el tipo seleccionado actualmente
+    // Tasks: FAB directo para crear nueva tarea
     if (route == AppRoute.tasks) {
-      final selectedType = ref.watch(selectedTaskTypeProvider);
-      final typeInfo = TaskTypes.all.firstWhere(
-        (t) => t.type == selectedType,
-        orElse: () => TaskTypes.all.first,
-      );
-
       return FloatingActionButton.extended(
         heroTag: 'main_fab_tasks',
         onPressed: () {
           HapticFeedback.mediumImpact();
-          _showAddTaskDialog(context, ref, selectedType);
+          _showAddTaskDialog(context, ref, 'daily');
         },
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
         icon: const Icon(Icons.add),
-        label: Text('Tarea ${typeInfo.label}'),
+        label: const Text('Nueva Tarea'),
       );
     }
 
@@ -220,21 +215,18 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
       );
     }
 
-    // Finance: FAB para nueva transaccion
+    // Finance: FAB para nuevo movimiento
     if (route == AppRoute.finance) {
       return FloatingActionButton.extended(
         heroTag: 'main_fab_finance',
         onPressed: () {
           HapticFeedback.mediumImpact();
-          showDialog(
-            context: context,
-            builder: (context) => const UnifiedTransactionDialog(),
-          );
+          _showQuickFinanceSheet(context);
         },
         backgroundColor: colorScheme.secondary,
         foregroundColor: colorScheme.onSecondary,
         icon: const Icon(Icons.add),
-        label: const Text('Nueva Transaccion'),
+        label: const Text('Nuevo Movimiento'),
       );
     }
 
@@ -298,6 +290,89 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
                   }
                 }
               },
+        ),
+      ),
+    );
+  }
+
+  void _showQuickFinanceSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Registrar Movimiento',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent.withValues(alpha: 0.15),
+                        foregroundColor: Colors.redAccent,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        showDialog(
+                          context: context,
+                          builder: (_) => const UnifiedTransactionDialog(
+                            initialType: FinanceCategoryType.expense,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.arrow_downward, color: Colors.redAccent),
+                      label: const Text('Gasto', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green.withValues(alpha: 0.15),
+                        foregroundColor: Colors.green,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        showDialog(
+                          context: context,
+                          builder: (_) => const UnifiedTransactionDialog(
+                            initialType: FinanceCategoryType.income,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.arrow_upward, color: Colors.green),
+                      label: const Text('Ingreso', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
         ),
       ),
     );

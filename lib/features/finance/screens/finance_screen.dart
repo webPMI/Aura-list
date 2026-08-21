@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../widgets/navigation/drawer_menu_button.dart';
 import '../widgets/finance_dashboard.dart';
 import '../widgets/transaction_list.dart';
 import '../widgets/finance_alert_banner.dart';
@@ -42,7 +43,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
     final activeAlertsCount = ref.watch(activeAlertsCountProvider);
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: DrawerAwareAppBar(
         title: const Text('Finanzas'),
         actions: [
           IconButton(

@@ -3,9 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/navigation_provider.dart';
 import '../providers/task_provider.dart';
 import '../core/responsive/breakpoints.dart';
-import '../widgets/navigation/task_type_selector.dart';
 import '../widgets/navigation/drawer_menu_button.dart';
-import '../widgets/date_header.dart';
 import '../widgets/task_list.dart';
 import '../widgets/dialogs/task_form_dialog.dart';
 import '../models/task_model.dart';
@@ -31,14 +29,11 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
   void _toggleSearch() {
     final isSearchActive = ref.read(isSearchActiveProvider);
     if (isSearchActive) {
-      // Close search and clear query
       ref.read(isSearchActiveProvider.notifier).state = false;
       ref.read(taskSearchQueryProvider.notifier).state = '';
       _searchController.clear();
     } else {
-      // Open search
       ref.read(isSearchActiveProvider.notifier).state = true;
-      // Focus the search field after the next frame
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _searchFocusNode.requestFocus();
       });
@@ -66,7 +61,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
         IconButton(
           icon: const Icon(Icons.search),
           onPressed: _toggleSearch,
-          tooltip: 'Buscar',
+          tooltip: 'Buscar tareas',
         ),
       ],
     );
@@ -74,13 +69,23 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedType = ref.watch(selectedTaskTypeProvider);
     final isSearchActive = ref.watch(isSearchActiveProvider);
     final searchQuery = ref.watch(taskSearchQueryProvider);
-    final filteredTasks = ref.watch(filteredTasksProvider(selectedType));
-    final isWideScreen = context.isTabletOrLarger;
-    final horizontalPadding = context.horizontalPadding;
-    final screenWidth = context.screenWidth;
+    final unifiedTasks = ref.watch(unifiedAllTasksProvider);
+
+    List<Task>? searchFilteredTasks;
+    if (isSearchActive && searchQuery.trim().isNotEmpty) {
+      final query = searchQuery.toLowerCase().trim();
+      searchFilteredTasks = unifiedTasks.where((task) {
+        final titleMatch = task.title.toLowerCase().contains(query);
+        final categoryMatch = task.category.toLowerCase().contains(query);
+        final motivationMatch =
+            task.motivation?.toLowerCase().contains(query) ?? false;
+        final rewardMatch =
+            task.reward?.toLowerCase().contains(query) ?? false;
+        return titleMatch || categoryMatch || motivationMatch || rewardMatch;
+      }).toList();
+    }
 
     return Scaffold(
       appBar: _buildAppBar(isSearchActive),
@@ -89,50 +94,13 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
           constraints: BoxConstraints(
             maxWidth: Breakpoints.maxContentWidth,
           ),
-          child: Column(
-            children: [
-              // Task type selector with responsive padding
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: horizontalPadding,
-                  vertical: context.isMobile ? 8 : 12,
-                ),
-                child: isWideScreen
-                    ? const TaskTypeSelector(showLabels: true)
-                    : const TaskTypeSelector(showLabels: false, scrollable: true),
-              ),
-
-              // Date header
-              DateHeader(type: selectedType),
-
-              // Task list with responsive layout
-              Expanded(
-                child: screenWidth > Breakpoints.tablet
-                    ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: TaskList(
-                              type: selectedType,
-                              filteredTasks: isSearchActive ? filteredTasks : null,
-                              isSearching: isSearchActive,
-                              searchQuery: searchQuery,
-                              onEditTask: (task) => _showEditTaskDialog(context, task),
-                              onFeedback: (message) => _showSnackBar(message),
-                            ),
-                          ),
-                        ],
-                      )
-                    : TaskList(
-                        type: selectedType,
-                        filteredTasks: isSearchActive ? filteredTasks : null,
-                        isSearching: isSearchActive,
-                        searchQuery: searchQuery,
-                        onEditTask: (task) => _showEditTaskDialog(context, task),
-                        onFeedback: (message) => _showSnackBar(message),
-                      ),
-              ),
-            ],
+          child: TaskList(
+            type: 'all',
+            filteredTasks: isSearchActive ? (searchFilteredTasks ?? unifiedTasks) : null,
+            isSearching: isSearchActive,
+            searchQuery: searchQuery,
+            onEditTask: (task) => _showEditTaskDialog(context, task),
+            onFeedback: (message) => _showSnackBar(message),
           ),
         ),
       ),
@@ -181,7 +149,7 @@ class _SearchAppBar extends StatelessWidget implements PreferredSizeWidget {
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
         onPressed: onClose,
-        tooltip: 'Cerrar busqueda',
+        tooltip: 'Cerrar búsqueda',
       ),
       title: TextField(
         controller: controller,
@@ -225,6 +193,3 @@ class _SearchAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }
-
-
-

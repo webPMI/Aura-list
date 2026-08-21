@@ -579,5 +579,25 @@ final filteredTasksProvider = Provider.autoDispose.family<List<Task>, String>((
   }).toList();
 });
 
+/// Provider for ALL active tasks across all types unified in a single stream
+final unifiedAllTasksProvider = Provider.autoDispose<List<Task>>((ref) {
+  final types = ['daily', 'weekly', 'monthly', 'yearly', 'once'];
+  final all = <Task>[];
+  for (final type in types) {
+    all.addAll(ref.watch(tasksProvider(type)));
+  }
+
+  final seen = <dynamic>{};
+  final unique = <Task>[];
+  for (final t in all) {
+    final key = t.key ?? t.id;
+    if (!seen.contains(key) && !t.deleted && !t.isDeferred) {
+      seen.add(key);
+      unique.add(t);
+    }
+  }
+  return unique;
+});
+
 
 
