@@ -14,24 +14,32 @@ class EncryptionService {
   EncryptionService._internal();
 
   static const String _prefUserKey = 'aura_e2ee_user_master_key_v1';
+  static const String _prefHasCustomPassphrase = 'aura_e2ee_has_custom_passphrase_v1';
   final LoggerService _logger = LoggerService();
 
   enc.Key? _key;
   bool _isInitialized = false;
+  bool _hasCustomPassphrase = false;
 
   /// Retorna si el servicio de cifrado está inicializado y listo.
   bool get isInitialized => _isInitialized && _key != null;
+
+  /// Retorna si el usuario configuró una contraseña maestra personalizada.
+  bool get hasCustomPassphrase => _hasCustomPassphrase;
 
   /// Inicializa el servicio de cifrado cargando o generando la clave maestra del usuario.
   Future<void> initialize({String? customKey}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      _hasCustomPassphrase = prefs.getBool(_prefHasCustomPassphrase) ?? false;
 
       if (customKey != null && customKey.isNotEmpty) {
-        // Derivar clave de 32 bytes (256 bits) usando SHA-256 si es una frase personalizada
+        // Derivar clave de 32 bytes (256 bits) usando SHA-256
         final keyBytes = sha256.convert(utf8.encode(customKey)).bytes;
         _key = enc.Key.fromBase64(base64Encode(keyBytes));
         await prefs.setString(_prefUserKey, _key!.base64);
+        await prefs.setBool(_prefHasCustomPassphrase, true);
+        _hasCustomPassphrase = true;
         _isInitialized = true;
         _logger.info('EncryptionService', 'Clave personalizada inicializada con éxito');
         return;
@@ -47,15 +55,21 @@ class EncryptionService {
         // Generar nueva clave aleatoria segura de 256 bits (32 bytes)
         _key = enc.Key.fromSecureRandom(32);
         await prefs.setString(_prefUserKey, _key!.base64);
+        await prefs.setBool(_prefHasCustomPassphrase, false);
+        _hasCustomPassphrase = false;
         _isInitialized = true;
         _logger.info('EncryptionService', 'Nueva clave E2EE de 256-bit generada');
       }
     } catch (e) {
       _logger.error('EncryptionService', 'Error inicializando EncryptionService', error: e);
-      // Fallback seguro en memoria en caso de error de prefs
       _key = enc.Key.fromSecureRandom(32);
       _isInitialized = true;
     }
+  }
+
+  /// Establece una nueva contraseña maestra personalizada elegida por el usuario.
+  Future<void> setMasterPassphrase(String passphrase) async {
+    await initialize(customKey: passphrase.trim());
   }
 
   /// Retorna la clave personal de cifrado en formato Base64 para respaldo del usuario.
@@ -91,7 +105,6 @@ class EncryptionService {
       };
     } catch (e) {
       _logger.error('EncryptionService', 'Error cifrando mapa', error: e);
-      // En caso de fallo inesperado, retornar los datos para evitar pérdida
       return plainData;
     }
   }
