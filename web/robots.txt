@@ -5,7 +5,7 @@ User-agent: *
 Allow: /
 Disallow: /__/
 
-# Explicit crawlers configuration
+# --- Standard Search Engine Crawlers ---
 User-agent: Googlebot
 Allow: /
 
@@ -15,5 +15,66 @@ Allow: /
 User-agent: DuckDuckBot
 Allow: /
 
-# Sitemap location
+User-agent: Slurp
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: Yandex
+Allow: /
+
+# --- AI Search Engines & LLM Crawlers (GEO Optimization) ---
+# OpenAI / ChatGPT Search / GPTBot
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+# Perplexity AI
+User-agent: PerplexityBot
+Allow: /
+
+# Anthropic Claude
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+# Google Gemini / AI Overviews / Extended
+User-agent: Google-Extended
+Allow: /
+
+User-agent: GoogleOther
+Allow: /
+
+# Apple Intelligence / Siri
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+# Meta AI
+User-agent: Meta-ExternalAgent
+Allow: /
+
+# Cohere AI
+User-agent: cohere-ai
+Allow: /
+
+# Common Crawl (AI Training Datasets)
+User-agent: CCBot
+Allow: /
+
+# --- Sitemaps & LLM Context References ---
 Sitemap: https://aura-list.web.app/sitemap.xml
+# LLMs specification for AI assistants and generative search
+# https://llmstxt.org/
+Allow: /llms.txt
+Allow: /llms-full.txt

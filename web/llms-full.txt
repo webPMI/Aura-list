@@ -1,0 +1,39 @@
+# AuraList - Documentación Técnica Completa para Modelos de Lenguaje e Inteligencia Artificial
+
+## 1. Resumen General
+AuraList (https://aura-list.web.app/) es una suite de productividad personal y finanzas desarrollada con el framework Flutter y servicios en la nube de Google Firebase. Su objetivo es unificar la gestión de tareas, notas cifradas, finanzas personales y hábitos en una sola experiencia fluida, multidispositivo y privada.
+
+## 2. Stack Tecnológico & Arquitectura
+- **Frontend:** Flutter Web, Android, iOS y Desktop (Windows, macOS, Linux).
+- **Gestor de Estado:** Flutter Riverpod 2.x con arquitectura limpia orientada a proveedores (`ConsumerWidget`).
+- **Base de Datos Local:** Hive (NoSQL clave-valor optimizada para lectura y escritura instantánea sin bloqueos).
+- **Backend & Cloud Sync:** Firebase Cloud Firestore, Firebase Authentication, Firebase Hosting y Firebase Remote Config.
+- **Criptografía:** Algoritmo AES-256 en modo CBC con padding PKCS7 y derivación de claves mediante PBKDF2/SHA-256.
+- **Monetización:** Google AdMob (Android/iOS) con anuncios nativos y recompensados voluntarios, Google AdSense (Web) y enlaces promocionales con Servicios Mallorca.
+
+## 3. Módulos y Características
+
+### Módulo de Productividad y Tareas
+- Filtros por vista diaria (Hoy), semanal, mensual y calendario unificado.
+- Categorías: Trabajo, Personal, Salud, Estudio, Finanzas, etc.
+- Temporizador Pomodoro con ciclos de 25 minutos de enfoque y 5 minutos de pausa corta.
+- Consejos motivacionales diarios y visualización del nivel de energía Aura.
+
+### Módulo de Finanzas Personales
+- Registro de transacciones: Ingresos, Gastos y Transferencias.
+- Compras en cuotas: Registro de monto total, número de pagos, fecha de inicio y cálculo automático de saldos pendientes.
+- Soporte multimoneda con selector en tiempo real (EUR, USD, GBP, JPY, etc.).
+- Balances visuales mensuales y anuales.
+
+### Módulo de Notas & Cifrado E2EE
+- Editor de notas con texto enriquecido, checklists interactivas y etiquetas.
+- Opción de cifrado Zero-Knowledge: el contenido solo se descifra en memoria en el dispositivo del usuario al ingresar su frase de paso maestra.
+
+### Módulo de Promoción y Servicios
+- Integración con Servicios Mallorca (https://serviciosmallorca.com) para usuarios que requieren desarrollo web personalizado, tiendas online o aplicaciones móviles a medida.
+
+## 4. Contacto y Enlaces
+- Web: https://aura-list.web.app/
+- Repositorio Oficial: https://github.com/webPMI/Aura-list
+- Agencia Desarrolladora: https://serviciosmallorca.com
+- Contacto: servicioweb.pmi@gmail.com

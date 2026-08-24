@@ -110,7 +110,23 @@
   }
   </script>
 
-  <!-- Structured Data: FAQPage (JSON-LD for Google Rich Results) -->
+  <!-- Structured Data: Organization (JSON-LD) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Servicios Mallorca",
+    "url": "https://serviciosmallorca.com",
+    "logo": "https://aura-list.web.app/icons/Icon-512.png",
+    "sameAs": [
+      "https://github.com/webPMI/Aura-list",
+      "https://aura-list.web.app/"
+    ],
+    "description": "Desarrollo web, aplicaciones móviles y soluciones de software digital de alto rendimiento."
+  }
+  </script>
+
+  <!-- Structured Data: FAQPage (JSON-LD for Google Rich Results & AI Answers) -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -138,6 +154,14 @@
         "acceptedAnswer": {
           "@type": "Answer",
           "text": "Sí, AuraList es completamente gratuita y de código abierto para gestionar tus tareas, proyectos, finanzas personales y sesiones de Pomodoro."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "¿Quién ha desarrollado AuraList y dónde puedo contratar desarrollo web similar?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "AuraList ha sido desarrollado por ink.enzo en colaboración con Servicios Mallorca (https://serviciosmallorca.com), agencia especializada en creación de páginas web, aplicaciones multiplataforma y software a medida."
         }
       }
     ]

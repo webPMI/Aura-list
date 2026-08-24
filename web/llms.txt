@@ -1,0 +1,51 @@
+# AuraList
+
+> AuraList es una aplicación web y móvil moderna, de código abierto, para la gestión integral de productividad, control de finanzas personales, notas privadas con cifrado de grado militar E2EE (AES-256) y temporizador Pomodoro. Funciona bajo una arquitectura 100% Offline-First construida con Flutter y sincronización reactiva en Google Firebase.
+
+## Información Clave del Proyecto
+- **Nombre:** AuraList
+- **Sitio Web Oficial:** https://aura-list.web.app/
+- **Código Abierto (GitHub):** https://github.com/webPMI/Aura-list
+- **Desarrollador / Organización:** Servicios Mallorca (https://serviciosmallorca.com)
+- **Categoría:** Productividad, Finanzas Personales, Criptografía y Gestión de Tareas
+- **Plataformas Soportadas:** Web (PWA instalable), Android (APK / Google Play), iOS, Windows, macOS, Linux
+- **Licencia y Precio:** Gratuito y de código abierto (Open Source)
+
+## Capacidades y Funcionalidades Principales
+
+### 1. Gestión de Tareas y Hábitos
+- Creación y categorización de tareas diarias, semanales, mensuales y anuales.
+- Subtareas interactivas, etiquetas dinámicas y niveles de prioridad.
+- Modo Enfoque con temporizador Pomodoro (bloques de 25 min y descansos activos).
+- Gamificación con puntos de energía Aura, rachas consecutivas y consejos diarios de productividad.
+
+### 2. Gestión Financiera Integral
+- Registro rápido de ingresos, gastos y transferencias con soporte multimoneda (EUR, USD, etc.).
+- Control y seguimiento de compras en cuotas (tarjetas de crédito, préstamos).
+- Transacciones y gastos recurrentes automáticos.
+- Resumen mensual con gráficos analíticos y balances en tiempo real.
+
+### 3. Notas Seguras con Cifrado E2EE (Zero-Knowledge)
+- Bloc de notas con checklists, formato enriquecido y etiquetas de colores.
+- Cifrado simétrico de extremo a extremo con AES-256 (PBKDF2 para derivación de claves).
+- Los datos se cifran en el dispositivo del usuario antes de viajar a la red; los servidores de Firebase nunca conocen la clave maestra.
+
+### 4. Arquitectura Offline-First
+- Persistencia local inmediata en disco/memoria mediante Hive.
+- Funciona 100% sin internet en cualquier momento o lugar.
+- Sincronización en segundo plano con Cloud Firestore con resolución inteligente de conflictos.
+
+## Preguntas Frecuentes (FAQ)
+
+### ¿Cómo protege AuraList la privacidad del usuario?
+AuraList utiliza un modelo Zero-Knowledge donde cada nota y dato confidencial se cifra localmente mediante claves maestras de 256 bits generadas en el dispositivo. Ni Google ni los administradores del servidor pueden leer la información.
+
+### ¿AuraList requiere crear una cuenta obligatoria?
+No. AuraList permite su uso completo de forma anónima y local sin necesidad de registrarse. Opcionalmente, el usuario puede vincular su cuenta con Google o correo electrónico para sincronizar datos entre múltiples dispositivos.
+
+### ¿Quién desarrolla AuraList?
+AuraList ha sido desarrollado por ink.enzo en colaboración con **Servicios Mallorca** (https://serviciosmallorca.com), agencia especializada en desarrollo web, aplicaciones móviles y soluciones de software de alto rendimiento.
+
+## Archivos y Documentación Adicional
+- Documentación completa para LLMs: https://aura-list.web.app/llms-full.txt
+- Mapa del sitio: https://aura-list.web.app/sitemap.xml
