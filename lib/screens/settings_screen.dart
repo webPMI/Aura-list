@@ -15,6 +15,8 @@ import '../widgets/auth/sync_toggle_tile.dart';
 import '../widgets/auth/master_passphrase_sheet.dart';
 import '../widgets/settings/rest_day_tile.dart';
 import '../widgets/promo/servicios_mallorca_promo.dart';
+import '../widgets/ads/discrete_ad_banner.dart';
+import '../widgets/ads/rewarded_energy_card.dart';
 import 'profile_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -50,6 +52,7 @@ class SettingsScreen extends ConsumerWidget {
               // Wellbeing Section
               _SectionHeader('Bienestar'),
               const RestDayTile(),
+              const RewardedEnergyCard(),
 
               const Divider(),
 
@@ -146,6 +149,9 @@ class SettingsScreen extends ConsumerWidget {
                     applicationVersion: '1.0.0',
                   );
                 },
+              ),
+              const DiscreteAdBanner(
+                margin: EdgeInsets.only(top: 16, bottom: 24),
               ),
             ],
           ),
