@@ -39,10 +39,7 @@ class AvatarPreloadService {
     if (_isPreloaded) return; // Ya precargado
 
     final guideIds = kGuideCatalog.map((g) => g.id).toList();
-
-    for (final id in guideIds) {
-      await _preloadSingleAvatar(context, id);
-    }
+    await Future.wait(guideIds.map((id) => _preloadSingleAvatar(context, id)));
 
     _isPreloaded = true;
   }

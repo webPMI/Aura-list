@@ -14,7 +14,7 @@ class AppRouter extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final shouldShowWelcome = ref.watch(shouldShowWelcomeProvider);
 
-    return shouldShowWelcome.when(
+    final Widget currentWidget = shouldShowWelcome.when(
       data: (showWelcome) {
         if (showWelcome) {
           // Primera vez - mostrar pantalla de bienvenida
@@ -22,17 +22,24 @@ class AppRouter extends ConsumerWidget {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             ref.read(onboardingServiceProvider).markWelcomeAsSeen();
           });
-          return const WelcomeScreen();
+          return const WelcomeScreen(key: ValueKey('welcome_screen'));
         } else {
           // Usuario recurrente - mostrar pantalla principal
-          return const MainScaffold();
+          return const MainScaffold(key: ValueKey('main_scaffold'));
         }
       },
-      loading: () => const AppSplashScreen(),
+      loading: () => const AppSplashScreen(key: ValueKey('app_splash_screen')),
       error: (error, stackTrace) {
         // En caso de error, mostrar la pantalla principal
-        return const MainScaffold();
+        return const MainScaffold(key: ValueKey('main_scaffold_error'));
       },
+    );
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      switchInCurve: Curves.easeInOut,
+      switchOutCurve: Curves.easeInOut,
+      child: currentWidget,
     );
   }
 }

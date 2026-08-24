@@ -5,22 +5,28 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Determina si es la primera vez que el usuario abre la app
 class OnboardingService {
   static const String _keyHasSeenWelcome = 'has_seen_welcome';
+  SharedPreferences? _prefs;
+
+  Future<SharedPreferences> _getPrefs() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    return _prefs!;
+  }
 
   /// Verifica si el usuario ya ha visto la pantalla de bienvenida
   Future<bool> hasSeenWelcome() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     return prefs.getBool(_keyHasSeenWelcome) ?? false;
   }
 
   /// Marca que el usuario ya ha visto la pantalla de bienvenida
   Future<void> markWelcomeAsSeen() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.setBool(_keyHasSeenWelcome, true);
   }
 
   /// Resetea el estado de onboarding (util para testing)
   Future<void> resetWelcome() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.remove(_keyHasSeenWelcome);
   }
 }
