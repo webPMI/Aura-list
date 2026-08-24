@@ -1,11 +1,11 @@
 {
-    "name": "AuraList - Gestión de Tareas Offline-First",
+    "name": "AuraList - Gestor de Tareas, Finanzas y Cifrado E2EE",
     "short_name": "AuraList",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#FFFFFF",
+    "background_color": "#0F172A",
     "theme_color": "#6366F1",
-    "description": "App de gestión de tareas que funciona offline con sincronización opcional en la nube. Organiza tus tareas diarias, semanales, mensuales y anuales sin estrés.",
+    "description": "App de gestión de tareas inteligentes, finanzas personales, notas y temporizador Pomodoro con cifrado militar Zero-Knowledge AES-256.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "scope": "/",
@@ -13,10 +13,10 @@
     "dir": "ltr",
     "categories": [
         "productivity",
+        "finance",
         "utilities",
         "lifestyle"
     ],
-    "screenshots": [],
     "icons": [
         {
             "src": "icons/Icon-192.png",
@@ -44,9 +44,33 @@
     "shortcuts": [
         {
             "name": "Nueva Tarea",
-            "short_name": "Nueva",
+            "short_name": "Tarea",
             "description": "Crear una nueva tarea rápidamente",
-            "url": "/?action=new-task",
+            "url": "/#/tasks?action=new",
+            "icons": [
+                {
+                    "src": "icons/Icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        },
+        {
+            "name": "Registrar Gasto",
+            "short_name": "Finanzas",
+            "description": "Añadir un nuevo movimiento financiero",
+            "url": "/#/finance?action=new",
+            "icons": [
+                {
+                    "src": "icons/Icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        },
+        {
+            "name": "Nueva Nota",
+            "short_name": "Nota",
+            "description": "Crear una nota o checklist",
+            "url": "/#/notes?action=new",
             "icons": [
                 {
                     "src": "icons/Icon-192.png",

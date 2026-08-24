@@ -1,44 +1,70 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
         xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
 
-  <!-- Homepage -->
+  <!-- Homepage & App Entrypoint -->
   <url>
     <loc>https://aura-list.web.app/</loc>
-    <lastmod>2026-02-10</lastmod>
-    <changefreq>weekly</changefreq>
+    <lastmod>2026-08-24</lastmod>
+    <changefreq>daily</changefreq>
     <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://aura-list.web.app/icons/Icon-512.png</image:loc>
+      <image:title>AuraList - Gestor Inteligente de Tareas, Finanzas y Cifrado E2EE</image:title>
+    </image:image>
   </url>
 
-  <!-- Main App Sections (Single Page App - virtual routes for SEO) -->
+  <!-- Virtual Feature Routes for SEO & Indexation -->
   <url>
     <loc>https://aura-list.web.app/#/tasks</loc>
-    <lastmod>2026-02-10</lastmod>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>daily</changefreq>
-    <priority>0.8</priority>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://aura-list.web.app/#/finance</loc>
+    <lastmod>2026-08-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://aura-list.web.app/#/notes</loc>
+    <lastmod>2026-08-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
   </url>
 
   <url>
     <loc>https://aura-list.web.app/#/calendar</loc>
-    <lastmod>2026-02-10</lastmod>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://aura-list.web.app/#/dashboard</loc>
-    <lastmod>2026-02-10</lastmod>
-    <changefreq>daily</changefreq>
+    <loc>https://aura-list.web.app/#/focus</loc>
+    <lastmod>2026-08-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://aura-list.web.app/#/security</loc>
+    <lastmod>2026-08-24</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
     <loc>https://aura-list.web.app/#/profile</loc>
-    <lastmod>2026-02-10</lastmod>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.6</priority>
   </url>
 
 </urlset>
