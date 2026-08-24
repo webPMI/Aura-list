@@ -18,6 +18,7 @@ import '../widgets/dashboard/user_card.dart';
 import '../widgets/dashboard/financial_summary_card.dart';
 import '../widgets/dashboard/overdue_tasks_banner.dart';
 import '../widgets/deferred_tasks_widget.dart';
+import '../features/aura/widgets/aura_energy_card.dart';
 import '../providers/streak_provider.dart';
 import 'today_screen.dart';
 
@@ -183,6 +184,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: DashboardLayout(
               cards: [
                 const UserCard(),
+                const AuraEnergyCard(),
                 const FinancialSummaryCard(),
                 _TodayProgressCard(),
                 _FocusModeCard(),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/ad_provider.dart';
+import '../../features/aura/providers/aura_provider.dart';
 import '../../services/ads/ad_service.dart';
 import '../../core/constants/ad_constants.dart';
 
@@ -28,6 +29,12 @@ class _RewardedEnergyCardState extends ConsumerState<RewardedEnergyCard> {
       onRewardEarned: () {
         ref.read(remainingRewardedAdsProvider.notifier).state =
             (AdConstants.maxRewardedAdsPerDay - adService.rewardedAdsWatchedToday).clamp(0, AdConstants.maxRewardedAdsPerDay);
+
+        // Sumar puntos en el sistema de Aura
+        ref.read(auraServiceProvider).addPoints(
+          AdConstants.rewardEnergyPoints,
+          reason: 'Recarga voluntaria de energía',
+        );
 
         if (widget.onEnergyEarned != null) {
           widget.onEnergyEarned!();
