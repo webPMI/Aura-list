@@ -21,11 +21,11 @@
   - Declarar si se comparten datos con terceros
   - Especificar si la recopilación es opcional
 
-- [ ] Completar **Financial Features Declaration**
-  - La app tiene features financieros (transacciones, presupuestos)
-  - Declarar que NO ofrece préstamos
+- [ ] Completar **Financial Features Declaration** (OPCIONAL)
+  - Solo si Google lo requiere tras revisión
+  - Aclarar que es registro manual, no procesamiento real
+  - Declarar que NO ofrece préstamos ni transacciones
   - Declarar que NO es institución financiera regulada
-  - Explicar naturaleza de features financieros
 
 - [ ] Verificar **Categoría de App**
   - Considerar categoría "Finance" o "Productivity"

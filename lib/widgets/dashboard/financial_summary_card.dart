@@ -65,6 +65,11 @@ class FinancialSummaryCard extends ConsumerWidget {
                   ),
                 ),
                 TextButton(
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                   onPressed: () {
                     ref
                         .read(navigationHistoryProvider.notifier)
@@ -73,9 +78,9 @@ class FinancialSummaryCard extends ConsumerWidget {
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Ver todo'),
-                      SizedBox(width: 4),
-                      Icon(Icons.chevron_right, size: 18),
+                      Text('Ver todo', style: TextStyle(fontSize: 13)),
+                      SizedBox(width: 2),
+                      Icon(Icons.chevron_right, size: 16),
                     ],
                   ),
                 ),
