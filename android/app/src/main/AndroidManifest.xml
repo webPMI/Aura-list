@@ -37,6 +37,11 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
+        <!-- Google Mobile Ads Application ID -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-1988580228487420~1721010813"/>
+
         <!-- Scheduled notification receiver -->
         <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
             android:exported="false" />

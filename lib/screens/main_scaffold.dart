@@ -20,7 +20,7 @@ import '../features/finance/screens/finance_screen.dart';
 import '../features/finance/widgets/unified_transaction_dialog.dart';
 import '../features/finance/models/finance_category.dart';
 import '../features/guides/providers/guide_onboarding_provider.dart';
-
+import '../widgets/install/android_install_prompt.dart';
 import '../features/guides/widgets/guide_intro_modal.dart';
 
 class MainScaffold extends ConsumerStatefulWidget {
@@ -149,6 +149,8 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
             ),
             // Greeting overlay - visible en cualquier pantalla al abrir la app
             const GuideGreetingWidget(),
+            // Android Install Prompt banner (solo en web Android)
+            const AndroidInstallPrompt(),
           ],
         ),
       ),

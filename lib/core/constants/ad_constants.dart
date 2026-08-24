@@ -16,8 +16,10 @@ class AdConstants {
   static const String iosInterstitialTestId = 'ca-app-pub-3940256099942544/4411468910';
   static const String iosRewardedTestId = 'ca-app-pub-3940256099942544/1712485313';
 
-  // --- PRODUCCIÓN (Coloca aquí tus IDs reales de AdMob cuando los tengas) ---
-  static const String androidBannerProdId = '';
+  // --- PRODUCCIÓN (IDs reales de Google AdMob) ---
+  static const String androidAppId = 'ca-app-pub-1988580228487420~1721010813';
+  static const String androidNativeAdUnitId = 'ca-app-pub-1988580228487420/6207050735';
+  static const String androidBannerProdId = 'ca-app-pub-1988580228487420/6207050735';
   static const String androidRewardedProdId = '';
   static const String iosBannerProdId = '';
   static const String iosRewardedProdId = '';
