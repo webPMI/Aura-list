@@ -314,20 +314,23 @@
 
       <script>
         const steps = [
-          { text: "Iniciando motor seguro...", percent: "25%" },
-          { text: "Verificando cifrado militar AES-256...", percent: "55%" },
-          { text: "Cargando tareas, notas y finanzas...", percent: "80%" },
-          { text: "¡Todo listo! Abriendo AuraList...", percent: "100%" }
+          { text: "✨ Despertando el motor inteligente de AuraList...", percent: "20%" },
+          { text: "🔐 Blindando tus notas y finanzas con AES-256...", percent: "45%" },
+          { text: "☕ Preparando tu café mental y tus metas...", percent: "70%" },
+          { text: "🎯 Sincronizando tus súper poderes de enfoque...", percent: "90%" },
+          { text: "🎉 ¡Despegamos! Todo listo para triunfar.", percent: "100%" }
         ];
         const webTips = [
-          "💡 Consejo: Tus datos se cifran con AES-256 localmente antes de sincronizar.",
-          "🍅 Pomodoro: Usa bloques de 25 min para avanzar sin fatiga mental.",
-          "⚡ Modo Offline: Todo funciona sin internet y se sincroniza al reconectar.",
-          "💰 Finanzas: Controla tus ingresos y gastos recurrentes en tiempo real.",
-          "🎯 Metas: Prioriza tus 3 tareas clave del día en el Modo Enfoque."
+          "🚀 'El secreto para avanzar es simplemente comenzar.' — Mark Twain",
+          "🧠 'Tu mente es para crear grandes ideas, no para guardarlas con estrés.' — David Allen",
+          "🔒 'Tus datos son 100% tuyos: privados, cifrados y seguros con AES-256.'",
+          "🍅 '25 minutos de enfoque con Pomodoro valen más que horas disperso.'",
+          "💎 'La disciplina es el puente entre tus metas y tus logros.' — Jim Rohn",
+          "⚡ 'Pequeños pasos diarios construyen victorias gigantescas.' — Kaikaku"
         ];
         let stepIdx = 0;
         let tipIdx = 0;
+        let clicks = 0;
 
         function updateStep() {
           if (stepIdx < steps.length - 1) {
@@ -341,12 +344,13 @@
             if (barEl) barEl.style.width = step.percent;
           }
         }
-        setInterval(updateStep, 700);
+        setInterval(updateStep, 650);
 
         function nextWebTip() {
+          clicks++;
           tipIdx = (tipIdx + 1) % webTips.length;
           const tipEl = document.getElementById("loader-tip-text");
-          if (tipEl) tipEl.textContent = webTips[tipIdx];
+          if (tipEl) tipEl.textContent = webTips[tipIdx] + (clicks > 0 ? " (⚡ +" + clicks + " Energía)" : "");
         }
         setInterval(nextWebTip, 4000);
       </script>

@@ -47,19 +47,21 @@ dinero real.
 
 ### Cómo Usamos tu Información Financiera
 
-Usamos tus datos financieros exclusivamente para:
-- Gestionar tus finanzas personales dentro de la app
-- Proporcionar análisis y proyecciones de flujo de caja
-- Ayudarte a controlar gastos y mantener presupuestos
-- Sincronizar tus datos financieros entre dispositivos (opcional)
-- Generar reportes y estadísticas personales
+Usamos tus datos de registro financiero exclusivamente para:
+- Organizar tus gastos e ingresos personales dentro de la app
+- Ayudarte a controlar gastos y mantener presupuestos básicos
+- Proporcionar estadísticas simples de tus patrones de gasto
+- Sincronizar tus datos de registro entre dispositivos (opcional)
+- Generar reportes básicos de tu actividad
 
 **Nunca usamos tus datos financieros para:**
+- Procesar transacciones financieras reales
 - Ofrecer productos financieros de terceros
 - Vender tu información a empresas financieras
 - Realizar perfilado financiero para marketing
 - Compartir con inversores o analistas
 - Tomar decisiones de crédito o préstamo
+- Conectar con cuentas bancarias
 
 ### Almacenamiento de Datos Financieros
 
@@ -76,17 +78,18 @@ Usamos tus datos financieros exclusivamente para:
 - Acceso restringido solo a tu cuenta autenticada
 - Cumple con estándares de seguridad ISO 27001 y SOC 2
 
-### Importante: No Somos Asesores Financieros
+### Importante: No Somos una Institución Financiera
 
 **Aviso Legal:**
-AuraList es una herramienta de gestión financiera personal para fines 
-informativos únicamente. No constituye asesoramiento financiero profesional, 
-ni estamos afiliados con instituciones financieras reguladas.
+AuraList es una herramienta de productividad personal que permite registrar 
+manualmente gastos e ingresos para organización personal. NO procesa transacciones 
+financieras reales, NO es una institución financiera regulada, y NO constituye 
+asesoramiento financiero profesional.
 
 **Limitaciones:**
-- Las proyecciones de flujo de caja son estimaciones basadas en patrones
-- No garantizamos exactitud en predicciones financieras
-- No recomendamos decisiones de inversión específicas
+- Los datos registrados son solo registros manuales, no transacciones reales
+- No conectamos con cuentas bancarias ni procesamos pagos
+- No ofrecemos préstamos, inversiones ni productos financieros
 - No proporcionamos asesoramiento fiscal o legal
 - Para decisiones financieras importantes, consulta a un profesional certificado
 

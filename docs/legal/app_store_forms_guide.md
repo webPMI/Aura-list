@@ -477,11 +477,11 @@ https://auralist.com/privacy-choices
 
 ### Google Play Console
 - [ ] Data Safety Form completado
-- [ ] Financial Features Declaration completado
 - [ ] Content Rating completado
 - [ ] Política de privacidad vinculada
 - [ ] SDKs declarados correctamente
-- [ ] Categoría de app verificada
+- [ ] Categoría de app verificada (Productivity, no Finance)
+- [ ] Financial Features Declaration (solo si Google lo solicita)
 
 ### Apple App Store Connect
 - [ ] App Privacy Details completado

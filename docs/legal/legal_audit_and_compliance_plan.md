@@ -10,7 +10,7 @@
 AuraList es una aplicación de gestión de tareas y finanzas personales con sincronización opcional en la nube mediante Firebase. La aplicación ya cuenta con documentación legal básica (Política de Privacidad y Términos de Servicio), pero requiere mejoras significativas para cumplir con los requisitos legales actuales en los mercados donde opera.
 
 **Estado Actual:** Parcialmente cumplido  
-**Riesgo Legal:** Medio-Alto  
+**Riesgo Legal:** Medio (reducido tras aclaración de estatus financiero)  
 **Prioridad:** Alta
 
 ---
@@ -207,8 +207,8 @@ Esta auditoría cubre los siguientes aspectos legales:
 #### ⚠️ Requisitos Parcialmente Cumplidos
 - **Data Safety Form:** No completado en Play Console
 - **Declaración de SDKs:** Firebase declarado pero otros SDKs no
-- **Financial Features Declaration:** No completado (la app tiene features financieros)
-- **Categoría de App:** Puede requerir categoría "Finance"
+- **Financial Features Declaration:** No completado (OPCIONAL - depende de si Google lo solicita)
+- **Categoría de App:** Debe ser "Productivity", no "Finance"
 
 #### ❌ Requisitos No Cumplidos
 - **Data Safety Section:** No completado en Play Console
@@ -219,9 +219,9 @@ Esta auditoría cubre los siguientes aspectos legales:
 #### 🎯 Acciones Recomendadas (Google Play)
 1. **Prioridad Alta:**
    - Completar Data Safety Form en Play Console
-   - Completar Financial Features Declaration
    - Agregar enlace visible a política de privacidad en configuración
-   - Verificar categoría correcta de la app
+   - Verificar categoría correcta de la app (Productivity, no Finance)
+   - Financial Features Declaration (solo si Google lo solicita)
 
 2. **Prioridad Media:**
    - Declarar todos los SDKs utilizados
@@ -307,7 +307,7 @@ Esta auditoría cubre los siguientes aspectos legales:
    - Apple App Store Privacy Details
 
 3. **Agregar disclaimers financieros:**
-   - Disclaimer prominente: "No es asesor financiero profesional"
+   - Disclaimer prominente: "Herramienta de registro personal, no procesa transacciones reales"
    - Limitación de responsabilidad para features financieros
    - Advertencias sobre naturaleza informativa de datos
 

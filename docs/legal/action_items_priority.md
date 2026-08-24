@@ -53,11 +53,10 @@
 
 **Acción:** Agregar disclaimer visible en la app
 ```
-"AuraList es una herramienta de registro personal para tareas y 
-finanzas. Permite registrar manualmente gastos e ingresos para 
-organización personal. NO procesa transacciones reales, NO es una 
-institución financiera, y NO constituye asesoramiento financiero 
-profesional."
+"AuraList es una herramienta de productividad personal que permite 
+registrar manualmente gastos e ingresos para organización personal. 
+NO procesa transacciones financieras reales, NO es una institución 
+financiera regulada, y NO constituye asesoramiento financiero profesional."
 ```
 
 **Ubicaciones sugeridas:**
@@ -337,10 +336,10 @@ class ConsentManager {
 
 ### Semana 1 (Esta semana)
 - [ ] Google Play Data Safety Form
-- [ ] Google Play Financial Features Declaration
 - [ ] Apple App Store Privacy Details
 - [ ] Disclaimer financiero prominente
 - [ ] Traducción al inglés
+- [ ] Financial Features Declaration (solo si Google lo solicita)
 
 ### Semana 2
 - [ ] Enlace "Do Not Sell My Personal Information"
@@ -421,11 +420,11 @@ class ConsentManager {
 
 ### Antes de Siguiente Update
 - [ ] Data Safety Form completado
-- [ ] Financial Features Declaration completado
 - [ ] App Privacy Details completado
 - [ ] Disclaimer financiero agregado
 - [ ] Traducción al inglés lista
 - [ ] Enlaces visibles implementados
+- [ ] Financial Features Declaration (solo si Google lo solicita)
 
 ### Antes de Próximo Trimestre
 - [ ] Traducción al portugués lista
