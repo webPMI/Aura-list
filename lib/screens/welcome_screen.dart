@@ -3,18 +3,61 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/responsive/breakpoints.dart';
 import '../widgets/dialogs/legal_document_viewer.dart';
+import '../widgets/dialogs/legal_acceptance_dialog.dart';
 import '../core/constants/legal/terms_of_service.dart';
 import '../core/constants/legal/privacy_policy.dart';
+import '../services/database_service.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
 import 'main_scaffold.dart';
 
 /// Pantalla de bienvenida que se muestra la primera vez que se abre la app
 /// Permite elegir entre iniciar sesion, registrarse o continuar sin cuenta
+/// REQUISITO: Todos los usuarios deben aceptar términos y condiciones antes de acceder
 class WelcomeScreen extends ConsumerWidget {
   const WelcomeScreen({super.key});
 
-  void _navigateToLogin(BuildContext context) {
+  /// Verifica si el usuario ha aceptado los términos y condiciones
+  /// Si no ha aceptado, muestra el diálogo de aceptación
+  /// Retorna true si el usuario aceptó, false si rechazó o cerró el diálogo
+  Future<bool> _checkAndRequestLegalAcceptance(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    try {
+      final dbService = ref.read(databaseServiceProvider);
+      final hasAccepted = await dbService.hasAcceptedLegal();
+
+      if (!hasAccepted) {
+        if (!context.mounted) return false;
+        // Mostrar diálogo de aceptación legal
+        final accepted = await showLegalAcceptanceDialog(
+          context: context,
+          ref: ref,
+        );
+        return accepted;
+      }
+
+      return true;
+    } catch (e) {
+      // En caso de error, asumimos que no ha aceptado para ser conservadores
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al verificar aceptación legal: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return false;
+    }
+  }
+
+  Future<void> _navigateToLogin(BuildContext context, WidgetRef ref) async {
+    // Verificar aceptación legal antes de permitir acceso
+    final accepted = await _checkAndRequestLegalAcceptance(context, ref);
+    if (!accepted || !context.mounted) return;
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const LoginScreen(),
@@ -22,7 +65,11 @@ class WelcomeScreen extends ConsumerWidget {
     );
   }
 
-  void _navigateToRegister(BuildContext context) {
+  Future<void> _navigateToRegister(BuildContext context, WidgetRef ref) async {
+    // Verificar aceptación legal antes de permitir acceso
+    final accepted = await _checkAndRequestLegalAcceptance(context, ref);
+    if (!accepted || !context.mounted) return;
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const RegisterScreen(),
@@ -31,14 +78,16 @@ class WelcomeScreen extends ConsumerWidget {
   }
 
   Future<void> _continueWithoutAccount(BuildContext context, WidgetRef ref) async {
+    // Verificar aceptación legal antes de permitir acceso
+    final accepted = await _checkAndRequestLegalAcceptance(context, ref);
+    if (!accepted || !context.mounted) return;
+
     // Continuar en modo local sin crear cuenta
-    if (context.mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => const MainScaffold(),
-        ),
-      );
-    }
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => const MainScaffold(),
+      ),
+    );
   }
 
   @override
@@ -147,7 +196,7 @@ class WelcomeScreen extends ConsumerWidget {
 
                   // Boton de registro
                   FilledButton.icon(
-                    onPressed: () => _navigateToRegister(context),
+                    onPressed: () => _navigateToRegister(context, ref),
                     icon: const Icon(Icons.person_add),
                     label: const Text('Crear cuenta'),
                     style: FilledButton.styleFrom(
@@ -162,7 +211,7 @@ class WelcomeScreen extends ConsumerWidget {
 
                   // Boton de login
                   OutlinedButton.icon(
-                    onPressed: () => _navigateToLogin(context),
+                    onPressed: () => _navigateToLogin(context, ref),
                     icon: const Icon(Icons.login),
                     label: const Text('Ya tengo cuenta'),
                     style: OutlinedButton.styleFrom(
