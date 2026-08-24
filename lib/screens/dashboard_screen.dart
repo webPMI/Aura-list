@@ -19,6 +19,7 @@ import '../widgets/dashboard/financial_summary_card.dart';
 import '../widgets/dashboard/overdue_tasks_banner.dart';
 import '../widgets/deferred_tasks_widget.dart';
 import '../features/aura/widgets/aura_energy_card.dart';
+import '../services/auth_service.dart';
 import '../providers/streak_provider.dart';
 import 'today_screen.dart';
 
@@ -207,7 +208,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 class _GreetingHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final greeting = MotivationalMessages.getTimeBasedGreeting();
+    final todayTasksAsync = ref.watch(todaySmartTasksProvider);
+    final todayTasks = todayTasksAsync.valueOrNull ?? [];
+    final totalTasks = todayTasks.length;
+    final completedTasks = todayTasks.where((t) => t.isCompleted).length;
+    final authUser = ref.watch(authStateProvider).valueOrNull;
+    final displayName = authUser != null && !authUser.isAnonymous
+        ? authUser.displayName?.split(' ').firstOrNull
+        : null;
+
+    final greeting = MotivationalMessages.getSmartGreeting(
+      totalTasks: totalTasks,
+      completedTasks: completedTasks,
+      name: displayName,
+    );
     final dateFormat = DateFormat('EEEE d MMMM', 'es');
     final activeGuide = ref.watch(activeGuideProvider);
 

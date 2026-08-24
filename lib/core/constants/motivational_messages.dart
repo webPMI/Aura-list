@@ -369,40 +369,53 @@ class MotivationalMessages {
     }
   }
 
-  /// Returns a time-appropriate greeting based on the hour of day.
-  static String getTimeBasedGreeting() {
+  /// Returns a smart, context-aware greeting based on hour of day and completed tasks.
+  static String getSmartGreeting({int totalTasks = 0, int completedTasks = 0, String? name}) {
     final hour = DateTime.now().hour;
+    final pending = (totalTasks - completedTasks).clamp(0, totalTasks);
+    final greetingPrefix = name != null && name.trim().isNotEmpty ? ', $name' : '';
 
     if (hour >= 5 && hour < 12) {
-      return randomMorningMotivation;
-    } else if (hour >= 12 && hour < 18) {
-      final afternoonMessages = [
-        'Buenas tardes. El día aún tiene mucho por ofrecer.',
-        'La tarde es perfecta para avanzar con calma.',
-        'Mitad del día completada. ¿Cómo va todo?',
-        '☀️ Buenas tardes. Tu energía sigue brillando.',
-        'Tarde productiva por delante. ¡Tú puedes!',
-      ];
-      return afternoonMessages[_random.nextInt(afternoonMessages.length)];
-    } else if (hour >= 18 && hour < 22) {
-      final eveningMessages = [
-        'Buenas noches. Momento de reflexionar sobre el día.',
-        'La noche llega. Celebra lo que lograste hoy.',
-        'Atardecer de logros. Descansa con satisfacción.',
-        '🌙 Buenas noches. Has hecho suficiente por hoy.',
-        'El día termina. Mañana hay nuevas oportunidades.',
-      ];
-      return eveningMessages[_random.nextInt(eveningMessages.length)];
+      if (totalTasks == 0) {
+        return 'Buenos días$greetingPrefix ☀️ ¿Qué planeas para hoy?';
+      } else if (completedTasks == 0) {
+        return 'Buenos días$greetingPrefix ☀️ Tienes $pending ${pending == 1 ? "tarea" : "tareas"} hoy';
+      } else if (pending == 0) {
+        return 'Buenos días$greetingPrefix ☀️ ¡Todo completado por la mañana!';
+      } else {
+        return 'Buenos días$greetingPrefix ☀️ $completedTasks de $totalTasks completadas';
+      }
+    } else if (hour >= 12 && hour < 19) {
+      if (totalTasks == 0) {
+        return 'Buenas tardes$greetingPrefix 🌤️ Espacio al día';
+      } else if (completedTasks == 0) {
+        return 'Buenas tardes$greetingPrefix 🌤️ $pending ${pending == 1 ? "pendiente" : "pendientes"} por delante';
+      } else if (pending == 0) {
+        return 'Buenas tardes$greetingPrefix 🌤️ ¡Todas tus tareas listas!';
+      } else {
+        return 'Buenas tardes$greetingPrefix 🌤️ $completedTasks de $totalTasks completadas';
+      }
+    } else if (hour >= 19 && hour < 23) {
+      if (totalTasks == 0) {
+        return 'Buenas noches$greetingPrefix 🌙 Tu día en calma';
+      } else if (pending == 0 && completedTasks > 0) {
+        return 'Buenas noches$greetingPrefix 🌙 ¡Excelente! Día completado 🎉';
+      } else if (pending > 0 && completedTasks > 0) {
+        return 'Buenas noches$greetingPrefix 🌙 $completedTasks listas • $pending pendientes';
+      } else {
+        return 'Buenas noches$greetingPrefix 🌙 $pending ${pending == 1 ? "pendiente" : "pendientes"} hoy';
+      }
     } else {
-      final nightMessages = [
-        'Noche tranquila. El descanso también es productivo.',
-        'Si aún estás despierto, recuerda cuidarte.',
-        '🌟 Las estrellas brillan. Tú también lo hiciste hoy.',
-        'Hora de descansar. Mañana será otro gran día.',
-        'Buenas noches. Tu bienestar es lo primero.',
-      ];
-      return nightMessages[_random.nextInt(nightMessages.length)];
+      if (pending > 0) {
+        return 'Noche tranquila$greetingPrefix ✨ $pending ${pending == 1 ? "pendiente" : "pendientes"}';
+      }
+      return 'Noche tranquila$greetingPrefix ✨ Recuerda descansar';
     }
+  }
+
+  /// Returns a time-appropriate greeting based on the hour of day.
+  static String getTimeBasedGreeting() {
+    return getSmartGreeting();
   }
 }
 
