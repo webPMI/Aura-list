@@ -14,18 +14,23 @@
 ```markdown
 ## 1.3 Datos Financieros (Opcional)
 
-AuraList incluye features opcionales de gestión financiera personal. 
+AuraList incluye features opcionales de registro financiero personal. 
 El uso de estas features es completamente voluntario.
+
+**IMPORTANTE:** AuraList es una herramienta de productividad personal que 
+permite registrar manualmente gastos e ingresos. NO procesa transacciones 
+financieras reales, NO es una institución financiera regulada, y NO gestiona 
+dinero real.
 
 ### Información Financiera que Podemos Recopilar
 
-**Solo si decides usar las features financieras:**
-- Transacciones personales (monto, fecha, categoría, descripción)
-- Presupuestos y límites de gasto por categoría
-- Proyecciones de flujo de caja basadas en tus patrones
-- Notas y comentarios financieros personales
+**Solo si decides usar las features de registro financiero:**
+- Registro manual de gastos personales (monto, fecha, categoría, descripción)
+- Registro manual de ingresos personales
+- Presupuestos básicos y límites de gasto por categoría
+- Notas y comentarios sobre finanzas personales
 - Categorías personalizadas de gastos/ingresos
-- Metas financieras y seguimiento de progreso
+- Metas de ahorro básicas
 
 ### Lo que NO Recopilamos
 
@@ -37,6 +42,8 @@ El uso de estas features es completamente voluntario.
 - Datos de identificación fiscal (SSN, RFC, etc.)
 - Información de inversión detallada
 - Datos de préstamos o créditos
+- Transacciones financieras reales
+- Historial de transacciones bancarias
 
 ### Cómo Usamos tu Información Financiera
 

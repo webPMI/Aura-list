@@ -138,23 +138,30 @@
 
 #### Información General
 **Ubicación:** Play Console → Policy → Financial features  
-**Obligatorio:** Sí, para apps con features financieros  
+**Obligatorio:** DEPENDE - Solo si Google considera la app como "financiera"  
 **Actualización:** Requerida cuando cambian las features financieras
 
-#### Preguntas y Respuestas
+**IMPORTANTE:** Dado que AuraList solo permite registro manual de gastos e ingresos (no procesa transacciones reales), puede NO requerir este formulario. Google Play puede considerar esta app como "Productivity" en lugar de "Finance".
+
+**Recomendación:** Intentar publicar sin este formulario primero. Si Google lo solicita, completarlo con las respuestas a continuación.
+
+#### Preguntas y Respuestas (Solo si Google lo solicita)
 
 **¿Su app ofrece o promueve productos o servicios financieros?**
-- ✅ Sí (herramientas de gestión financiera personal)
+- ❌ No (herramientas de productividad con registro manual opcional)
 
 **¿Qué tipo de features financieros ofrece?**
-- ✅ Gestión de transacciones personales
-- ✅ Presupuestación
-- ✅ Proyecciones de flujo de caja
+- ✅ Registro manual de gastos e ingresos personales
+- ✅ Presupuestación personal básica
+- ✅ Seguimiento de gastos para organización personal
+- ❌ Gestión de transacciones reales
+- ❌ Procesamiento de pagos
 - ❌ Préstamos
 - ❌ Inversiones
 - ❌ Seguros
 - ❌ Banca
 - ❌ Criptomonedas
+- ❌ Transferencias de dinero
 
 **¿Su app ofrece préstamos?**
 - ❌ No
@@ -166,7 +173,7 @@
 - ❌ No
 
 **¿Su app ofrece servicios de asesoramiento financiero?**
-- ❌ No (herramientas informativas únicamente)
+- ❌ No (herramientas de registro personal únicamente)
 
 #### Información Adicional
 

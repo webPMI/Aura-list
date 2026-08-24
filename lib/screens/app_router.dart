@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/onboarding_service.dart';
+import '../widgets/splash/app_splash_screen.dart';
 import 'welcome_screen.dart';
 import 'main_scaffold.dart';
 
@@ -27,11 +28,7 @@ class AppRouter extends ConsumerWidget {
           return const MainScaffold();
         }
       },
-      loading: () => const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      ),
+      loading: () => const AppSplashScreen(),
       error: (error, stackTrace) {
         // En caso de error, mostrar la pantalla principal
         return const MainScaffold();
