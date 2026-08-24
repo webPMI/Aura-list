@@ -12,6 +12,7 @@ import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
 import '../../screens/today_screen.dart';
 import '../auth/master_passphrase_sheet.dart';
+import '../promo/servicios_mallorca_promo.dart';
 
 class AppDrawer extends ConsumerWidget {
   final VoidCallback? onNavigate;
@@ -157,6 +158,8 @@ class AppDrawer extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           child: _SectionHeader(icon: Icons.info_outline, title: 'Acerca de'),
         ),
+
+        const ServiciosMallorcaDrawerTile(),
 
         _AboutSection(),
 
@@ -835,6 +838,17 @@ class _AboutSection extends StatelessWidget {
           style: TextStyle(
             fontSize: 11,
             color: colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Center(
+          child: TextButton.icon(
+            onPressed: () => openServiciosMallorca(utmSource: 'auralist_about_dialog'),
+            icon: const Icon(Icons.rocket_launch_rounded, size: 14),
+            label: const Text('Visitar Servicios Mallorca'),
+            style: TextButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+            ),
           ),
         ),
       ],

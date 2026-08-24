@@ -14,6 +14,7 @@ import '../widgets/auth/auth_action_sheet.dart';
 import '../widgets/auth/sync_toggle_tile.dart';
 import '../widgets/auth/master_passphrase_sheet.dart';
 import '../widgets/settings/rest_day_tile.dart';
+import '../widgets/promo/servicios_mallorca_promo.dart';
 import 'profile_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -127,6 +128,7 @@ class SettingsScreen extends ConsumerWidget {
 
               // About Section
               _SectionHeader('Acerca de'),
+              const ServiciosMallorcaSettingsTile(),
               const _VersionTile(),
               ListTile(
                 leading: const Icon(Icons.system_update_outlined),

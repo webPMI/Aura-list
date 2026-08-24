@@ -7,6 +7,7 @@ import '../widgets/dialogs/legal_acceptance_dialog.dart';
 import '../core/constants/legal/terms_of_service.dart';
 import '../core/constants/legal/privacy_policy.dart';
 import '../services/database_service.dart';
+import '../widgets/promo/servicios_mallorca_promo.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
 import 'main_scaffold.dart';
@@ -235,7 +236,11 @@ class WelcomeScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
+
+                  // Banner de Servicios Mallorca
+                  const ServiciosMallorcaWelcomeBanner(),
+                  const SizedBox(height: 20),
 
                   // Nota de privacidad con enlaces clickeables
                   Center(
