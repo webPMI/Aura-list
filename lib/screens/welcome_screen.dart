@@ -131,6 +131,13 @@ class WelcomeScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                   _FeatureItem(
+                    icon: Icons.shield_outlined,
+                    title: 'Privacidad y Cifrado Total',
+                    description: 'Tus datos se guardan cifrados con AES-256 (Zero-Knowledge)',
+                    colorScheme: colorScheme,
+                  ),
+                  const SizedBox(height: 16),
+                  _FeatureItem(
                     icon: Icons.psychology,
                     title: 'Inteligente y adaptable',
                     description: 'Se adapta a tu forma de trabajar',

@@ -12,6 +12,7 @@ import '../services/auth_service.dart';
 import '../widgets/navigation/drawer_menu_button.dart';
 import '../widgets/auth/auth_action_sheet.dart';
 import '../widgets/auth/sync_toggle_tile.dart';
+import '../widgets/auth/master_passphrase_sheet.dart';
 import '../widgets/settings/rest_day_tile.dart';
 import 'profile_screen.dart';
 
@@ -87,7 +88,14 @@ class SettingsScreen extends ConsumerWidget {
               const Divider(),
 
               // Data Section
-              _SectionHeader('Datos'),
+              _SectionHeader('Datos y Privacidad'),
+              ListTile(
+                leading: const Icon(Icons.shield_outlined, color: Colors.green),
+                title: const Text('Cifrado de Extremo a Extremo (E2EE)'),
+                subtitle: const Text('Protección Zero-Knowledge con AES-256'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => MasterPassphraseSheet.show(context),
+              ),
               const SyncToggleTile(),
               const SyncStatusTile(),
               ListTile(
