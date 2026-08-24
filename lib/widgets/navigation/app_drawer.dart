@@ -11,6 +11,7 @@ import '../../providers/task_provider.dart';
 import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
 import '../../screens/today_screen.dart';
+import '../auth/master_passphrase_sheet.dart';
 
 class AppDrawer extends ConsumerWidget {
   final VoidCallback? onNavigate;
@@ -122,6 +123,9 @@ class AppDrawer extends ConsumerWidget {
 
         // Sync Status
         _SyncStatusTile(),
+
+        // E2EE Security Badge
+        _EncryptionStatusTile(onNavigate: onNavigate),
 
         // Settings Navigation
         const NavigationDrawerDestination(
@@ -549,6 +553,54 @@ class _SyncStatusTile extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _EncryptionStatusTile extends StatelessWidget {
+  final VoidCallback? onNavigate;
+
+  const _EncryptionStatusTile({this.onNavigate});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: _AnimatedListTile(
+        leading: const Icon(
+          Icons.shield,
+          color: Colors.green,
+          size: 22,
+        ),
+        title: const Text(
+          'Cifrado E2EE Activo',
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+        subtitle: const Text(
+          'Zero-Knowledge (AES-256)',
+          style: TextStyle(fontSize: 11, color: Colors.green),
+        ),
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: Colors.green.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: const Text(
+            'SEGURO',
+            style: TextStyle(
+              color: Colors.green,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        onTap: () {
+          onNavigate?.call();
+          MasterPassphraseSheet.show(context);
+        },
+      ),
     );
   }
 }
