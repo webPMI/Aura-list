@@ -53,10 +53,11 @@
 
 **Acción:** Agregar disclaimer visible en la app
 ```
-"Esta aplicación proporciona herramientas de gestión financiera 
-para fines informativos únicamente. No constituye asesoramiento 
-financiero profesional. Consulte a un asesor financiero certificado 
-para decisiones financieras importantes."
+"AuraList es una herramienta de registro personal para tareas y 
+finanzas. Permite registrar manualmente gastos e ingresos para 
+organización personal. NO procesa transacciones reales, NO es una 
+institución financiera, y NO constituye asesoramiento financiero 
+profesional."
 ```
 
 **Ubicaciones sugeridas:**

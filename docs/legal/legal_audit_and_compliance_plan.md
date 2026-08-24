@@ -165,6 +165,8 @@ Esta auditoría cubre los siguientes aspectos legales:
 
 ### 4. Requisitos de Datos Financieros
 
+**Aclaración Importante:** AuraList NO es una institución financiera regulada. La aplicación solo permite a los usuarios registrar manualmente gastos e ingresos para su organización personal. No procesa transacciones reales, no tiene banca integrada, y no gestiona dinero real.
+
 #### ✅ Requisitos Cumplidos
 - Encriptación de datos financieros
 - Almacenamiento local con Hive
@@ -172,28 +174,25 @@ Esta auditoría cubre los siguientes aspectos legales:
 - No se almacenan datos bancarios sensibles (números de cuenta, tarjetas)
 
 #### ⚠️ Requisitos Parcialmente Cumplidos
-- **CFPB Section 1033:** No hay API para portabilidad de datos financieros
-- **GLBA Privacy Notice:** No hay aviso de privacidad específico financiero
-- **Notificación de Brechas Financieras:** No hay procedimiento específico
-- **Disclaimers Financieros:** No hay advertencias sobre naturaleza no profesional
+- **Disclaimer Financiero:** No hay advertencia sobre naturaleza no profesional
+- **Claridad de Features:** No está claro que los datos son solo registros manuales
 
-#### ❌ Requisitos No Cumplidos
-- **Aviso GLBA:** No hay aviso de privacidad Gramm-Leach-Bliley
-- **Opt-out GLBA:** No hay mecanismo de opt-out para compartir financiero
-- **Categorías GLBA:** No hay clasificación de datos según GLBA
-- **Licencia Financiera:** No hay disclaimer sobre no ser asesor financiero
+#### ❌ Requisitos No Cumplidos (NO APLICABLES)
+- **CFPB Section 1033:** NO APLICA - AuraList no es "covered entity" bajo CFPB
+- **GLBA Privacy Notice:** NO APLICA - AuraList no es institución financiera
+- **Opt-out GLBA:** NO APLICA - No se comparten datos financieros
+- **Categorías GLBA:** NO APLICA - No es institución financiera regulada
+- **Licencia Financiera:** NO APLICA - No se requieren licencias financieras
 
 #### 🎯 Acciones Recomendadas (Datos Financieros)
 1. **Prioridad Alta:**
-   - Agregar disclaimer prominente: "No es asesor financiero profesional"
-   - Crear aviso de privacidad específico para datos financieros
-   - Implementar opt-out para compartir datos financieros (si aplica)
-   - Limitar el alcance de features financieros
+   - Agregar disclaimer claro: "Herramienta de registro personal, no asesor financiero"
+   - Aclarar en la app que los datos son solo registros manuales
+   - Especificar que no se procesan transacciones reales
 
 2. **Prioridad Media:**
-   - Considerar cumplimiento CFPB Section 1033 (portabilidad)
-   - Documentar procedimiento de notificación de brechas financieras
-   - Clasificar datos según categorías GLBA
+   - Mejorar descripción de features financieras en tiendas
+   - Asegurar que la categoría de app refleje esto (Productivity, no Finance)
 
 ---
 
