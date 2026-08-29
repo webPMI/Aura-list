@@ -3,31 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// URL de descarga de APK oficial o repositorio
-///
-/// NOTA: Apunta a la página de releases de GitHub, NO a un archivo .apk directo.
-/// El botón "Descargar APK" abre esta página en el navegador externo donde el
-/// usuario puede descargar el APK manualmente. Si en el futuro hay un APK directo
-/// alojado en un URL estable, cambiar esta constante para que sea el archivo .apk.
-const String kAndroidApkDownloadUrl = 'https://github.com/webPMI/Aura-list/releases';
-
-/// Banner flotante para detectar usuarios en Android Web y ofrecer la instalación/descarga
-///
-/// IMPORTANTE - Detección de plataforma:
-/// Antes usábamos `defaultTargetPlatform != TargetPlatform.android` que es un valor
-/// de TIEMPO DE COMPILACIÓN (no runtime). Esto significaba que en web compilado para
-/// Windows, el banner nunca se mostraba aunque el usuario estuviera en Android.
-/// 
-/// Solución: ahora solo comprobamos `kIsWeb` (valor runtime). Mostramos el banner
-/// en cualquier web. Los usuarios en dispositivos no-Android simplemente no lo
-/// instalan; no hay daño en mostrarlo.
-///
-/// URLs de descarga:
-/// - kAndroidApkDownloadUrl: apunta a la página de releases de GitHub.
-///   El botón "Descargar APK" abre esta página en el navegador externo.
-///   NOTA: No hay un APK directo aquí; el usuario debe descargar manualmente
-///   desde la página de releases. Si en el futuro hay un APK directo, cambiar
-///   esta URL para que sea el archivo .apk en sí.
+/// Banner flotante para ofrecer la instalación directa de la PWA
 class AndroidInstallPrompt extends StatefulWidget {
   final Widget? child;
 
@@ -51,11 +27,6 @@ class _AndroidInstallPromptState extends State<AndroidInstallPrompt> {
   }
 
   Future<void> _checkEligibility() async {
-    // Mostramos el banner en web — el usuario decide si instalar o no.
-    // Nota: defaultTargetPlatform es tiempo de compilación, no runtime,
-    // por lo que no podemos detectar Android del usuario en web.
-    // En vez de eso, mostramos el banner siempre en web; los usuarios
-    // en otros dispositivos simplemente no lo usan.
     if (!kIsWeb) {
       return;
     }
@@ -66,7 +37,6 @@ class _AndroidInstallPromptState extends State<AndroidInstallPrompt> {
       if (lastDismissed != null) {
         final lastDate = DateTime.fromMillisecondsSinceEpoch(lastDismissed);
         final difference = DateTime.now().difference(lastDate).inDays;
-        // Si el usuario cerró el banner hace menos de 7 días, no mostramos
         if (difference < 7) {
           return;
         }
@@ -91,71 +61,100 @@ class _AndroidInstallPromptState extends State<AndroidInstallPrompt> {
   }
 
   Future<void> _handlePwaInstall() async {
-    // Mostrar diálogo explicativo o instrucciones nativas
     if (!mounted) return;
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        icon: const Icon(Icons.install_mobile_rounded, color: Colors.green, size: 36),
-        title: const Text('Instalar AuraList'),
-        content: const Column(
+        icon: const Icon(Icons.install_mobile_rounded, color: Colors.indigo, size: 40),
+        title: const Text(
+          'Instalar AuraList',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Para instalar AuraList en tu pantalla de inicio en Android:',
-              style: TextStyle(fontWeight: FontWeight.w600),
+            const Text(
+              'Instala la aplicación directamente en tu pantalla de inicio sin descargas pesadas:',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
             ),
-            SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('1. ', style: TextStyle(fontWeight: FontWeight.bold)),
-                Expanded(
-                  child: Text('Toca los tres puntos (⋮) en la esquina superior del navegador.'),
-                ),
-              ],
+            const SizedBox(height: 16),
+            _buildInstallStep(
+              number: '1',
+              title: 'Abre el menú del navegador',
+              desc: 'Toca los tres puntos (⋮) en Android o el botón Compartir (⎙) en iPhone.',
             ),
-            SizedBox(height: 8),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('2. ', style: TextStyle(fontWeight: FontWeight.bold)),
-                Expanded(
-                  child: Text('Selecciona "Instalar aplicación" o "Añadir a la pantalla de inicio".'),
-                ),
-              ],
+            const SizedBox(height: 12),
+            _buildInstallStep(
+              number: '2',
+              title: 'Añadir a pantalla de inicio',
+              desc: 'Selecciona "Instalar aplicación" o "Añadir a pantalla de inicio".',
             ),
-            SizedBox(height: 8),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('3. ', style: TextStyle(fontWeight: FontWeight.bold)),
-                Expanded(
-                  child: Text('¡Listo! Tendrás la app con icono nativo y modo offline.'),
-                ),
-              ],
+            const SizedBox(height: 12),
+            _buildInstallStep(
+              number: '3',
+              title: '¡Listo para usar!',
+              desc: 'Tendrás AuraList con icono propio, pantalla completa y modo 100% offline.',
             ),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Entendido'),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _dismissPrompt();
+            },
+            child: const Text('¡Entendido!'),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _handleDownloadApk() async {
-    final uri = Uri.parse(kAndroidApkDownloadUrl);
-    try {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (e) {
-      debugPrint('Error al abrir URL de descarga APK: $e');
-    }
+  Widget _buildInstallStep({
+    required String number,
+    required String title,
+    required String desc,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 24,
+          height: 24,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.indigo.shade100,
+            shape: BoxShape.circle,
+          ),
+          child: Text(
+            number,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+              color: Colors.indigo.shade900,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              ),
+              Text(
+                desc,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -196,11 +195,11 @@ class _AndroidInstallPromptState extends State<AndroidInstallPrompt> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.green.shade700,
+                          color: Colors.indigo.shade600,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(
-                          Icons.android_rounded,
+                          Icons.phone_android_rounded,
                           color: Colors.white,
                           size: 22,
                         ),
@@ -211,13 +210,13 @@ class _AndroidInstallPromptState extends State<AndroidInstallPrompt> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Instala AuraList en tu Android',
+                              'Instala AuraList en tu pantalla de inicio',
                               style: theme.textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             Text(
-                              'Acceso rápido, modo 100% offline y pantalla completa.',
+                              'Acceso instantáneo, pantalla completa y modo 100% offline.',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: colorScheme.onSurface.withValues(alpha: 0.7),
                                 fontSize: 11,
@@ -238,23 +237,18 @@ class _AndroidInstallPromptState extends State<AndroidInstallPrompt> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      OutlinedButton.icon(
-                        onPressed: _handleDownloadApk,
-                        icon: const Icon(Icons.download_rounded, size: 14),
-                        label: const Text('Descargar APK', style: TextStyle(fontSize: 12)),
-                        style: OutlinedButton.styleFrom(
-                          visualDensity: VisualDensity.compact,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        ),
+                      TextButton(
+                        onPressed: _dismissPrompt,
+                        child: const Text('Ahora no', style: TextStyle(fontSize: 12)),
                       ),
                       const SizedBox(width: 8),
                       FilledButton.icon(
                         onPressed: _handlePwaInstall,
                         icon: const Icon(Icons.install_mobile_rounded, size: 14),
-                        label: const Text('Instalar App', style: TextStyle(fontSize: 12)),
+                        label: const Text('Instalar App Gratis', style: TextStyle(fontSize: 12)),
                         style: FilledButton.styleFrom(
                           visualDensity: VisualDensity.compact,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         ),
                       ),
                     ],

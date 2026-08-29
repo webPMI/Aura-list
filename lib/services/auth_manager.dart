@@ -244,22 +244,47 @@ class AuthManager {
   }) async {
     final user = currentUser;
 
-    // If user is anonymous, link the account
+    // If user is anonymous, try to link first, or fallback to sign-in if account already exists
     if (user != null && user.isAnonymous) {
       try {
         final result = await linkWithGoogle();
-        // Assume it's a "new" registration when linking from anonymous
+        
+        // Success or user deliberately cancelled popup
+        if (result.success || result.cancelled) {
+          return (isNewUser: true, result: result);
+        }
+
+        // If linking failed because the Google account already exists,
+        // seamlessly sign in directly with Google and merge pending local data
+        if (result.error != null &&
+            (result.error!.contains('ya está en uso') ||
+             result.error!.contains('ya esta en uso') ||
+             result.error!.contains('already-in-use') ||
+             result.error!.contains('already_in_use'))) {
+          _logger.info(
+            'AuthManager',
+            'Cuenta existente de Google detectada. Iniciando sesión directamente y migrando datos locales...',
+          );
+          final signInResult = await signInWithGoogle();
+          return (isNewUser: false, result: signInResult);
+        }
+
         return (isNewUser: true, result: result);
       } catch (e) {
         _logger.error(
           'AuthManager',
-          'Error linking anonymous to Google',
+          'Error linking anonymous to Google, intentando login directo',
           error: e,
         );
-        return (
-          isNewUser: false,
-          result: AuthResult.error('Error al vincular cuenta'),
-        );
+        try {
+          final signInResult = await signInWithGoogle();
+          return (isNewUser: false, result: signInResult);
+        } catch (_) {
+          return (
+            isNewUser: false,
+            result: AuthResult.error('Error al autenticar con Google'),
+          );
+        }
       }
     }
 
