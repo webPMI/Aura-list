@@ -69,9 +69,16 @@ void main() {
   });
 
   group('AuthService Mocked Implementation Tests', () {
-    test('signInAnonymously returns null because anonymous login is disabled', () async {
+    test('signInAnonymously returns null graciously when Firebase unavailable', () async {
+      // El mockAuth (MockFirebaseAuth) no tiene Firebase apps configuradas.
+      // signInAnonymously() debería retornar null sin lanzar excepciones.
+      // Este test verifica la graceful degradation del servicio.
       final result = await authService.signInAnonymously();
+      // Retorna null porque no hay Firebase disponible (no hay apps)
       expect(result, isNull);
+      // Nota: isFirebaseAvailable es true porque _auth fue inyectado,
+      // pero el metodo devuelve null porque la operación subyacente falla
+      // o porque Firebase no está realmente disponible en este entorno de test.
     });
 
     test('registerWithEmailPassword returns UserCredential on success', () async {

@@ -95,10 +95,7 @@ class BudgetManagementScreen extends ConsumerWidget {
   }
 
   void _showAddBudgetDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) => _AddBudgetDialog(),
-    );
+    _AddBudgetDialog.show(context);
   }
 
   void _showInfo(BuildContext context) {
@@ -248,10 +245,7 @@ class _BudgetCard extends ConsumerWidget {
   }
 
   void _showEditBudgetDialog(BuildContext context, WidgetRef ref, Budget budget) {
-    showDialog(
-      context: context,
-      builder: (context) => _AddBudgetDialog(existingBudget: budget),
-    );
+    _AddBudgetDialog.show(context, existingBudget: budget);
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref, Budget budget) {
@@ -280,8 +274,39 @@ class _BudgetCard extends ConsumerWidget {
 
 class _AddBudgetDialog extends ConsumerStatefulWidget {
   final Budget? existingBudget;
+  final bool? isBottomSheet;
 
-  const _AddBudgetDialog({this.existingBudget});
+  const _AddBudgetDialog({
+    this.existingBudget,
+    this.isBottomSheet,
+  });
+
+  static Future<void> show(
+    BuildContext context, {
+    Budget? existingBudget,
+  }) async {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    if (isMobile) {
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        useSafeArea: true,
+        builder: (ctx) => _AddBudgetDialog(
+          existingBudget: existingBudget,
+          isBottomSheet: true,
+        ),
+      );
+    } else {
+      await showDialog(
+        context: context,
+        builder: (ctx) => _AddBudgetDialog(
+          existingBudget: existingBudget,
+          isBottomSheet: false,
+        ),
+      );
+    }
+  }
 
   @override
   ConsumerState<_AddBudgetDialog> createState() => _AddBudgetDialogState();
@@ -319,110 +344,24 @@ class _AddBudgetDialogState extends ConsumerState<_AddBudgetDialog> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final categories = ref.watch(financeProvider).categories;
-
-    return AlertDialog(
-      title: Text(widget.existingBudget == null
-          ? 'Nuevo Presupuesto'
-          : 'Editar Presupuesto'),
-      content: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre',
-                  hintText: 'ej: Supermercado',
-                ),
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'Requerido' : null,
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedCategoryId,
-                decoration: const InputDecoration(labelText: 'Categoría'),
-                items: categories.map((cat) {
-                  return DropdownMenuItem(
-                    value: cat.id,
-                    child: Text(cat.name),
-                  );
-                }).toList(),
-                onChanged: (value) =>
-                    setState(() => _selectedCategoryId = value),
-                validator: (value) => value == null ? 'Requerido' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _limitController,
-                decoration: const InputDecoration(
-                  labelText: 'Límite',
-                  prefixText: '€ ',
-                ),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value?.isEmpty ?? true) return 'Requerido';
-                  if (double.tryParse(value!) == null) return 'Número inválido';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<BudgetPeriod>(
-                initialValue: _selectedPeriod,
-                decoration: const InputDecoration(labelText: 'Período'),
-                items: BudgetPeriod.values.map((period) {
-                  return DropdownMenuItem(
-                    value: period,
-                    child: Text(period.spanishName),
-                  );
-                }).toList(),
-                onChanged: (value) =>
-                    setState(() => _selectedPeriod = value!),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _noteController,
-                decoration: const InputDecoration(
-                  labelText: 'Nota (opcional)',
-                ),
-                maxLines: 2,
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
-        ),
-        TextButton(
-          onPressed: _save,
-          child: const Text('Guardar'),
-        ),
-      ],
-    );
-  }
-
   void _save() {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedCategoryId == null) return;
 
+    final limit = double.tryParse(_limitController.text.replaceAll(',', '.')) ?? 0.0;
+    if (limit <= 0) return;
+
     final budget = Budget(
       id: widget.existingBudget?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      name: _nameController.text,
+      name: _nameController.text.trim(),
       categoryId: _selectedCategoryId!,
-      limit: double.parse(_limitController.text),
+      limit: limit,
       period: _selectedPeriod,
       startDate: DateTime.now(),
       alertThreshold: _alertThreshold,
       createdAt: widget.existingBudget?.createdAt ?? DateTime.now(),
       lastUpdatedAt: DateTime.now(),
-      note: _noteController.text.isEmpty ? null : _noteController.text,
+      note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
     );
 
     if (widget.existingBudget == null) {
@@ -432,6 +371,330 @@ class _AddBudgetDialogState extends ConsumerState<_AddBudgetDialog> {
     }
 
     Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final categories = ref.watch(financeProvider).categories;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final mediaQuery = MediaQuery.of(context);
+    final isMobile = widget.isBottomSheet ?? (mediaQuery.size.width < 600);
+    final isEditing = widget.existingBudget != null;
+
+    final contentWidget = Form(
+      key: _formKey,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Nombre del presupuesto
+          TextFormField(
+            controller: _nameController,
+            decoration: InputDecoration(
+              labelText: 'Nombre del presupuesto',
+              hintText: 'Ej: Supermercado, Ocio, Restaurantes',
+              prefixIcon: const Icon(Icons.label_outline_rounded),
+              filled: true,
+              fillColor: isDark ? Colors.grey.shade900.withValues(alpha: 0.6) : Colors.grey.shade50,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            ),
+            validator: (value) =>
+                value == null || value.trim().isEmpty ? 'Ingresa un nombre' : null,
+          ),
+          const SizedBox(height: 12),
+
+          // Selector de Categoría
+          DropdownButtonFormField<String>(
+            initialValue: _selectedCategoryId,
+            decoration: InputDecoration(
+              labelText: 'Categoría',
+              prefixIcon: const Icon(Icons.category_outlined),
+              filled: true,
+              fillColor: isDark ? Colors.grey.shade900.withValues(alpha: 0.6) : Colors.grey.shade50,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            ),
+            items: categories.map((cat) {
+              return DropdownMenuItem(
+                value: cat.id,
+                child: Text(cat.name),
+              );
+            }).toList(),
+            onChanged: (value) => setState(() => _selectedCategoryId = value),
+            validator: (value) => value == null ? 'Selecciona una categoría' : null,
+          ),
+          const SizedBox(height: 12),
+
+          // Límite monetario y Período
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: TextFormField(
+                  controller: _limitController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: 'Límite',
+                    prefixText: '€ ',
+                    prefixStyle: const TextStyle(fontWeight: FontWeight.bold),
+                    filled: true,
+                    fillColor: isDark ? Colors.grey.shade900.withValues(alpha: 0.6) : Colors.grey.shade50,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) return 'Requerido';
+                    final v = double.tryParse(value.replaceAll(',', '.'));
+                    if (v == null || v <= 0) return 'Monto inválido';
+                    return null;
+                  },
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                flex: 3,
+                child: DropdownButtonFormField<BudgetPeriod>(
+                  initialValue: _selectedPeriod,
+                  decoration: InputDecoration(
+                    labelText: 'Período',
+                    filled: true,
+                    fillColor: isDark ? Colors.grey.shade900.withValues(alpha: 0.6) : Colors.grey.shade50,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  ),
+                  items: BudgetPeriod.values.map((period) {
+                    return DropdownMenuItem(
+                      value: period,
+                      child: Text(period.spanishName),
+                    );
+                  }).toList(),
+                  onChanged: (value) => setState(() => _selectedPeriod = value!),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Umbral de alerta
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Alerta de umbral de gasto',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.grey.shade300 : Colors.grey.shade800,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${(_alertThreshold * 100).toInt()}%',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                Slider(
+                  value: _alertThreshold,
+                  min: 0.5,
+                  max: 1.0,
+                  divisions: 10,
+                  label: '${(_alertThreshold * 100).toInt()}%',
+                  onChanged: (val) => setState(() => _alertThreshold = val),
+                ),
+                Text(
+                  'Te avisaremos cuando tus gastos alcancen el ${(_alertThreshold * 100).toInt()}% del límite.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Nota opcional
+          TextFormField(
+            controller: _noteController,
+            decoration: InputDecoration(
+              labelText: 'Nota (opcional)',
+              prefixIcon: const Icon(Icons.notes_rounded),
+              filled: true,
+              fillColor: isDark ? Colors.grey.shade900.withValues(alpha: 0.6) : Colors.grey.shade50,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            ),
+            maxLines: 2,
+          ),
+          const SizedBox(height: 18),
+
+          // Botón Principal
+          ElevatedButton.icon(
+            onPressed: _save,
+            icon: const Icon(Icons.check_circle_rounded, color: Colors.white),
+            label: Text(
+              isEditing ? 'Guardar Cambios' : 'Crear Presupuesto',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary,
+              elevation: 2,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final headerBar = Row(
+      children: [
+        Icon(
+          Icons.account_balance_wallet_rounded,
+          color: theme.colorScheme.primary,
+          size: 24,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          isEditing ? 'Editar Presupuesto' : 'Nuevo Presupuesto',
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const Spacer(),
+        IconButton(
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.close_rounded),
+          tooltip: 'Cerrar',
+          visualDensity: VisualDensity.compact,
+        ),
+      ],
+    );
+
+    if (isMobile) {
+      return Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        constraints: BoxConstraints(
+          maxHeight: mediaQuery.size.height * 0.90,
+        ),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 8,
+              bottom: mediaQuery.viewInsets.bottom + 16,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                headerBar,
+                const SizedBox(height: 10),
+                Flexible(
+                  child: SingleChildScrollView(
+                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                    child: contentWidget,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      backgroundColor: theme.colorScheme.surface,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        width: 520,
+        constraints: BoxConstraints(
+          maxHeight: mediaQuery.size.height * 0.90,
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            headerBar,
+            const SizedBox(height: 14),
+            Flexible(
+              child: SingleChildScrollView(
+                child: contentWidget,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

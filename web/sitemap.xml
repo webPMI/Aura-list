@@ -8,7 +8,7 @@
   <!-- Homepage & App Entrypoint -->
   <url>
     <loc>https://aura-list.web.app/</loc>
-    <lastmod>2026-08-24</lastmod>
+    <lastmod>2026-08-29</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
@@ -17,54 +17,106 @@
     </image:image>
   </url>
 
-  <!-- Virtual Feature Routes for SEO & Indexation -->
+  <!-- Static Editorial Guides (High Value Content for Google & AdSense) -->
   <url>
-    <loc>https://aura-list.web.app/#/tasks</loc>
-    <lastmod>2026-08-24</lastmod>
-    <changefreq>daily</changefreq>
+    <loc>https://aura-list.web.app/guia-finanzas-personales.html</loc>
+    <lastmod>2026-08-29</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
-    <loc>https://aura-list.web.app/#/finance</loc>
-    <lastmod>2026-08-24</lastmod>
-    <changefreq>daily</changefreq>
+    <loc>https://aura-list.web.app/guia-interes-compuesto-ahorro.html</loc>
+    <lastmod>2026-08-29</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
-    <loc>https://aura-list.web.app/#/notes</loc>
-    <lastmod>2026-08-24</lastmod>
-    <changefreq>daily</changefreq>
+    <loc>https://aura-list.web.app/guia-productividad-pomodoro.html</loc>
+    <lastmod>2026-08-29</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
-    <loc>https://aura-list.web.app/#/calendar</loc>
-    <lastmod>2026-08-24</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
+    <loc>https://aura-list.web.app/guia-seguridad-cifrado-e2ee.html</loc>
+    <lastmod>2026-08-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
 
+  <!-- Help Center & Information Pages -->
   <url>
-    <loc>https://aura-list.web.app/#/focus</loc>
-    <lastmod>2026-08-24</lastmod>
+    <loc>https://aura-list.web.app/centro-de-ayuda.html</loc>
+    <lastmod>2026-08-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://aura-list.web.app/#/security</loc>
-    <lastmod>2026-08-24</lastmod>
+    <loc>https://aura-list.web.app/sobre-nosotros.html</loc>
+    <lastmod>2026-08-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://aura-list.web.app/#/profile</loc>
-    <lastmod>2026-08-24</lastmod>
+    <loc>https://aura-list.web.app/contacto.html</loc>
+    <lastmod>2026-08-29</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Legal & Compliance Pages -->
+  <url>
+    <loc>https://aura-list.web.app/politica-privacidad.html</loc>
+    <lastmod>2026-08-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://aura-list.web.app/terminos.html</loc>
+    <lastmod>2026-08-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Virtual Feature Routes for PWA App Exploration -->
+  <url>
+    <loc>https://aura-list.web.app/#/tasks</loc>
+    <lastmod>2026-08-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://aura-list.web.app/#/finance</loc>
+    <lastmod>2026-08-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://aura-list.web.app/#/notes</loc>
+    <lastmod>2026-08-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://aura-list.web.app/#/calendar</loc>
+    <lastmod>2026-08-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://aura-list.web.app/#/focus</loc>
+    <lastmod>2026-08-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
 
 </urlset>

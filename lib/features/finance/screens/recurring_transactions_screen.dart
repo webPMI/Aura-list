@@ -78,10 +78,7 @@ class RecurringTransactionsScreen extends ConsumerWidget {
   }
 
   void _showAddDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => const UnifiedTransactionDialog(),
-    );
+    UnifiedTransactionDialog.show(context);
   }
 
   void _showInfo(BuildContext context) {

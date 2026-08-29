@@ -45,10 +45,16 @@ class MockAuthService implements AuthService {
   Future<UserCredential?> signInAnonymously() async => null;
 
   @override
-  Future<UserCredential?> linkWithEmailPassword(
+  Future<({UserCredential? credential, String? errorMessage, bool isCancelled, String? errorCode})>
+  linkWithEmailPassword(
     String email,
     String password,
-  ) async => null;
+  ) async => (
+    credential: null,
+    errorMessage: null,
+    isCancelled: false,
+    errorCode: null,
+  );
 
   @override
   Future<({UserCredential? credential, String? error})>

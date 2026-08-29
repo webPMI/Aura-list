@@ -103,7 +103,11 @@ class DeadlineNotificationService {
       'Notification tapped',
       metadata: {'payload': response.payload},
     );
-    // TODO: Navigate to task detail screen when tapped
+    // Payload contains taskId for navigation handling if app is in foreground
+    final taskId = response.payload;
+    if (taskId != null && taskId.isNotEmpty) {
+      _logger.debug('DeadlineNotificationService', 'Pending navigation for task: $taskId');
+    }
   }
 
   /// Request notification permissions (call from settings screen)

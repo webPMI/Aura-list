@@ -59,7 +59,6 @@ class OverdueTasksBanner extends ConsumerWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: () {
-            // TODO: Navigate to overdue tasks view
             _showOverdueTasksDialog(context, overdueTasks);
           },
           child: Padding(

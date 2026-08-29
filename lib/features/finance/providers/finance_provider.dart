@@ -11,6 +11,9 @@ import '../data/firestore_category_storage.dart';
 import '../data/firestore_transaction_storage.dart';
 import '../data/firestore_recurring_transaction_storage.dart';
 import '../data/recurring_transaction_storage.dart';
+import '../data/savings_account_storage.dart';
+import '../data/firestore_savings_account_storage.dart';
+import '../services/savings_account_sync_service.dart';
 import '../../../services/error_handler.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/database_service.dart';
@@ -231,13 +234,28 @@ final financeRepositoryProvider = Provider<FinanceRepository>((ref) {
       },
     );
 
+    final savingsStorage = SavingsAccountStorage(errorHandler);
+
+    final savingsSync = SavingsAccountSyncService(
+      localStorage: savingsStorage,
+      cloudStorage: FirestoreSavingsAccountStorage(errorHandler),
+      errorHandler: errorHandler,
+      isCloudSyncEnabled: () async {
+        final db = ref.read(databaseServiceProvider);
+        final prefs = await db.getUserPreferences();
+        return prefs.cloudSyncEnabled;
+      },
+    );
+
     return FinanceRepository(
       categoryStorage: categoryStorage,
       transactionStorage: transactionStorage,
       recurringStorage: recurringStorage,
+      savingsStorage: savingsStorage,
       categorySync: categorySync,
       transactionSync: transactionSync,
       recurringSync: recurringSync,
+      savingsSync: savingsSync,
       errorHandler: errorHandler,
     );
   } catch (e, stack) {
@@ -278,6 +296,22 @@ final transactionStorageProvider = Provider<TransactionStorage>((ref) {
       e,
       type: ErrorType.database,
       message: 'Error al crear TransactionStorage',
+      stackTrace: stack,
+    );
+    rethrow;
+  }
+});
+
+final savingsAccountStorageProvider = Provider<SavingsAccountStorage>((ref) {
+  try {
+    final errorHandler = ref.watch(errorHandlerProvider);
+    return SavingsAccountStorage(errorHandler);
+  } catch (e, stack) {
+    final errorHandler = ref.watch(errorHandlerProvider);
+    errorHandler.handle(
+      e,
+      type: ErrorType.database,
+      message: 'Error al crear SavingsAccountStorage',
       stackTrace: stack,
     );
     rethrow;

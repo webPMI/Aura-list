@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cifrado de Extremo a Extremo (E2EE) y Arquitectura Zero-Knowledge | AuraList</title>
+  <meta name="description" content="Comprende la seguridad militar AES-256 y la arquitectura Zero-Knowledge de AuraList. Por qué tus notas, tareas y datos financieros nunca deben guardarse en texto plano.">
+  <meta name="keywords" content="cifrado e2ee, zero knowledge, cifrado aes 256, privacidad de datos, app de notas seguras, seguridad auralist">
+  <meta name="author" content="AuraList Security Team">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <link rel="canonical" href="https://aura-list.web.app/guia-seguridad-cifrado-e2ee.html">
+  <link rel="icon" type="image/png" href="favicon.png">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://aura-list.web.app/guia-seguridad-cifrado-e2ee.html">
+  <meta property="og:title" content="Cifrado E2EE y Zero-Knowledge | AuraList">
+  <meta property="og:description" content="Descubre cómo el cifrado de extremo a extremo con AES-256 protege tu privacidad frente a brechas de datos.">
+  <meta property="og:image" content="https://aura-list.web.app/icons/Icon-512.png">
+
+  <!-- Google AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1988580228487420" crossorigin="anonymous"></script>
+
+  <!-- Article Schema.org JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Cifrado de Extremo a Extremo (E2EE) y Arquitectura Zero-Knowledge: La Guía Definitiva",
+    "description": "Explicación técnica y práctica del cifrado AES-256 y el almacenamiento soberano de datos.",
+    "image": "https://aura-list.web.app/icons/Icon-512.png",
+    "author": {
+      "@type": "Organization",
+      "name": "AuraList"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "AuraList",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://aura-list.web.app/icons/Icon-512.png"
+      }
+    },
+    "datePublished": "2026-08-28",
+    "dateModified": "2026-08-29"
+  }
+  </script>
+
+  <link rel="stylesheet" href="static-pages.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="nav-container">
+      <a href="/" class="brand">
+        <img src="favicon.png" alt="AuraList Logo">
+        <span>AuraList</span>
+      </a>
+      <nav>
+        <ul class="nav-links">
+          <li><a href="/guia-finanzas-personales.html">Finanzas</a></li>
+          <li><a href="/guia-productividad-pomodoro.html">Productividad</a></li>
+          <li><a href="/guia-seguridad-cifrado-e2ee.html" style="color: var(--accent-light);">Seguridad</a></li>
+          <li><a href="/centro-de-ayuda.html">Ayuda</a></li>
+          <li><a href="/sobre-nosotros.html">Nosotros</a></li>
+          <li><a href="/" class="btn-app">Abrir App</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container">
+    <div class="badge">🔒 Seguridad Criptográfica Militar</div>
+    <h1>Cifrado de Extremo a Extremo (E2EE) y Arquitectura Zero-Knowledge</h1>
+    <div class="meta-info">
+      <span>📅 Publicado: 28 de agosto de 2026</span>
+      <span>⏱️ Tiempo de lectura: 5 minutos</span>
+      <span>✍️ Por Equipo de Seguridad de AuraList</span>
+    </div>
+
+    <p class="lead">¿Sabías que la gran mayoría de aplicaciones de notas y tareas almacenan tu información en texto plano dentro de sus bases de datos? En AuraList rompemos con ese paradigma mediante cifrado AES-256 local y arquitectura Zero-Knowledge.</p>
+
+    <!-- AdSense Placement -->
+    <div class="ad-placeholder">
+      <ins class="adsbygoogle"
+           style="display:block; text-align:center;"
+           data-ad-layout="in-article"
+           data-ad-format="fluid"
+           data-ad-client="ca-pub-1988580228487420"
+           data-ad-slot="1234567890"></ins>
+      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
+
+    <h2>¿Qué es la Arquitectura Zero-Knowledge?</h2>
+    <p>El principio de <strong>Conocimiento Cero (Zero-Knowledge)</strong> establece que el proveedor del servicio (en este caso, los servidores de AuraList) no posee los medios matemáticos ni la clave para leer o descifrar los datos del usuario. Tus notas, balances financieros y listas viajan a la nube transformados en bloques de texto ininteligibles (texto cifrado).</p>
+
+    <div class="comparison-grid">
+      <div class="comp-card bad">
+        <h4>❌ Aplicaciones Tradicionales</h4>
+        <p>Las notas y tareas se envían sin cifrar al servidor. Empleados de la empresa, administradores de base de datos o atacantes en una brecha de seguridad pueden leer tus datos personales.</p>
+      </div>
+
+      <div class="comp-card good">
+        <h4>✅ AuraList (Zero-Knowledge)</h4>
+        <p>El cifrado AES-256 se realiza dentro del chip de tu dispositivo. La clave maestra nunca sale de tu equipo. Nadie más tiene acceso.</p>
+      </div>
+    </div>
+
+    <h2>Cómo Funciona el Cifrado AES-GCM 256 bits</h2>
+    <p>El estándar <strong>Advanced Encryption Standard (AES) con longitud de clave de 256 bits</strong> es el mismo algoritmo utilizado por gobiernos e instituciones financieras de todo el mundo para resguardar secretos de máxima seguridad:</p>
+    <ul>
+      <li><strong>Derivación PBKDF2:</strong> Tu contraseña personal se pasa por miles de rondas criptográficas con sal única (`salt`) para crear la llave de 256 bits.</li>
+      <li><strong>Modo GCM (Galois/Counter Mode):</strong> Proporciona no solo confidencialidad (nadie puede leerlo), sino también autenticidad e integridad (si alguien intenta modificar el archivo cifrado, la app lo detecta y lo rechaza de inmediato).</li>
+      <li><strong>Protección contra ataques de fuerza bruta:</strong> Se necesitarían miles de millones de años utilizando todos los superordenadores del planeta para intentar descifrar una sola clave AES-256 por fuerza bruta.</li>
+    </ul>
+
+    <h2>Filosofía Offline-First y Soberanía Digital</h2>
+    <p>La combinación del cifrado E2EE con el almacenamiento local (Offline-First) devuelve la <strong>soberanía de los datos</strong> a las manos de los usuarios. Tu productividad no depende de que un servidor esté activo, ni de que una corporación comercialice tus patrones de gasto con anunciantes.</p>
+
+    <div class="cta-banner">
+      <h3>🛡️ Protege tus Tareas y Finanzas Hoy Mismo</h3>
+      <p>Empieza a usar AuraList de forma completamente gratuita. Cifra tus proyectos y toma el control absoluto de tu privacidad.</p>
+      <a href="/" class="cta-btn">Probar AuraList Gratis</a>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>AuraList</h4>
+        <p>Tu suite integral de productividad offline-first con finanzas inteligentes, tareas y cifrado de extremo a extremo.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Guías y Recursos</h4>
+        <ul>
+          <li><a href="/guia-finanzas-personales.html">Finanzas Personales</a></li>
+          <li><a href="/guia-interes-compuesto-ahorro.html">Interés Compuesto</a></li>
+          <li><a href="/guia-productividad-pomodoro.html">Técnica Pomodoro</a></li>
+          <li><a href="/guia-seguridad-cifrado-e2ee.html">Cifrado Zero-Knowledge</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Soporte y Ayuda</h4>
+        <ul>
+          <li><a href="/centro-de-ayuda.html">Centro de Ayuda y FAQs</a></li>
+          <li><a href="/sobre-nosotros.html">Sobre Nosotros</a></li>
+          <li><a href="/contacto.html">Contacto y Soporte</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="/politica-privacidad.html">Política de Privacidad</a></li>
+          <li><a href="/terminos.html">Términos de Servicio</a></li>
+          <li><a href="/">Acceder a la Aplicación</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      &copy; 2026 AuraList. Privacidad absoluta por diseño.
+    </div>
+  </footer>
+
+</body>
+</html>

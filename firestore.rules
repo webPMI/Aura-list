@@ -288,6 +288,14 @@ service cloud.firestore {
         allow delete: if isAuthenticated() && isOwner(userId);
       }
 
+      // Savings accounts subcollections
+      match /finance_savings_accounts/{docId} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow create: if isAuthenticated() && isOwner(userId);
+        allow update: if isAuthenticated() && isOwner(userId);
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
+
       // Task templates subcollection
       match /task_templates/{templateId} {
         allow read: if isAuthenticated() && isOwner(userId);

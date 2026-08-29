@@ -19,6 +19,7 @@ import '../features/finance/models/cash_flow_projection.dart';
 import '../features/finance/models/finance_alert.dart';
 import '../features/finance/models/task_finance_link.dart';
 import '../features/finance/models/finance_enums.dart';
+import '../features/finance/models/savings_account.dart';
 import '../models/recurrence_rule.dart' as task_recurrence;
 import '../models/recurrence_rule.dart' hide RecurrenceFrequency, RecurrenceFrequencyExtension, RecurrenceFrequencyAdapter;
 import '../core/cache/cache_policy.dart';
@@ -236,6 +237,12 @@ class DatabaseService {
       if (!Hive.isAdapterRegistered(30)) {
         Hive.registerAdapter(TaskTemplateAdapter());
       }
+      if (!Hive.isAdapterRegistered(31)) {
+        Hive.registerAdapter(SavingsAccountTypeAdapter());
+      }
+      if (!Hive.isAdapterRegistered(32)) {
+        Hive.registerAdapter(SavingsAccountAdapter());
+      }
 
       // Open boxes managed directly by DatabaseService
       _historyBox = Hive.isBoxOpen(_historyBoxName)
@@ -318,6 +325,7 @@ class DatabaseService {
         openTyped<CashFlowProjection>('finance_cash_flow_projections'),
         openTyped<FinanceAlert>('finance_alerts'),
         openTyped<TaskFinanceLink>('finance_task_links'),
+        openTyped<SavingsAccount>('finance_savings_accounts'),
       ]);
 
       _logger.debug('Service', '[DatabaseService] Finance boxes initialized');

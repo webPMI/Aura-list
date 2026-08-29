@@ -39,6 +39,24 @@ class FinanceCategory extends HiveObject {
     this.isDefault = false,
   });
 
+  FinanceCategory copyWith({
+    String? id,
+    String? name,
+    String? icon,
+    String? color,
+    FinanceCategoryType? type,
+    bool? isDefault,
+  }) {
+    return FinanceCategory(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      icon: icon ?? this.icon,
+      color: color ?? this.color,
+      type: type ?? this.type,
+      isDefault: isDefault ?? this.isDefault,
+    );
+  }
+
   Map<String, dynamic> toFirestore() {
     return {
       'id': id,

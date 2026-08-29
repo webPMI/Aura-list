@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/finance_category.dart';
+import '../models/recurring_transaction.dart';
+import '../models/finance_enums.dart';
+import '../providers/finance_provider.dart';
+import '../providers/forecast_provider.dart';
 import '../../../models/recurrence_rule.dart';
 
 /// Dialog para crear/editar transacciones recurrentes
@@ -47,7 +51,9 @@ class _AddRecurringTransactionDialogState
     _noteController.text = transaction['note'] ?? '';
     _selectedType = transaction['type'] ?? FinanceCategoryType.expense;
     _startDate = transaction['startDate'] ?? DateTime.now();
-    // TODO: Cargar más campos cuando el modelo esté completo
+    _interval = transaction['interval'] ?? 1;
+    _endDate = transaction['endDate'];
+    _linkedTaskId = transaction['linkedTaskId'];
   }
 
   @override
@@ -60,8 +66,10 @@ class _AddRecurringTransactionDialogState
 
   @override
   Widget build(BuildContext context) {
-    // TODO: Conectar con financeProvider cuando esté disponible
-    final categories = <FinanceCategory>[];
+    final financeState = ref.watch(financeProvider);
+    final categories = financeState.categories
+        .where((c) => c.type == _selectedType)
+        .toList();
 
     return Dialog(
       child: Container(
@@ -305,7 +313,6 @@ class _AddRecurringTransactionDialogState
                         )
                       : null,
                   onTap: () {
-                    // TODO: Abrir selector de tareas
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Selector de tareas próximamente'),
@@ -418,10 +425,42 @@ class _AddRecurringTransactionDialogState
     }
   }
 
-  void _submit() {
+  void _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
-      // TODO: Guardar transacción recurrente
-      Navigator.pop(context);
+      final amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
+      final recurrence = RecurrenceRule(
+        frequency: _frequency,
+        interval: _interval,
+        startDate: _startDate,
+        endDate: _endDate,
+        weekDays: _selectedWeekDays.isNotEmpty ? _selectedWeekDays : null,
+        monthDay: _selectedMonthDay != null && _selectedMonthDay! > 0
+            ? _selectedMonthDay
+            : null,
+      );
+
+      final recurring = RecurringTransaction(
+        id: widget.existingTransaction?['id'] ??
+            DateTime.now().millisecondsSinceEpoch.toString(),
+        title: _titleController.text.trim(),
+        amount: _selectedType == FinanceCategoryType.expense
+            ? -amount.abs()
+            : amount.abs(),
+        categoryId: _selectedCategory?.id,
+        type: _selectedType,
+        recurrence: recurrence,
+        note: _noteController.text.trim().isNotEmpty
+            ? _noteController.text.trim()
+            : null,
+        linkedTaskId: _linkedTaskId,
+        createdAt: widget.existingTransaction?['createdAt'] ?? DateTime.now(),
+        lastUpdatedAt: DateTime.now(),
+      );
+
+      await ref.read(forecastProvider.notifier).addRecurringTransaction(recurring);
+
+      if (!mounted) return;
+      Navigator.pop(context, recurring);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Transacción recurrente guardada')),
       );

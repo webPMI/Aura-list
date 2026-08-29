@@ -51,10 +51,7 @@ class InstallmentsOverviewScreen extends ConsumerWidget {
             icon: const Icon(Icons.add_circle_outline),
             tooltip: 'Nuevo compromiso',
             onPressed: () {
-              showDialog(
-                context: context,
-                builder: (_) => const UnifiedTransactionDialog(),
-              );
+              UnifiedTransactionDialog.show(context);
             },
           ),
         ],
@@ -134,10 +131,7 @@ class InstallmentsOverviewScreen extends ConsumerWidget {
           if (all.isEmpty)
             SliverFillRemaining(
               child: _EmptyState(
-                onAdd: () => showDialog(
-                  context: context,
-                  builder: (_) => const UnifiedTransactionDialog(),
-                ),
+                onAdd: () => UnifiedTransactionDialog.show(context),
               ),
             ),
 

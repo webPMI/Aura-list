@@ -7,6 +7,7 @@ import '../services/database_service.dart';
 import '../core/constants/legal/terms_of_service.dart';
 import '../core/constants/legal/privacy_policy.dart';
 import '../providers/task_provider.dart';
+import '../widgets/dialogs/delete_account_dialog.dart';
 import '../widgets/navigation/drawer_menu_button.dart';
 import '../widgets/auth/auth_action_sheet.dart';
 import '../widgets/auth/sync_toggle_tile.dart';
@@ -236,108 +237,23 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   void _showDeleteAccountDialog(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        icon: Icon(Icons.delete_forever, color: colorScheme.error, size: 48),
-        title: const Text('Eliminar cuenta?'),
-        content: const Text(
-          'Esta accion eliminara permanentemente:\n\n'
-          '- Todas tus tareas\n'
-          '- Todas tus notas\n'
-          '- Tu historial de progreso\n'
-          '- Tu cuenta de usuario\n\n'
-          'Esta accion no se puede deshacer.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _showFinalDeleteConfirmation(context, ref);
-            },
-            style: TextButton.styleFrom(foregroundColor: colorScheme.error),
-            child: const Text('Continuar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showFinalDeleteConfirmation(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        icon: Icon(
-          Icons.warning_amber_rounded,
-          color: colorScheme.error,
-          size: 48,
-        ),
-        title: const Text('Confirmacion final'),
-        content: const Text(
-          'Escribe "ELIMINAR" para confirmar que deseas eliminar tu cuenta y todos tus datos permanentemente.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-        ],
-      ),
-    );
-
-    // Use a separate dialog with text field for confirmation
-    showDialog(
-      context: context,
-      builder: (context) => _DeleteConfirmationDialog(
-        onConfirm: () => _deleteAccount(context, ref),
-      ),
-    );
-  }
-
-  Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
-    try {
-      final authService = ref.read(authServiceProvider);
-      final dbService = ref.read(databaseServiceProvider);
-
-      final success = await authService.deleteAccount(dbService);
-
-      if (context.mounted) {
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Cuenta eliminada exitosamente'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-          // Navigate to home or show onboarding
-          Navigator.of(context).popUntil((route) => route.isFirst);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Error al eliminar la cuenta. Intenta de nuevo.'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
+    /// Abre el diálogo de confirmación para eliminar cuenta del usuario.
+    ///
+    /// Este método delega completamente en showDeleteAccountDialog del archivo
+    /// lib/widgets/dialogs/delete_account_dialog.dart. NO intentar implementar
+    /// diálogos de confirmación inline aquí — esa lógica ya está centralizada
+    /// en el componente reutilizable.
+    ///
+    /// Flujo interno de delete_account_dialog.dart:
+    /// 1. Muestra AlertDialog con advertencia de lo que se eliminará
+    /// 2. Pide confirmación escribiendo "ELIMINAR"
+    /// 3. Llama a authService.deleteAccount(dbService)
+    /// 4. Si éxito → pop(true) + SnackBar de éxito
+    /// 5. Si error → muestra mensaje de error en el diálogo
+    ///
+    /// Luego en profile_screen.dart, el caller (quien invoque esto) es
+    /// responsable de manejar la navegación post-eliminación si es necesario.
+    showDeleteAccountDialog(context: context, ref: ref);
   }
 }
 

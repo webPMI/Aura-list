@@ -205,11 +205,9 @@ class FinancialSummaryCard extends ConsumerWidget {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (ctx) => const UnifiedTransactionDialog(
-                          initialType: FinanceCategoryType.expense,
-                        ),
+                      UnifiedTransactionDialog.show(
+                        context,
+                        initialType: FinanceCategoryType.expense,
                       );
                     },
                     icon: const Icon(Icons.remove_circle_outline, color: Colors.red, size: 18),
@@ -224,11 +222,9 @@ class FinancialSummaryCard extends ConsumerWidget {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (ctx) => const UnifiedTransactionDialog(
-                          initialType: FinanceCategoryType.income,
-                        ),
+                      UnifiedTransactionDialog.show(
+                        context,
+                        initialType: FinanceCategoryType.income,
                       );
                     },
                     icon: const Icon(Icons.add_circle_outline, color: Colors.green, size: 18),

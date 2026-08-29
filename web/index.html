@@ -218,6 +218,7 @@
       color: #FFFFFF;
       background: linear-gradient(135deg, #FFFFFF 0%, #A5B4FC 100%);
       -webkit-background-clip: text;
+      background-clip: text;
       -webkit-text-fill-color: transparent;
     }
     .hero p {
@@ -310,9 +311,18 @@
 <body>
   <!-- Semantic Crawlable HTML Pre-rendered for Googlebot and Fast First Paint -->
   <div id="seo-root">
-    <header class="header-bar">
-      <img src="favicon.png" alt="AuraList Logo" width="48" height="48">
-      <div class="brand-title">AuraList</div>
+    <header class="header-bar" style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; border-bottom: 1px solid #334155; padding-bottom: 16px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <img src="favicon.png" alt="AuraList Logo" width="40" height="40">
+        <div class="brand-title">AuraList</div>
+      </div>
+      <nav style="display: flex; gap: 16px; flex-wrap: wrap;">
+        <a href="/guia-finanzas-personales.html" style="color: #94A3B8; text-decoration: none; font-size: 14px; font-weight: 600;">Finanzas</a>
+        <a href="/guia-productividad-pomodoro.html" style="color: #94A3B8; text-decoration: none; font-size: 14px; font-weight: 600;">Productividad</a>
+        <a href="/guia-seguridad-cifrado-e2ee.html" style="color: #94A3B8; text-decoration: none; font-size: 14px; font-weight: 600;">Seguridad</a>
+        <a href="/centro-de-ayuda.html" style="color: #94A3B8; text-decoration: none; font-size: 14px; font-weight: 600;">Ayuda</a>
+        <a href="/sobre-nosotros.html" style="color: #94A3B8; text-decoration: none; font-size: 14px; font-weight: 600;">Nosotros</a>
+      </nav>
     </header>
 
     <main>
@@ -358,6 +368,7 @@
         let stepIdx = 0;
         let tipIdx = 0;
         let clicks = 0;
+        let pwaInstallable = false;
 
         function updateStep() {
           if (stepIdx < steps.length - 1) {
@@ -400,6 +411,34 @@
             <p style="font-size: 12px; color: #86EFAC; font-weight: bold; margin-bottom: 4px;">✅ AuraList (Zero-Knowledge)</p>
             <p style="font-size: 12px; color: #CBD5E1;">Cifrado local con clave de 256 bits. Imposible de descifrar por terceros.</p>
           </div>
+        </div>
+      </section>
+
+      <!-- Guides & Knowledge Hub Section -->
+      <section style="width: 100%; margin-bottom: 48px;">
+        <h2 style="font-size: 24px; color: #FFFFFF; font-weight: 800; text-align: center; margin-bottom: 8px;">Guías Educativas y Recursos</h2>
+        <p style="text-align: center; color: #94A3B8; font-size: 15px; margin-bottom: 24px;">Aprende estrategias probadas para mejorar tus finanzas, multiplicar tus ahorros y optimizar tu productividad.</p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+          <a href="/guia-finanzas-personales.html" style="background: #1E293B; border: 1px solid #334155; border-radius: 14px; padding: 20px; text-decoration: none; display: block; transition: border-color 0.2s;">
+            <div style="font-size: 24px; margin-bottom: 8px;">💰</div>
+            <h3 style="color: #818CF8; font-size: 16px; margin-bottom: 6px;">Guía de Finanzas Personales</h3>
+            <p style="color: #94A3B8; font-size: 13px; margin: 0;">Domina la regla 50/30/20, presupuestos y control de gastos.</p>
+          </a>
+          <a href="/guia-interes-compuesto-ahorro.html" style="background: #1E293B; border: 1px solid #334155; border-radius: 14px; padding: 20px; text-decoration: none; display: block; transition: border-color 0.2s;">
+            <div style="font-size: 24px; margin-bottom: 8px;">📈</div>
+            <h3 style="color: #818CF8; font-size: 16px; margin-bottom: 6px;">El Poder del Interés Compuesto</h3>
+            <p style="color: #94A3B8; font-size: 13px; margin: 0;">Cómo multiplicar tus ahorros a 10, 20 y 30 años paso a paso.</p>
+          </a>
+          <a href="/guia-productividad-pomodoro.html" style="background: #1E293B; border: 1px solid #334155; border-radius: 14px; padding: 20px; text-decoration: none; display: block; transition: border-color 0.2s;">
+            <div style="font-size: 24px; margin-bottom: 8px;">🍅</div>
+            <h3 style="color: #818CF8; font-size: 16px; margin-bottom: 6px;">Técnica Pomodoro y Deep Work</h3>
+            <p style="color: #94A3B8; font-size: 13px; margin: 0;">Estrategias de concentración profunda y gestión de tareas.</p>
+          </a>
+          <a href="/guia-seguridad-cifrado-e2ee.html" style="background: #1E293B; border: 1px solid #334155; border-radius: 14px; padding: 20px; text-decoration: none; display: block; transition: border-color 0.2s;">
+            <div style="font-size: 24px; margin-bottom: 8px;">🔒</div>
+            <h3 style="color: #818CF8; font-size: 16px; margin-bottom: 6px;">Cifrado Zero-Knowledge AES-256</h3>
+            <p style="color: #94A3B8; font-size: 13px; margin: 0;">Seguridad criptográfica militar y privacidad sin concesiones.</p>
+          </a>
         </div>
       </section>
 
@@ -448,8 +487,41 @@
       </section>
     </main>
 
-    <footer>
-      <p>&copy; 2026 AuraList. Diseñado para tu productividad sin estrés y con máxima privacidad.</p>
+    <!-- Comprehensive Footer with Full Legal & Guide Links -->
+    <footer style="width: 100%; border-top: 1px solid #334155; padding: 40px 0 20px 0; margin-top: 40px;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; text-align: left; margin-bottom: 30px;">
+        <div>
+          <h4 style="color: #FFFFFF; font-size: 15px; margin-bottom: 12px;">AuraList App</h4>
+          <p style="font-size: 13px; color: #94A3B8; line-height: 1.6;">Suite de productividad offline-first con finanzas inteligentes, tareas y cifrado de extremo a extremo.</p>
+        </div>
+        <div>
+          <h4 style="color: #FFFFFF; font-size: 15px; margin-bottom: 12px;">Guías Educativas</h4>
+          <ul style="list-style: none; padding: 0; font-size: 13px;">
+            <li style="margin-bottom: 8px;"><a href="/guia-finanzas-personales.html" style="color: #94A3B8; text-decoration: none;">Finanzas Personales</a></li>
+            <li style="margin-bottom: 8px;"><a href="/guia-interes-compuesto-ahorro.html" style="color: #94A3B8; text-decoration: none;">Interés Compuesto</a></li>
+            <li style="margin-bottom: 8px;"><a href="/guia-productividad-pomodoro.html" style="color: #94A3B8; text-decoration: none;">Técnica Pomodoro</a></li>
+            <li style="margin-bottom: 8px;"><a href="/guia-seguridad-cifrado-e2ee.html" style="color: #94A3B8; text-decoration: none;">Cifrado Zero-Knowledge</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 style="color: #FFFFFF; font-size: 15px; margin-bottom: 12px;">Soporte y Ayuda</h4>
+          <ul style="list-style: none; padding: 0; font-size: 13px;">
+            <li style="margin-bottom: 8px;"><a href="/centro-de-ayuda.html" style="color: #94A3B8; text-decoration: none;">Centro de Ayuda</a></li>
+            <li style="margin-bottom: 8px;"><a href="/sobre-nosotros.html" style="color: #94A3B8; text-decoration: none;">Sobre Nosotros</a></li>
+            <li style="margin-bottom: 8px;"><a href="/contacto.html" style="color: #94A3B8; text-decoration: none;">Contacto y Soporte</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 style="color: #FFFFFF; font-size: 15px; margin-bottom: 12px;">Legal</h4>
+          <ul style="list-style: none; padding: 0; font-size: 13px;">
+            <li style="margin-bottom: 8px;"><a href="/politica-privacidad.html" style="color: #94A3B8; text-decoration: none;">Política de Privacidad</a></li>
+            <li style="margin-bottom: 8px;"><a href="/terminos.html" style="color: #94A3B8; text-decoration: none;">Términos de Servicio</a></li>
+          </ul>
+        </div>
+      </div>
+      <div style="text-align: center; font-size: 12px; color: #64748B; border-top: 1px solid #1E293B; padding-top: 20px;">
+        <p>&copy; 2026 AuraList. Diseñado para tu productividad sin estrés y con máxima privacidad.</p>
+      </div>
     </footer>
   </div>
 

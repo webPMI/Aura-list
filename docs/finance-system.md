@@ -178,6 +178,55 @@ class CashFlowProjection extends HiveObject {
 - `expenseVariance`: Diferencia en gastos
 - `accuracy`: Precisión de la proyección (0.0-1.0)
 
+#### SavingsAccount (typeId: 32)
+
+Cuentas de ahorro e inversión gestionadas por el usuario para simular su crecimiento con interés compuesto.
+
+```dart
+@HiveType(typeId: 32)
+class SavingsAccount extends HiveObject {
+  String id;
+  String name;                 // Nombre de la cuenta
+  SavingsAccountType type;     // savings | investment
+  double initialBalance;       // Saldo con el que se abrió
+  double currentBalance;       // Saldo actual
+  double monthlyContribution;  // Aportación mensual (constante)
+  double annualInterestRate;   // Tasa anual en porcentaje (ej: 4.5)
+  String icon;
+  String color;                // Color hex
+  DateTime startDate;
+  DateTime createdAt;
+  DateTime? lastUpdatedAt;
+  bool deleted;
+  DateTime? deletedAt;
+  String? firestoreId;
+}
+```
+
+**Propiedades calculadas:**
+- `gainedAmount`: currentBalance - initialBalance
+- `totalReturnPercentage`: Ganancia sobre el saldo inicial (%)
+
+**Servicio de simulación (`SavingsSimulationService`):**
+- Proyecta mes a mes con interés compuesto: `(saldo + aporte) * (1 + tasa/12/100)`
+- `projectAccount`: Proyección individual a 30 años (360 meses)
+- `projectCombined`: Proyección consolidada de todas las cuentas
+- `overallStats`: Estadísticas generales y promedios (saldo total, aportación mensual total, ganancia, tasa ponderada por saldo, hitos a 1/5/10/20/30 años)
+
+**Ejemplo de uso:**
+```dart
+final cuenta = SavingsAccount(
+  id: 'acc_${DateTime.now().millisecondsSinceEpoch}',
+  name: 'Fondo de emergencia',
+  type: SavingsAccountType.savings,
+  initialBalance: 5000.0,
+  currentBalance: 5200.0,
+  monthlyContribution: 200.0,
+  annualInterestRate: 4.5,
+  createdAt: DateTime.now(),
+);
+```
+
 #### FinanceAlert (typeId: 20)
 
 Alertas inteligentes sobre presupuestos, gastos inusuales, etc.
@@ -1021,6 +1070,10 @@ users/
       {alertId}/
         - Documento de FinanceAlert
 
+    finance_savings_accounts/
+      {accountId}/
+        - Documento de SavingsAccount
+
     task_finance_links/
       {linkId}/
         - Documento de TaskFinanceLink
@@ -1067,7 +1120,7 @@ users/
 
 1. **Sin multi-moneda**: Actualmente solo soporta una moneda
 2. **Sin cuentas bancarias**: No se integra directamente con bancos
-3. **Sin inversiones**: No maneja portafolios de inversión
+3. **Sin cuotas de inversión reales**: Las simulaciones de ahorro/inversión usan tasas fijas, no datos de mercado en tiempo real
 4. **Proyecciones simples**: Las proyecciones usan algoritmos básicos, no machine learning
 5. **Sin presupuestos compartidos**: Cada usuario tiene presupuestos independientes
 
@@ -1080,7 +1133,7 @@ users/
 - Integración con Open Banking APIs
 - Machine learning para mejores proyecciones
 - Presupuestos compartidos entre usuarios
-- Metas de ahorro con tracking visual
+- Simulación de escenarios (retiros, aportes variables) y meta de ahorro con tracking visual
 - Detección de fraude y gastos duplicados
 
 ## Soporte

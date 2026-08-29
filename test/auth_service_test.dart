@@ -109,8 +109,11 @@ void main() {
         'password123',
       );
 
-      // Should return null when Firebase unavailable
-      expect(result, isNull);
+      // Now returns a record, not null. Should have error info.
+      expect(result.credential, isNull);
+      expect(result.errorCode, isNotNull);
+      expect(result.errorMessage, contains('Firebase'));
+      expect(result.isCancelled, isFalse);
     });
 
     test('linkWithGoogle handles Firebase unavailability', () async {

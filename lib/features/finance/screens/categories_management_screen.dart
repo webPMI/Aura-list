@@ -222,198 +222,360 @@ class _CategoriesManagementScreenState
   }
 
   Future<void> _addCategory(BuildContext context) async {
-    final nameController = TextEditingController();
-    Color selectedColor = const Color(0xFF66BB6A);
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Nueva Categoría'),
-          content: SizedBox(
-            width: 300,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nombre',
-                    border: OutlineInputBorder(),
-                  ),
-                  autofocus: true,
-                  validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
-                ),
-                const SizedBox(height: 16),
-                const Text('Color'),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final c in [
-                      const Color(0xFFEF5350),
-                      const Color(0xFFFF7043),
-                      const Color(0xFFFFA726),
-                      const Color(0xFFFFCA28),
-                      const Color(0xFF42A5F5),
-                      const Color(0xFF2196F3),
-                      const Color(0xFF66BB6A),
-                      const Color(0xFF26A69A),
-                      const Color(0xFF78909C),
-                      const Color(0xFFAB47BC),
-                      const Color(0xFF5C6BC0),
-                      const Color(0xFF9E9E9E),
-                    ])
-                      GestureDetector(
-                        onTap: () => setState(() => selectedColor = c),
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: c,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: selectedColor == c ? Colors.black : Colors.grey,
-                              width: selectedColor == c ? 2 : 1,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (nameController.text.isEmpty) return;
-                Navigator.pop(context, true);
-              },
-              child: const Text('Crear'),
-            ),
-          ],
-        ),
-      ),
+    final newCat = await _CategoryEditorDialog.show(
+      context,
+      initialType: _filterType,
     );
-
-    if (result == true && nameController.text.isNotEmpty) {
-      final newCat = FinanceCategory(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        name: nameController.text,
-        icon: 'category',
-        color:
-            '#${selectedColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
-        type: _filterType,
-        isDefault: false,
-      );
+    if (newCat != null) {
       await ref.read(financeProvider.notifier).addCategory(newCat);
     }
   }
 
   Future<void> _editCategory(BuildContext context, FinanceCategory cat) async {
-    final nameController =
-        TextEditingController(text: cat.name);
-    Color selectedColor = Color(
-        int.parse(cat.color.replaceFirst('#', 'FF'), radix: 16));
+    final updated = await _CategoryEditorDialog.show(
+      context,
+      category: cat,
+    );
+    if (updated != null) {
+      await ref.read(financeProvider.notifier).updateCategory(updated);
+    }
+  }
+}
 
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Editar Categoría'),
-          content: SizedBox(
-            width: 300,
+class _CategoryEditorDialog extends StatefulWidget {
+  final FinanceCategory? category;
+  final FinanceCategoryType initialType;
+  final bool isBottomSheet;
+
+  const _CategoryEditorDialog({
+    this.category,
+    this.initialType = FinanceCategoryType.expense,
+    this.isBottomSheet = false,
+  });
+
+  static Future<FinanceCategory?> show(
+    BuildContext context, {
+    FinanceCategory? category,
+    FinanceCategoryType initialType = FinanceCategoryType.expense,
+  }) async {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    if (isMobile) {
+      return showModalBottomSheet<FinanceCategory>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        useSafeArea: true,
+        builder: (ctx) => _CategoryEditorDialog(
+          category: category,
+          initialType: initialType,
+          isBottomSheet: true,
+        ),
+      );
+    } else {
+      return showDialog<FinanceCategory>(
+        context: context,
+        builder: (ctx) => _CategoryEditorDialog(
+          category: category,
+          initialType: initialType,
+          isBottomSheet: false,
+        ),
+      );
+    }
+  }
+
+  @override
+  State<_CategoryEditorDialog> createState() => _CategoryEditorDialogState();
+}
+
+class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late Color _selectedColor;
+
+  static const List<Color> _palette = [
+    Color(0xFFEF5350),
+    Color(0xFFFF7043),
+    Color(0xFFFFA726),
+    Color(0xFFFFCA28),
+    Color(0xFF42A5F5),
+    Color(0xFF2196F3),
+    Color(0xFF66BB6A),
+    Color(0xFF26A69A),
+    Color(0xFF78909C),
+    Color(0xFFAB47BC),
+    Color(0xFF5C6BC0),
+    Color(0xFF9E9E9E),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.category?.name ?? '');
+    if (widget.category != null) {
+      try {
+        _selectedColor = Color(int.parse(
+            widget.category!.color.replaceFirst('#', 'FF'),
+            radix: 16));
+      } catch (_) {
+        _selectedColor = const Color(0xFF66BB6A);
+      }
+    } else {
+      _selectedColor = const Color(0xFF66BB6A);
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (!_formKey.currentState!.validate()) return;
+
+    final name = _nameController.text.trim();
+    final colorHex =
+        '#${_selectedColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
+
+    if (widget.category != null) {
+      final updated = widget.category!.copyWith(
+        name: name,
+        color: colorHex,
+      );
+      Navigator.pop(context, updated);
+    } else {
+      final newCat = FinanceCategory(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        name: name,
+        icon: 'category',
+        color: colorHex,
+        type: widget.initialType,
+        isDefault: false,
+      );
+      Navigator.pop(context, newCat);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final mediaQuery = MediaQuery.of(context);
+    final isEditing = widget.category != null;
+
+    final contentWidget = Form(
+      key: _formKey,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Nombre
+          TextFormField(
+            controller: _nameController,
+            autofocus: true,
+            decoration: InputDecoration(
+              labelText: 'Nombre de la categoría',
+              hintText: 'Ej: Supermercado, Transporte, Gimnasio',
+              prefixIcon: const Icon(Icons.category_outlined),
+              filled: true,
+              fillColor: isDark
+                  ? Colors.grey.shade900.withValues(alpha: 0.6)
+                  : Colors.grey.shade50,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                    color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            ),
+            validator: (v) =>
+                v == null || v.trim().isEmpty ? 'Ingresa un nombre' : null,
+          ),
+          const SizedBox(height: 16),
+
+          // Paleta de colores
+          Text(
+            'Color de la categoría',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.grey.shade300 : Colors.grey.shade800,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              for (final c in _palette)
+                GestureDetector(
+                  onTap: () => setState(() => _selectedColor = c),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: c,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _selectedColor == c
+                            ? (isDark ? Colors.white : Colors.black)
+                            : Colors.transparent,
+                        width: 3,
+                      ),
+                      boxShadow: _selectedColor == c
+                          ? [
+                              BoxShadow(
+                                color: c.withValues(alpha: 0.4),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              )
+                            ]
+                          : null,
+                    ),
+                    child: _selectedColor == c
+                        ? const Icon(Icons.check, color: Colors.white, size: 18)
+                        : null,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 22),
+
+          // Botón Principal
+          ElevatedButton.icon(
+            onPressed: _submit,
+            icon: const Icon(Icons.check_circle_rounded, color: Colors.white),
+            label: Text(
+              isEditing ? 'Guardar Cambios' : 'Crear Categoría',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _selectedColor,
+              elevation: 2,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final headerBar = Row(
+      children: [
+        Container(
+          width: 14,
+          height: 14,
+          decoration: BoxDecoration(
+            color: _selectedColor,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          isEditing ? 'Editar Categoría' : 'Nueva Categoría',
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const Spacer(),
+        IconButton(
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.close_rounded),
+          tooltip: 'Cerrar',
+          visualDensity: VisualDensity.compact,
+        ),
+      ],
+    );
+
+    if (widget.isBottomSheet) {
+      return Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        constraints: BoxConstraints(
+          maxHeight: mediaQuery.size.height * 0.85,
+        ),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 8,
+              bottom: mediaQuery.viewInsets.bottom + 16,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextFormField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nombre',
-                    border: OutlineInputBorder(),
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                  autofocus: true,
                 ),
-                const SizedBox(height: 16),
-                const Text('Color'),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final c in [
-                      const Color(0xFFEF5350),
-                      const Color(0xFFFF7043),
-                      const Color(0xFFFFA726),
-                      const Color(0xFFFFCA28),
-                      const Color(0xFF42A5F5),
-                      const Color(0xFF2196F3),
-                      const Color(0xFF66BB6A),
-                      const Color(0xFF26A69A),
-                      const Color(0xFF78909C),
-                      const Color(0xFFAB47BC),
-                      const Color(0xFF5C6BC0),
-                      const Color(0xFF9E9E9E),
-                    ])
-                      GestureDetector(
-                        onTap: () => setState(() => selectedColor = c),
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: c,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: selectedColor == c
-                                  ? Colors.black
-                                  : Colors.grey,
-                              width: selectedColor == c ? 2 : 1,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
+                headerBar,
+                const SizedBox(height: 12),
+                Flexible(
+                  child: SingleChildScrollView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    child: contentWidget,
+                  ),
                 ),
               ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (nameController.text.isEmpty) return;
-                Navigator.pop(context, true);
-              },
-              child: const Text('Guardar'),
+        ),
+      );
+    }
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      backgroundColor: theme.colorScheme.surface,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        width: 440,
+        constraints: BoxConstraints(
+          maxHeight: mediaQuery.size.height * 0.85,
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            headerBar,
+            const SizedBox(height: 14),
+            Flexible(
+              child: SingleChildScrollView(
+                child: contentWidget,
+              ),
             ),
           ],
         ),
       ),
     );
-
-    if (result == true && nameController.text.isNotEmpty) {
-      final updated = FinanceCategory(
-        id: cat.id,
-        name: nameController.text,
-        icon: cat.icon,
-        color:
-            '#${selectedColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
-        type: cat.type,
-        isDefault: cat.isDefault,
-      );
-      await ref
-          .read(financeProvider.notifier)
-          .updateCategory(updated);
-    }
   }
 }
 

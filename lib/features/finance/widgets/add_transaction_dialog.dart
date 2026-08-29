@@ -117,17 +117,18 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
                 id: DateTime.now().millisecondsSinceEpoch.toString(),
                 name: _newCategoryName.text,
                 icon: 'category',
-                color: '#${_newCategoryColor.value.toRadixString(16).substring(2).toUpperCase()}',
+                color: '#${_newCategoryColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
                 type: _selectedType,
                 isDefault: false,
               );
               await ref.read(financeProvider.notifier).addCategory(newCat);
+              if (!context.mounted) return;
               setState(() {
                 _showCategoryCreator = false;
                 _selectedCategory = newCat;
                 _newCategoryName.clear();
               });
-              if (mounted) Navigator.pop(context, newCat);
+              Navigator.pop(context, newCat);
             },
             child: const Text('Crear'),
           ),
@@ -186,15 +187,18 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
                   decimal: true,
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) return 'Requerido';
-                  if (double.tryParse(value) == null)
+                  if (value == null || value.isEmpty) {
+                    return 'Requerido';
+                  }
+                  if (double.tryParse(value) == null) {
                     return 'Número inválido';
+                  }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<FinanceCategory>(
-                value: _selectedCategory,
+                initialValue: _selectedCategory,
                 decoration: const InputDecoration(
                   labelText: 'Categoría',
                   border: OutlineInputBorder(),
@@ -216,8 +220,8 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
                     value: null,
                     child: Row(
                       children: [
-                        const Icon(Icons.add, color: Colors.grey),
-                        const SizedBox(width: 8),
+                        Icon(Icons.add, color: Colors.grey),
+                        SizedBox(width: 8),
                         Text(
                           'Crear categoría...',
                           style: TextStyle(color: Colors.grey),

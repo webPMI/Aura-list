@@ -150,12 +150,24 @@ class AuthService {
     return _firebaseAvailable;
   }
 
-  /// Inicio de sesion anonimo desactivado.
+  /// Inicio de sesion anonimo (para usuarios que no quieren registrar cuenta todavia)
+  ///
+  /// Este método permite que usuarios que no desean crear una cuenta registrada
+  /// puedan usar la app con un usuario anónimo de Firebase. Los datos se guardan
+  /// localmente (Hive) y están disponibles sin conexión.
+  ///
+  /// Flujo de uso:
+  /// 1. Se llama automáticamente desde main.dart:_initializeAuth() cuando no hay
+  ///    usuario autenticado (primera vez o tras cerrar sesión).
+  /// 2. El usuario anónimo puede después vincularse con email/password o Google
+  ///    mediante linkWithEmailPassword() o linkWithGoogle().
+  ///
+  /// Importante: El usuario anónimo de Firebase NO es persistente entre dispositivos.
+  /// Para tener sync entre dispositivos, el usuario debe vincularse con una cuenta
+  /// registrada (email o Google).
+  ///
+  /// Retorna null si Firebase no está disponible (modo local sin Auth).
   Future<UserCredential?> signInAnonymously() async {
-    // Autenticación anónima desactivada (no se usa en este proyecto)
-    _logger.info('AuthService', 'Inicio de sesión anónimo desactivado - modo local');
-    return null;
-    /*
     _ensureFirebaseAvailable();
 
     if (!_firebaseAvailable || _auth == null) {
@@ -168,11 +180,19 @@ class AuthService {
 
     try {
       final result = await _auth!.signInAnonymously();
+      _logger.info(
+        'AuthService',
+        'Usuario anonimo creado: ${result.user?.uid}',
+      );
       return result;
     } catch (e) {
+      _logger.error(
+        'AuthService',
+        'Error al crear usuario anonimo',
+        error: e,
+      );
       return null;
     }
-    */
   }
 
   /// Cierra la sesion del usuario.
@@ -219,7 +239,55 @@ class AuthService {
     await signOut(clearCache: true, preservePreferences: true);
   }
 
-  // ==================== ACCOUNT LINKING ====================
+  // ==================== ACCOUNT_LINKING ====================
+  //
+  // DESGLOSE DEL FLUJO DE AUTENTICACIÓN EN LA APP
+  // =============================================
+  //
+  // Escenario A — Primera vez (sin sesión):
+  //   1. main.dart:_initializeAuth() detecta currentUser == null
+  //   2. Crea usuario anónimo via signInAnonymously()
+  //   3. WelcomeScreen decide si mostrar (shouldShowWelcomeProvider)
+  //   4. Usuario elige: registrar, login, o continuar anónimo
+  //
+  // Escenario B — Usuario existente con cuenta vinculada:
+  //   1. main.dart:_initializeAuth() detecta currentUser != null
+  //   2. Si isLinkedAccount, realiza sincronización inicial
+  //   3. App abre directamente en MainScaffold
+  //
+  // Escenario C — Usuario anónimo que quiere vincularse:
+  //   1. User anónimo activo (currentUser?.isAnonymous == true)
+  //   2. UI muestra AuthActionSheet → AuthForm(mode: AuthMode.link)
+  //   3. AuthForm llama a authManager.linkWithEmailPassword() o linkWithGoogle()
+  //   4. AuthManager delega a AuthService.linkWith*()
+  //   5. Si éxito → AuthService hace linkWithCredential / linkWithPopup
+  //   6. AuthManager._enableSyncAfterAuth() activa sync
+  //
+  // Escenario D — Login directo con Google:
+  //   1. currentUser == null (no hay sesión)
+  //   2. UI llama a authenticateWithGoogle()
+  //   3. authenticateWithGoogle() → signInWithGoogle() (logueo directo)
+  //   4. Si éxito → sync automático
+  //
+  // Escenario E — Vincular cuenta anónima con email/password:
+  //   1. currentUser?.isAnonymous == true
+  //   2. AuthForm(mode: AuthMode.link) → authManager.linkWithEmailPassword()
+  //   3. AuthManager → AuthService.linkWithEmailPassword(email, password)
+  //   4. AuthService verifica: Firebase OK? usuario anónimo? credenciales válidas?
+  //   5. Si éxito → (credential, null error). AuthManager activa sync.
+  //
+  // Códigos de error de FirebaseAuth a saber:
+  //   - email-already-in-use: el email ya tiene cuenta con otro método
+  //   - credential-already-in-use: esa credencial ya está vinculada a otro usuario
+  //   - requires-recent-login: el usuario debe re-autenticarse antes (seguridad)
+  //   - popup-closed-by-user: usuario cerró el popup de Google (no es error)
+  //   - network-request-failed: problema de conexión (no es error de credenciales)
+  //
+  // NOTA SOBRE EL RETURN TYPE DE linkWith*():
+  //   Antes: UserCredential? (null = error genérico, sin distinguir causa)
+  //   Ahora: record con errorCode → permite mensajes de usuario específicos
+  //   Esto es crítico para UX: el usuario necesita saber "email ya en uso"
+  //   vs "credenciales incorrectas" vs "Firebase no disponible".
 
   /// Check if current user has linked their account (not anonymous)
   bool get isLinkedAccount {
@@ -247,10 +315,21 @@ class AuthService {
 
   /// Link anonymous account with email and password
   /// Preserves all local data
-  Future<UserCredential?> linkWithEmailPassword(
-    String email,
-    String password,
-  ) async {
+  /// Returns a detailed result distinguishing failure causes
+  ///
+  /// Por qué un record en vez de UserCredential?:
+  /// - errorCode permite al UI decidir qué mostrar sin adivinar
+  /// - errorMessage es traducido al español con contexto específico
+  /// - isCancelled distingue "usuario cerró popup" de "error real"
+  ///
+  /// Flujo:
+  /// 1. Verificar Firebase disponible
+  /// 2. Verificar existe usuario anónimo activo
+  /// 3. Intentar linkWithCredential(email+password)
+  /// 4. Si éxito: devolver credential + habilitar sync
+  /// 5. Si FirebaseAuthException: mapear código → mensaje en español
+  Future<({UserCredential? credential, String? errorMessage, bool isCancelled, String? errorCode})>
+      linkWithEmailPassword(String email, String password) async {
     _ensureFirebaseAvailable();
     if (!_firebaseAvailable || _auth == null) {
       _errorHandler.handle(
@@ -259,7 +338,12 @@ class AuthService {
         severity: ErrorSeverity.error,
         userMessage: 'Servicio no disponible',
       );
-      return null;
+      return (
+        credential: null,
+        errorMessage: 'Firebase no disponible. Verifica tu conexión e inténtalo de nuevo.',
+        isCancelled: false,
+        errorCode: 'firebase_unavailable',
+      );
     }
 
     final user = currentUser;
@@ -268,9 +352,14 @@ class AuthService {
         'No hay usuario activo',
         type: ErrorType.auth,
         severity: ErrorSeverity.error,
-        userMessage: 'Debes iniciar sesion primero',
+        userMessage: 'Debes iniciar sesión primero',
       );
-      return null;
+      return (
+        credential: null,
+        errorMessage: 'No hay sesión activa. Reinicia la app e intenta de nuevo.',
+        isCancelled: false,
+        errorCode: 'no_active_user',
+      );
     }
 
     if (!user.isAnonymous) {
@@ -278,9 +367,14 @@ class AuthService {
         'Usuario ya vinculado',
         type: ErrorType.auth,
         severity: ErrorSeverity.info,
-        userMessage: 'Tu cuenta ya esta vinculada',
+        userMessage: 'Tu cuenta ya está vinculada',
       );
-      return null;
+      return (
+        credential: null,
+        errorMessage: 'Tu cuenta ya está vinculada con otro método.',
+        isCancelled: false,
+        errorCode: 'already_linked',
+      );
     }
 
     try {
@@ -294,50 +388,90 @@ class AuthService {
         'AuthService',
         'Cuenta vinculada exitosamente con email: $email',
       );
-      return result;
+      return (
+        credential: result,
+        errorMessage: null,
+        isCancelled: false,
+        errorCode: null,
+      );
     } on FirebaseAuthException catch (e, stack) {
-      String userMessage = 'No se pudo vincular la cuenta';
-
-      switch (e.code) {
-        case 'email-already-in-use':
-          userMessage = 'Este correo ya esta en uso';
-          break;
-        case 'invalid-email':
-          userMessage = 'Correo electronico invalido';
-          break;
-        case 'weak-password':
-          userMessage = 'La contrasena es muy debil';
-          break;
-        case 'credential-already-in-use':
-          userMessage = 'Esta credencial ya esta en uso';
-          break;
-      }
+      String userMessage = _getLinkErrorMessage(e.code);
 
       _errorHandler.handle(
         e,
         type: ErrorType.auth,
         severity: ErrorSeverity.error,
-        message: 'Error al vincular cuenta con email',
+        message: 'Error al vincular cuenta con email: ${e.code}',
         userMessage: userMessage,
         stackTrace: stack,
       );
-      return null;
+      return (
+        credential: null,
+        errorMessage: userMessage,
+        isCancelled: false,
+        errorCode: e.code,
+      );
     } catch (e, stack) {
       _errorHandler.handle(
         e,
         type: ErrorType.auth,
         severity: ErrorSeverity.error,
         message: 'Error al vincular cuenta',
-        userMessage: 'No se pudo vincular la cuenta',
+        userMessage: 'Error inesperado al vincular la cuenta',
         stackTrace: stack,
       );
-      return null;
+      return (
+        credential: null,
+        errorMessage: 'Error inesperado. Intenta de nuevo.',
+        isCancelled: false,
+        errorCode: 'unknown',
+      );
+    }
+  }
+
+  /// Mensajes de error específicos para vinculación con email/password
+  ///
+  /// Cada código de FirebaseAuthException se mapea a un mensaje en español
+  /// que es accionable para el usuario (no solo "error genérico").
+  ///
+  /// Diseño: centralizar los mensajes aquí evita código duplicado y hace
+  /// fácil añadir nuevos códigos de error en el futuro sin revisar toda
+  /// la función linkWithEmailPassword.
+  String _getLinkErrorMessage(String code) {
+    switch (code) {
+      case 'email-already-in-use':
+        return 'Este correo ya está en uso por otra cuenta. Usa otro correo o inicia sesión con él.';
+      case 'invalid-email':
+        return 'Correo electrónico inválido. Verifica que esté bien escrito.';
+      case 'weak-password':
+        return 'La contraseña es demasiado débil. Usa al menos 6 caracteres, una mayúscula y un número.';
+      case 'credential-already-in-use':
+        return 'Este correo y contraseña ya están en uso. Inicia sesión directamente con esas credenciales.';
+      case 'requires-recent-login':
+        return 'Por seguridad, cierra sesión y vuelve a entrar antes de vincular tu cuenta.';
+      case 'network-request-failed':
+        return 'Error de conexión. Verifica tu internet e inténtalo de nuevo.';
+      case 'invalid-credential':
+        return 'Credencial inválida. Verifica email y contraseña e inténtalo de nuevo.';
+      default:
+        return 'No se pudo vincular la cuenta (error: $code). Intenta de nuevo.';
     }
   }
 
   /// Link anonymous account with Google
   /// Preserves all local data
   /// Returns a record with UserCredential and optional error message
+  ///
+  /// Diferencias entre plataformas:
+  /// - Web (kIsWeb=true): usa `user.linkWithPopup(googleProvider)` directamente
+  ///   porque el paquete google_sign_in no provee idToken de forma confiable en web.
+  /// - Mobile: usa el flujo completo de google_sign_in (signIn → authentication → credential).
+  ///
+  /// Casos manejados:
+  /// - Usuario cancela el popup → (credential: null, error: null) [no es error]
+  /// - Cuenta de Google ya vinculada a otro usuario → error específico
+  /// - Credencial inválida → error específico
+  /// - FirebaseAuthException genérica → mensaje default
   Future<({UserCredential? credential, String? error})> linkWithGoogle() async {
     _ensureFirebaseAvailable();
     if (!_firebaseAvailable || _auth == null) {
@@ -493,9 +627,26 @@ class AuthService {
   }
 
   // ==================== ACCOUNT DELETION ====================
-
   /// Delete user account completely
-  /// Removes: Firebase Auth account, Firestore data, local Hive data
+  ///
+  /// Pasos ejecutados en orden:
+  /// 1. Si Firebase no disponible → solo limpiar datos locales y retornar éxito
+  /// 2. Si no hay usuario → solo limpiar datos locales y retornar éxito
+  /// 3. Eliminar datos de Firestore (deleteAllUserDataFromCloud)
+  /// 4. Limpiar datos locales Hive (clearAllLocalData)
+  /// 5. Desconectar de Google si estaba vinculado
+  /// 6. Borrar cuenta de Firebase Auth (user.delete())
+  ///
+  /// ERROR CRÍTICO - requires-recent-login:
+  /// Firebase exige que la cuenta haya iniciado sesión recientemente para
+  /// poder eliminarla (protección contra eliminación remota por atacantes).
+  /// Si el usuario no ha hecho login en las últimas 5 min, Firebase rechaza
+  /// con este código. La solución es que el usuario cierre sesión y vuelva
+  /// a entrar antes de intentar eliminar.
+  ///
+  /// NOTA: Al borrar la cuenta NO se crea un nuevo anónimo automáticamente.
+  /// Esto es intencional: tras eliminar, el usuario debe decidir si crear
+  /// una cuenta nueva o continuar sin cuenta.
   Future<bool> deleteAccount(DatabaseService dbService) async {
     _ensureFirebaseAvailable();
     if (!_firebaseAvailable || _auth == null) {

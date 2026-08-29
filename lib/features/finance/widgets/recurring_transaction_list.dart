@@ -48,10 +48,7 @@ class RecurringTransactionList extends ConsumerWidget {
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => const UnifiedTransactionDialog(),
-                  );
+                  UnifiedTransactionDialog.show(context);
                 },
                 icon: const Icon(Icons.add),
                 label: const Text('Programar Recurrente'),

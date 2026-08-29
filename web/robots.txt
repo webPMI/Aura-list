@@ -5,6 +5,16 @@ User-agent: *
 Allow: /
 Disallow: /__/
 
+# --- Google AdSense & AdMob Crawlers ---
+User-agent: Mediapartners-Google
+Allow: /
+
+User-agent: AdsBot-Google
+Allow: /
+
+User-agent: AdsBot-Google-Mobile
+Allow: /
+
 # --- Standard Search Engine Crawlers ---
 User-agent: Googlebot
 Allow: /
@@ -74,7 +84,5 @@ Allow: /
 
 # --- Sitemaps & LLM Context References ---
 Sitemap: https://aura-list.web.app/sitemap.xml
-# LLMs specification for AI assistants and generative search
-# https://llmstxt.org/
 Allow: /llms.txt
 Allow: /llms-full.txt

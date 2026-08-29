@@ -4,9 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:checklist_app/features/aura/models/aura_state.dart';
 import 'package:checklist_app/features/aura/services/aura_service.dart';
-import 'package:checklist_app/features/aura/providers/aura_provider.dart';
 import 'package:checklist_app/features/aura/widgets/aura_energy_card.dart';
-import 'package:checklist_app/features/aura/widgets/aura_sanctuary_sheet.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

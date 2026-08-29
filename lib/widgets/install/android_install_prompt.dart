@@ -4,9 +4,30 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// URL de descarga de APK oficial o repositorio
+///
+/// NOTA: Apunta a la página de releases de GitHub, NO a un archivo .apk directo.
+/// El botón "Descargar APK" abre esta página en el navegador externo donde el
+/// usuario puede descargar el APK manualmente. Si en el futuro hay un APK directo
+/// alojado en un URL estable, cambiar esta constante para que sea el archivo .apk.
 const String kAndroidApkDownloadUrl = 'https://github.com/webPMI/Aura-list/releases';
 
 /// Banner flotante para detectar usuarios en Android Web y ofrecer la instalación/descarga
+///
+/// IMPORTANTE - Detección de plataforma:
+/// Antes usábamos `defaultTargetPlatform != TargetPlatform.android` que es un valor
+/// de TIEMPO DE COMPILACIÓN (no runtime). Esto significaba que en web compilado para
+/// Windows, el banner nunca se mostraba aunque el usuario estuviera en Android.
+/// 
+/// Solución: ahora solo comprobamos `kIsWeb` (valor runtime). Mostramos el banner
+/// en cualquier web. Los usuarios en dispositivos no-Android simplemente no lo
+/// instalan; no hay daño en mostrarlo.
+///
+/// URLs de descarga:
+/// - kAndroidApkDownloadUrl: apunta a la página de releases de GitHub.
+///   El botón "Descargar APK" abre esta página en el navegador externo.
+///   NOTA: No hay un APK directo aquí; el usuario debe descargar manualmente
+///   desde la página de releases. Si en el futuro hay un APK directo, cambiar
+///   esta URL para que sea el archivo .apk en sí.
 class AndroidInstallPrompt extends StatefulWidget {
   final Widget? child;
 
@@ -30,8 +51,12 @@ class _AndroidInstallPromptState extends State<AndroidInstallPrompt> {
   }
 
   Future<void> _checkEligibility() async {
-    // Solo mostramos si está en la Web y desde un dispositivo Android
-    if (!kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+    // Mostramos el banner en web — el usuario decide si instalar o no.
+    // Nota: defaultTargetPlatform es tiempo de compilación, no runtime,
+    // por lo que no podemos detectar Android del usuario en web.
+    // En vez de eso, mostramos el banner siempre en web; los usuarios
+    // en otros dispositivos simplemente no lo usan.
+    if (!kIsWeb) {
       return;
     }
 

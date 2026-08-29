@@ -68,13 +68,51 @@ class AuthManager {
       _authService.getInitializationStatus();
 
   // ==================== Operaciones Unificadas ====================
+  //
+  // FLUJO DE AUTENTICACIÓN EN LA APP (resumen):
+  // ============================================
+  //
+  // Este AuthManager es el punto de entrada centralizado para todas las
+  // operaciones de autenticación. La UI (AuthForm, AuthActionSheet,
+  // UnifiedGoogleAuthButton) llama siempre a los métodos de este Manager,
+  // nunca directamente a AuthService.
+  //
+  // Flujo completo (ver auth_service.dart para el desglose detallado):
+  //   A. Primera vez → main.dart crea usuario anónimo → WelcomeScreen
+  //   B. Usuario existente → main.dart hace sync inicial → MainScaffold
+  //   C. Anónimo quiere vincular → AuthForm(mode: link) → linkWith*()
+  //   D. Login Google directo → authenticateWithGoogle() → signInWithGoogle()
+  //
+  // Patrón de errores: cuando AuthService retorna null/void, el Manager
+  // usa isFirebaseAvailable para distinguir "Firebase down" de "credenciales
+  // incorrectas". Los métodos linkWith*() usan el nuevo retorno record con
+  // errorCode para mensajes de usuario específicos.
+  //
+  // Importante: signInAnonymously() en este Manager devuelve error porque
+  // la creación de usuario anónimo se hace automáticamente en main.dart.
+  // Este método existe solo por compatibilidad de interfaz.
 
-  /// Login anonimo (desactivado)
+  /// Login anonimo (disponible)
   Future<AuthResult> signInAnonymously() async {
     return AuthResult.error('El inicio de sesión anónimo está desactivado');
   }
 
   /// Login con email/password (cuenta existente)
+  ///
+  /// Flujo:
+  /// 1. Llamar a AuthService.signInWithEmailPassword(email, password)
+  /// 2. Si null → distinguir: ¿Firebase unavailable? → mensaje técnico,
+  ///    ¿o credenciales inválidas? → "Credenciales incorrectas"
+  /// 3. Si éxito → activar sync automáticamente
+  ///
+  /// Nota: el AuthService retorna null tanto para errores técnicos como de
+  /// credenciales. Aquí discriminamos con isFirebaseAvailable para dar
+  /// mensajes diferentes ("Firebase no disponible" vs "Credenciales incorrectas").
+  ///
+  /// Importante: este método es para USUARIOS EXISTENTES. Si el usuario es nuevo,
+  /// debe usar registerWithEmailPassword() o authenticateWithGoogle().
+  /// Si un usuario nuevo intenta login con credenciales que no existen,
+  /// recibirá "Credenciales incorrectas" — comportamiento esperado.
   Future<AuthResult> signInWithEmailPassword(
     String email,
     String password,
@@ -110,6 +148,20 @@ class AuthManager {
   }
 
   /// Registro de nueva cuenta con email/password
+  ///
+  /// Flujo:
+  /// 1. Llamar a AuthService.registerWithEmailPassword(email, password)
+  /// 2. Si null → distinguir: ¿Firebase unavailable? → mensaje técnico,
+  ///    ¿o error de registro (email ya usado, password débil)? → mensaje específico
+  /// 3. Si éxito → activar sync automáticamente
+  ///
+  /// Nota: igual que signInWithEmailPassword, discriminamos el caso
+  /// Firebase unavailable para no confundir al usuario.
+  ///
+  /// Importante: este método es para USUARIOS NUEVOS. Si el email ya existe
+  /// en Firebase, recibirá "Este correo ya está registrado" — el usuario
+  /// debe usar signInWithEmailPassword() en ese caso.
+  /// El AuthService maneja internamente el código 'email-already-in-use'.
   Future<AuthResult> registerWithEmailPassword(
     String email,
     String password,
@@ -144,6 +196,14 @@ class AuthManager {
   }
 
   /// Login con Google (directo, no vinculacion)
+  ///
+  /// Este método es para usuarios que YA tienen una cuenta de Google vinculada
+  /// y quieren iniciar sesión. No crea cuenta nueva ni vincula anónimo.
+  ///
+  /// Flujo:
+  /// 1. Llamar a AuthService.signInWithGoogle()
+  /// 2. Si null → usuario canceló, no es error
+  /// 3. Si éxito → activar sync automáticamente
   Future<AuthResult> signInWithGoogle() async {
     try {
       final result = await _authService.signInWithGoogle();
@@ -164,6 +224,21 @@ class AuthManager {
   /// Unified Google authentication
   /// Handles both login and registration scenarios
   /// Detects automatically if user exists or is new
+  ///
+  /// Este es el método que llama la UI (UnifiedGoogleAuthButton) cuando el
+  /// usuario pulsa "Continuar con Google". Determina automáticamente qué hacer:
+  ///
+  /// Casos:
+  /// - User anónimo activo → vincular cuenta de Google (linkWithGoogle)
+  ///   → el usuario tenía datos locales y ahora se vincula para sincronizar
+  /// - No hay user (null) → iniciar sesión directo con Google (signInWithGoogle)
+  ///   → el usuario entra por primera vez directamente con Google
+  /// - User no anónimo → intentar login directo (signInWithGoogle)
+  ///   → el usuario ya tenía cuenta vinculada y quiere entrar
+  ///
+  /// Retorna (isNewUser, result):
+  /// - isNewUser: true si vino de anónimo → puede necesitar welcome/register flow
+  /// - result: AuthResult con éxito, error o cancelación
   Future<({bool isNewUser, AuthResult result})> authenticateWithGoogle({
     bool requireTermsAcceptance = false,
   }) async {
@@ -204,13 +279,22 @@ class AuthManager {
 
   /// Vincular cuenta anonima con Google
   /// Activa sincronizacion automaticamente
+  ///
+  /// Usa el retorno detallado de AuthService para mensajes claros:
+  /// - Si se devuelve errorCode != null → error específico (ej: "Google ya en uso")
+  /// - Si isCancelled = true → usuario cerró el popup, no es error
+  /// - Si credential != null → éxito
+  ///
+  /// Este método es el punto de entrada para la UI (AuthForm, AuthActionSheet).
+  /// Traduce los códigos internos de AuthService a AuthResult para que el UI
+  /// pueda mostrar mensajes en español.
   Future<AuthResult> linkWithGoogle() async {
     final user = currentUser;
     if (user == null) {
-      return AuthResult.error('No hay usuario activo');
+      return AuthResult.error('No hay sesión activa. Reinicia la app e intenta de nuevo.');
     }
     if (!user.isAnonymous) {
-      return AuthResult.error('La cuenta ya esta vinculada');
+      return AuthResult.error('La cuenta ya está vinculada con otro método.');
     }
 
     try {
@@ -218,8 +302,10 @@ class AuthManager {
 
       if (credential == null) {
         if (error != null) {
+          // Error específico del servicio (ej: "Esta cuenta de Google ya está en uso")
           return AuthResult.error(error);
         }
+        // Sin error pero sin credential = cancelado (popup cerrado por usuario)
         return AuthResult.cancelled();
       }
 
@@ -229,12 +315,13 @@ class AuthManager {
       return AuthResult.success();
     } catch (e) {
       _logger.error('AuthManager', 'Error en linkWithGoogle', error: e);
-      return AuthResult.error('Error al vincular con Google');
+      return AuthResult.error('Error al vincular con Google. Verifica tu conexión e inténtalo de nuevo.');
     }
   }
 
   /// Vincular cuenta anonima con email/password
   /// Activa sincronizacion automaticamente
+  /// Usa el nuevo retorno detallado de AuthService para mensajes claros
   Future<AuthResult> linkWithEmailPassword(
     String email,
     String password,
@@ -248,10 +335,20 @@ class AuthManager {
     }
 
     try {
-      final result = await _authService.linkWithEmailPassword(email, password);
+      final (:credential, :errorMessage, :isCancelled, :errorCode) =
+          await _authService.linkWithEmailPassword(email, password);
 
-      if (result == null) {
-        return AuthResult.error('No se pudo vincular la cuenta');
+      if (isCancelled) {
+        return AuthResult.cancelled();
+      }
+
+      if (credential == null) {
+        // Distinguir entre error de credenciales y error técnico
+        if (!_authService.isFirebaseAvailable) {
+          return AuthResult.error('Firebase no disponible en este momento');
+        }
+        // Usar el mensaje detallado del servicio si está disponible
+        return AuthResult.error(errorMessage ?? 'No se pudo vincular la cuenta');
       }
 
       // Activar sync automaticamente despues de vincular
@@ -268,7 +365,21 @@ class AuthManager {
   }
 
   /// Activa la sincronizacion en la nube
-  /// Se llama automaticamente despues de vincular/login
+  ///
+  /// Este método se llama automaticamente despues de vincular o iniciar sesion
+  /// exitosamente. Su funcion es:
+  /// 1. Activar la sincronizacion en la nube (setCloudSyncEnabled(true))
+  /// 2. Realizar la sincronizacion completa de tareas (performFullSync)
+  /// 3. Si hay repositorio de finanzas, sincronizar tambien finanzas
+  ///
+  /// Si hay errores de sync pero no fatales, se loguean como warning y la app
+  /// continua funcionando. Si hay errores criticos, se notifica al ErrorHandler.
+  ///
+  /// IMPORTANTE: Este método es llamado automaticamente por:
+  /// - linkWithGoogle() / linkWithEmailPassword() (vinculacion de cuenta)
+  /// - signInWithGoogle() / signInWithEmailPassword() (login)
+  /// - registerWithEmailPassword() (registro nuevo)
+  /// NO debe ser llamado directamente por la UI en circunstancias normales.
   Future<void> _enableSyncAfterAuth() async {
     try {
       await _dbService.setCloudSyncEnabled(true);

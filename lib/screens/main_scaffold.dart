@@ -336,11 +336,9 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
                       ),
                       onPressed: () {
                         Navigator.pop(context);
-                        showDialog(
-                          context: context,
-                          builder: (_) => const UnifiedTransactionDialog(
-                            initialType: FinanceCategoryType.expense,
-                          ),
+                        UnifiedTransactionDialog.show(
+                          context,
+                          initialType: FinanceCategoryType.expense,
                         );
                       },
                       icon: const Icon(Icons.arrow_downward, color: Colors.redAccent),
@@ -359,11 +357,9 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
                       ),
                       onPressed: () {
                         Navigator.pop(context);
-                        showDialog(
-                          context: context,
-                          builder: (_) => const UnifiedTransactionDialog(
-                            initialType: FinanceCategoryType.income,
-                          ),
+                        UnifiedTransactionDialog.show(
+                          context,
+                          initialType: FinanceCategoryType.income,
                         );
                       },
                       icon: const Icon(Icons.arrow_upward, color: Colors.green),

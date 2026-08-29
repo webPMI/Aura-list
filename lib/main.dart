@@ -109,6 +109,27 @@ class _ChecklistAppState extends ConsumerState<ChecklistApp> {
     }
   }
 
+  /// Inicializa la autenticación de Firebase al iniciar la app.
+  ///
+  /// Este método es llamado una sola vez tras el primer frame de la UI.
+  ///Su flujo es:
+  /// 1. Verificar que Firebase esté disponible
+  /// 2. Si hay usuario existente → realizar sync inicial
+  /// 3. Si no hay usuario → crear usuario anónimo automáticamente
+  ///
+  /// Casos manejados:
+  /// - Firebase disponible + usuario existente → sync completo
+  /// - Firebase disponible + sin usuario → crear anónimo + sync
+  /// - Firebase NO disponible → app en modo local (sin auth)
+  /// - Error al crear anónimo → fallback a modo local
+  ///
+  /// NOTA: NO marca welcome como visto aquí. El WelcomeScreen decide eso
+  /// basándose en shouldShowWelcomeProvider. Esto permite que el usuario
+  /// nueva vez vea la pantalla de bienvenida con las opciones.
+  ///
+  /// PREVIOUSLY (antes de la corrección): Este método NO creaba usuario
+  /// anónimo, por lo que usuarios primera vez quedaban sin sesión Firebase.
+  /// Esto causaba fallos en vincular cuenta y en alcune operaciones.
   Future<void> _initializeAuth() async {
     if (_authInitialized) return;
     _authInitialized = true;
@@ -125,12 +146,12 @@ class _ChecklistAppState extends ConsumerState<ChecklistApp> {
       if (!authService.isFirebaseAvailable) {
         _logger.info(
           'AuthInit',
-          'Firebase Auth no disponible - app funcionara en modo local',
+          'Firebase Auth no disponible - app funcionará en modo local',
         );
         return;
       }
 
-      final currentUser = authService.currentUser;
+      var currentUser = authService.currentUser;
       if (currentUser != null) {
         _logger.info(
           'AuthInit',
@@ -143,14 +164,43 @@ class _ChecklistAppState extends ConsumerState<ChecklistApp> {
         // Perform sync for existing user
         _performInitialSync(currentUser.uid);
       } else {
+        // No hay usuario → crear uno anónimo automáticamente
         _logger.info(
           'AuthInit',
-          'No hay usuario autenticado. La app funcionará en modo local hasta que el usuario inicie sesión.',
+          'No hay usuario. Creando sesión anónima para primer uso...',
         );
+        try {
+          final credential = await authService.signInAnonymously();
+          if (credential != null && credential.user != null) {
+            _logger.info(
+              'AuthInit',
+              'Usuario anónimo creado: ${credential.user!.uid}',
+            );
+            // NO marcar welcome como visto aquí — dejar que el WelcomeScreen
+            // decida si mostrarse basándose en el provider de onboarding
+            // Perform initial sync for the new anonymous user
+            _performInitialSync(credential.user!.uid);
+          } else {
+            _logger.warning(
+              'AuthInit',
+              'No se pudo crear usuario anónimo. La app funcionará en modo local.',
+            );
+          }
+        } catch (e) {
+          _logger.error(
+            'AuthInit',
+            'Error al crear usuario anónimo',
+            error: e,
+          );
+          _logger.info(
+            'AuthInit',
+            'La app continuará en modo local.',
+          );
+        }
       }
     } catch (e) {
-      _logger.error('AuthInit', 'Error al inicializar autenticacion', error: e);
-      _logger.info('AuthInit', 'La app continuara en modo local');
+      _logger.error('AuthInit', 'Error al inicializar autenticación', error: e);
+      _logger.info('AuthInit', 'La app continuará en modo local');
     }
   }
 

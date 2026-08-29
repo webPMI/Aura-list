@@ -36,11 +36,8 @@ class RecurringTransactionAdapter extends TypeAdapter<RecurringTransaction> {
       totalInstallments: fields[16] as int?,
       paidInstallments: fields[17] == null ? 0 : fields[17] as int,
       deferredInstallments: fields[18] == null ? 0 : fields[18] as int,
-      installmentPaymentModeStr:
-          fields[19] == null ? 'automatic' : fields[19] as String,
-      paymentDateHistory: fields[20] == null
-          ? []
-          : (fields[20] as List).cast<int>(),
+      installmentPaymentModeStr: fields[19] as String,
+      paymentDateHistory: (fields[20] as List?)?.cast<int>(),
     );
   }
 
