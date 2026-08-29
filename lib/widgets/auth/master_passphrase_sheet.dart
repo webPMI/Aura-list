@@ -98,12 +98,12 @@ class _MasterPassphraseSheetState extends State<MasterPassphraseSheet> {
                     color: Colors.green.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.shield_outlined, color: Colors.green, size: 24),
+                  child: const Icon(Icons.lock_rounded, color: Colors.green, size: 24),
                 ),
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Text(
-                    'Cifrado Zero-Knowledge',
+                    'Tus Notas Bajo Llave',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -111,7 +111,7 @@ class _MasterPassphraseSheetState extends State<MasterPassphraseSheet> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Tus tareas, notas y finanzas se cifran con AES-256 en tu propio teléfono antes de subirse a la nube. Nadie en los servidores puede leer tus datos.',
+              'Tus notas privadas y finanzas se guardan dentro de una caja fuerte digital. Solo tú tienes la llave: ni los creadores de la app ni nadie en internet puede ver lo que escribes.',
               style: TextStyle(
                 fontSize: 13,
                 color: colorScheme.onSurface.withValues(alpha: 0.7),
@@ -130,7 +130,7 @@ class _MasterPassphraseSheetState extends State<MasterPassphraseSheet> {
               child: Row(
                 children: [
                   Icon(
-                    hasCustom ? Icons.key : Icons.phonelink_lock,
+                    hasCustom ? Icons.key_rounded : Icons.lock_outline_rounded,
                     color: Colors.green,
                     size: 20,
                   ),
@@ -138,8 +138,8 @@ class _MasterPassphraseSheetState extends State<MasterPassphraseSheet> {
                   Expanded(
                     child: Text(
                       hasCustom
-                          ? 'Protegido con tu Contraseña Maestra personal'
-                          : 'Protegido con Clave Militar Autogenerada en este dispositivo',
+                          ? 'Caja fuerte protegida con tu Llave Secreta personal'
+                          : 'Protegido automáticamente con cerradura digital en este dispositivo',
                       style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -153,8 +153,8 @@ class _MasterPassphraseSheetState extends State<MasterPassphraseSheet> {
               // Botón para definir o cambiar contraseña
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.password, color: Colors.blueAccent),
-                title: Text(hasCustom ? 'Cambiar Contraseña Maestra' : 'Definir mi Contraseña Maestra'),
+                leading: const Icon(Icons.key_rounded, color: Colors.indigoAccent),
+                title: Text(hasCustom ? 'Cambiar mi Llave Secreta' : 'Crear mi Llave Secreta Personal'),
                 subtitle: const Text('Elegir una frase o contraseña que solo tú conozcas'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {

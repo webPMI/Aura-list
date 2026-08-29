@@ -14,7 +14,7 @@ void main() {
       );
 
       expect(find.text('AuraList'), findsOneWidget);
-      expect(find.text('100% Privado • Cifrado AES-256 E2EE'), findsOneWidget);
+      expect(find.text('100% Privado • Solo tú puedes leer tus datos'), findsOneWidget);
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
       expect(find.text('Toca aquí para recargar energía positiva'), findsOneWidget);
 

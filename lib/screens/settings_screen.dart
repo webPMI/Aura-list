@@ -94,9 +94,9 @@ class SettingsScreen extends ConsumerWidget {
               // Data Section
               _SectionHeader('Datos y Privacidad'),
               ListTile(
-                leading: const Icon(Icons.shield_outlined, color: Colors.green),
-                title: const Text('Cifrado de Extremo a Extremo (E2EE)'),
-                subtitle: const Text('Protección Zero-Knowledge con AES-256'),
+                leading: const Icon(Icons.lock_outline, color: Colors.green),
+                title: const Text('Notas Protegidas con Llave Secreta'),
+                subtitle: const Text('Solo tú puedes leerlas con tu clave personal'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => MasterPassphraseSheet.show(context),
               ),
@@ -363,26 +363,45 @@ class _AccountTile extends ConsumerWidget {
   }
 
   void _showLogoutDialog(BuildContext context, WidgetRef ref) {
+    final user = ref.read(authServiceProvider).currentUser;
+    final isAnonymous = user?.isAnonymous ?? true;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Cerrar sesion'),
-        content: const Text(
-          'Los datos locales se mantendran. Deseas cerrar sesion?',
+        icon: Icon(
+          isAnonymous ? Icons.warning_amber_rounded : Icons.logout_rounded,
+          color: isAnonymous ? Colors.amber : Colors.red,
+          size: 36,
+        ),
+        title: Text(isAnonymous ? '¿Cerrar sesión de invitado?' : 'Cerrar sesión'),
+        content: Text(
+          isAnonymous
+              ? 'Estás en modo invitado. Si sales sin vincular tu cuenta con Google o Email, tus tareas no se sincronizarán en la nube.'
+              : 'Tus datos están guardados de forma segura en la nube. ¿Deseas cerrar sesión en este dispositivo?',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancelar'),
           ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await ref.read(authServiceProvider).signOut();
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Cerrar sesion'),
-          ),
+          if (isAnonymous)
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(context);
+                showAuthActionSheet(context: context, ref: ref);
+              },
+              child: const Text('Vincular Cuenta'),
+            )
+          else
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await ref.read(authServiceProvider).signOut();
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Cerrar sesión'),
+            ),
         ],
       ),
     );

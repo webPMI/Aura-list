@@ -571,16 +571,16 @@ class _EncryptionStatusTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: _AnimatedListTile(
         leading: const Icon(
-          Icons.shield,
+          Icons.lock_rounded,
           color: Colors.green,
           size: 22,
         ),
         title: const Text(
-          'Cifrado E2EE Activo',
+          'Máxima Privacidad Activa',
           style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
         ),
         subtitle: const Text(
-          'Zero-Knowledge (AES-256)',
+          'Solo tú puedes leer tus datos',
           style: TextStyle(fontSize: 11, color: Colors.green),
         ),
         trailing: Container(
@@ -590,7 +590,7 @@ class _EncryptionStatusTile extends StatelessWidget {
             borderRadius: BorderRadius.circular(6),
           ),
           child: const Text(
-            'SEGURO',
+            'BAJO LLAVE',
             style: TextStyle(
               color: Colors.green,
               fontSize: 10,

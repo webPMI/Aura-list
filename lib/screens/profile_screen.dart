@@ -85,11 +85,11 @@ class ProfileScreen extends ConsumerWidget {
               _SectionHeader('Privacidad y Seguridad'),
               ListTile(
                 leading: const Icon(
-                  Icons.shield_outlined,
+                  Icons.lock_outline,
                   color: Colors.green,
                 ),
-                title: const Text('Cifrado de Extremo a Extremo (E2EE)'),
-                subtitle: const Text('Tus datos se guardan cifrados con clave local'),
+                title: const Text('Notas Protegidas con Llave Secreta'),
+                subtitle: const Text('Solo tú puedes leerlas con tu clave personal'),
                 trailing: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
@@ -97,11 +97,11 @@ class ProfileScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
-                    'AES-256',
+                    'BAJO LLAVE',
                     style: TextStyle(
                       color: Colors.green,
                       fontWeight: FontWeight.bold,
-                      fontSize: 11,
+                      fontSize: 10,
                     ),
                   ),
                 ),

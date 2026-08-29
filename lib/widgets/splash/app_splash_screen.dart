@@ -225,7 +225,7 @@ class _AppSplashScreenState extends State<AppSplashScreen>
 
                 const SizedBox(height: 8),
 
-                // Pill Badge de Cifrado Militar E2EE
+                // Pill Badge de Máxima Privacidad
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
                   decoration: BoxDecoration(
@@ -238,10 +238,10 @@ class _AppSplashScreenState extends State<AppSplashScreen>
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.shield_outlined, size: 14, color: Color(0xFF4ADE80)),
+                      Icon(Icons.lock_rounded, size: 14, color: Color(0xFF4ADE80)),
                       SizedBox(width: 6),
                       Text(
-                        '100% Privado • Cifrado AES-256 E2EE',
+                        '100% Privado • Solo tú puedes leer tus datos',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,

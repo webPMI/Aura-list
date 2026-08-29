@@ -24,12 +24,12 @@ void main() {
 
       await tester.pump();
 
-      expect(find.text('Cifrado Zero-Knowledge'), findsOneWidget);
-      expect(find.text('Definir mi Contraseña Maestra'), findsOneWidget);
+      expect(find.text('Tus Notas Bajo Llave'), findsOneWidget);
+      expect(find.text('Crear mi Llave Secreta Personal'), findsOneWidget);
       expect(find.text('Copiar Clave'), findsOneWidget);
 
       // Tap on set master passphrase
-      await tester.tap(find.text('Definir mi Contraseña Maestra'));
+      await tester.tap(find.text('Crear mi Llave Secreta Personal'));
       await tester.pump();
 
       expect(find.text('Elige tu Contraseña Maestra Personal'), findsOneWidget);
