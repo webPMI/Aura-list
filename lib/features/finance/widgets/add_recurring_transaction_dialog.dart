@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/finance_category.dart';
 import '../models/recurring_transaction.dart';
-import '../models/finance_enums.dart';
 import '../providers/finance_provider.dart';
 import '../providers/forecast_provider.dart';
 import '../../../models/recurrence_rule.dart';
@@ -433,9 +432,9 @@ class _AddRecurringTransactionDialogState
         interval: _interval,
         startDate: _startDate,
         endDate: _endDate,
-        weekDays: _selectedWeekDays.isNotEmpty ? _selectedWeekDays : null,
-        monthDay: _selectedMonthDay != null && _selectedMonthDay! > 0
-            ? _selectedMonthDay
+        byDays: _selectedWeekDays.isNotEmpty ? _selectedWeekDays : null,
+        byMonthDays: _selectedMonthDay != null && _selectedMonthDay! > 0
+            ? [_selectedMonthDay!]
             : null,
       );
 
