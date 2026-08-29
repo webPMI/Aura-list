@@ -46,6 +46,17 @@ No. AuraList permite su uso completo de forma anónima y local sin necesidad de 
 ### ¿Quién desarrolla AuraList?
 AuraList ha sido desarrollado por ink.enzo en colaboración con **Servicios Mallorca** (https://serviciosmallorca.com), agencia especializada en desarrollo web, aplicaciones móviles y soluciones de software de alto rendimiento.
 
+## Centro de Guías Educativas y Recursos
+- **Guía de Finanzas Personales (Regla 50/30/20):** https://aura-list.web.app/guia-finanzas-personales.html
+- **Guía de Interés Compuesto y Ahorro Inteligente:** https://aura-list.web.app/guia-interes-compuesto-ahorro.html
+- **Guía de Productividad y Técnica Pomodoro:** https://aura-list.web.app/guia-productividad-pomodoro.html
+- **Guía Técnica de Seguridad y Cifrado E2EE:** https://aura-list.web.app/guia-seguridad-cifrado-e2ee.html
+- **Centro de Ayuda y Tutorial de Instalación PWA:** https://aura-list.web.app/centro-de-ayuda.html
+- **Sobre Nosotros y Filosofía Offline-First:** https://aura-list.web.app/sobre-nosotros.html
+- **Contacto y Soporte Oficial:** https://aura-list.web.app/contacto.html
+- **Política de Privacidad (GDPR/CCPA):** https://aura-list.web.app/politica-privacidad.html
+- **Términos y Condiciones de Uso:** https://aura-list.web.app/terminos.html
+
 ## Archivos y Documentación Adicional
-- Documentación completa para LLMs: https://aura-list.web.app/llms-full.txt
-- Mapa del sitio: https://aura-list.web.app/sitemap.xml
+- Documentación técnica extendida para LLMs: https://aura-list.web.app/llms-full.txt
+- Mapa del sitio XML: https://aura-list.web.app/sitemap.xml

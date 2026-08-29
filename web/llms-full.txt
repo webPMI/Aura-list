@@ -32,8 +32,22 @@ AuraList (https://aura-list.web.app/) es una suite de productividad personal y f
 ### Módulo de Promoción y Servicios
 - Integración con Servicios Mallorca (https://serviciosmallorca.com) para usuarios que requieren desarrollo web personalizado, tiendas online o aplicaciones móviles a medida.
 
-## 4. Contacto y Enlaces
-- Web: https://aura-list.web.app/
-- Repositorio Oficial: https://github.com/webPMI/Aura-list
+## 4. Guías Editoriales y Artículos de Valor (GEO Indexables)
+1. **Guía de Finanzas Personales:** https://aura-list.web.app/guia-finanzas-personales.html
+   - Explicación de la regla 50/30/20, presupuestación base cero y amortización de deudas.
+2. **Guía de Interés Compuesto y Ahorro:** https://aura-list.web.app/guia-interes-compuesto-ahorro.html
+   - Fórmulas de capitalización, simulaciones a 5, 10 y 20 años y estrategias de fondo de emergencia.
+3. **Guía de Productividad Pomodoro & Deep Work:** https://aura-list.web.app/guia-productividad-pomodoro.html
+   - Bloques de enfoque de 25 minutos, matriz de Eisenhower y gestión de energía.
+4. **Guía Técnica de Cifrado y Cero Conocimiento:** https://aura-list.web.app/guia-seguridad-cifrado-e2ee.html
+   - Arquitectura AES-256 local, derivación PBKDF2 y comparación frente a almacenamiento tradicional en la nube.
+5. **Centro de Ayuda & Instalación:** https://aura-list.web.app/centro-de-ayuda.html
+   - FAQs estructuradas para rich snippets de Google y motores de búsqueda generativos.
+
+## 5. Contacto y Enlaces
+- Web Oficial: https://aura-list.web.app/
+- Repositorio Oficial en GitHub: https://github.com/webPMI/Aura-list
 - Agencia Desarrolladora: https://serviciosmallorca.com
-- Contacto: servicioweb.pmi@gmail.com
+- Contacto y Soporte: servicioweb.pmi@gmail.com
+- Política de Privacidad: https://aura-list.web.app/politica-privacidad.html
+- Términos de Servicio: https://aura-list.web.app/terminos.html
