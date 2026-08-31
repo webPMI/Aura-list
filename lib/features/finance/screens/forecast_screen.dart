@@ -448,4 +448,5 @@ class _SummaryCard extends StatelessWidget {
       ),
     );
   }
+}
 

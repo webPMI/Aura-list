@@ -80,12 +80,12 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      // Tap on Recurrente
+      // Tap on Recurrente tab
       await tester.tap(find.text('Recurrente'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Periodicidad'), findsOneWidget);
-      expect(find.text('Número de cuotas'), findsOneWidget);
+      expect(find.text('Periodicidad de pago'), findsOneWidget);
+      expect(find.text('Número total de cuotas'), findsOneWidget);
       expect(find.text('Programar Recurrente'), findsOneWidget);
       expect(find.text('Automático'), findsOneWidget);
       expect(find.text('Manual'), findsOneWidget);

@@ -13,7 +13,8 @@ import '../data/task_finance_link_storage.dart';
 import '../services/recurring_transaction_service.dart';
 import '../../../services/error_handler.dart';
 import '../../../services/auth_service.dart';
-import 'finance_provider.dart' show transactionStorageProvider, financeRepositoryProvider;
+import '../models/finance_category.dart';
+import 'finance_provider.dart';
 
 /// Estado del provider de previsiones financieras.
 class ForecastState {
