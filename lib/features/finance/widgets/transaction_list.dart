@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../providers/finance_provider.dart';
 import '../models/finance_category.dart';
 
+import 'unified_transaction_dialog.dart';
+
 /// Provider local para el filtro de tipo de transacción en la lista
 final _transactionTypeFilterProvider =
     StateProvider.autoDispose<FinanceCategoryType?>((ref) => null);
@@ -167,42 +169,73 @@ class TransactionList extends ConsumerWidget {
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     elevation: 1,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: catColor.withValues(alpha: 0.15),
-                        child: Icon(
-                          isIncome ? Icons.arrow_upward : Icons.arrow_downward,
-                          color: catColor,
-                          size: 20,
+                    child: InkWell(
+                      onTap: () => UnifiedTransactionDialog.show(
+                        context,
+                        existingTransaction: transaction,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: catColor.withValues(alpha: 0.15),
+                          child: Icon(
+                            isIncome ? Icons.arrow_upward : Icons.arrow_downward,
+                            color: catColor,
+                            size: 20,
+                          ),
                         ),
-                      ),
-                      title: Text(
-                        transaction.title,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Row(
-                        children: [
-                          Text(
-                            category.name,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: catColor,
-                              fontWeight: FontWeight.w500,
+                        title: Text(
+                          transaction.title,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Row(
+                          children: [
+                            Text(
+                              category.name,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: catColor,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            DateFormat('dd MMM yyyy', 'es').format(transaction.date),
-                            style: const TextStyle(fontSize: 12, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                      trailing: Text(
-                        '${isIncome ? '+' : '-'}${currencyFormat.format(transaction.amount)}',
-                        style: TextStyle(
-                          color: amountColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                            const SizedBox(width: 8),
+                            Text(
+                              DateFormat('dd MMM yyyy', 'es').format(transaction.date),
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
+                            if (transaction.note != null && transaction.note!.isNotEmpty) ...[
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  '• ${transaction.note}',
+                                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${isIncome ? '+' : '-'}${currencyFormat.format(transaction.amount)}',
+                              style: TextStyle(
+                                color: amountColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined, size: 18, color: Colors.blueGrey),
+                              tooltip: 'Editar transacción',
+                              onPressed: () => UnifiedTransactionDialog.show(
+                                context,
+                                existingTransaction: transaction,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),

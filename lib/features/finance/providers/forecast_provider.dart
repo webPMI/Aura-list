@@ -676,5 +676,281 @@ final activeBudgetsProvider = Provider<List<Budget>>((ref) {
   return ref.watch(forecastProvider).activeBudgets;
 });
 
+// ============================================================
+// ESTRUCTURAS Y PROVIDERS DE ANÁLISIS Y PROYECCIÓN DE GASTOS
+// ============================================================
+
+/// Detalle de un gasto o ingreso proyectado en un mes específico
+class ProjectedItemDetail {
+  final String title;
+  final double amount;
+  final DateTime dueDate;
+  final bool isExpense;
+  final String? categoryId;
+  final String categoryName;
+  final String categoryColor;
+  final String source; // 'recurring', 'installment', 'future_transaction'
+  final String? installmentSummary;
+
+  const ProjectedItemDetail({
+    required this.title,
+    required this.amount,
+    required this.dueDate,
+    required this.isExpense,
+    this.categoryId,
+    required this.categoryName,
+    required this.categoryColor,
+    required this.source,
+    this.installmentSummary,
+  });
+}
+
+/// Proyección financiera de un mes específico
+class MonthlyForecastProjection {
+  final DateTime month;
+  final double startingBalance;
+  final double projectedIncome;
+  final double projectedFixedExpenses;
+  final double projectedScheduledExpenses;
+  final double estimatedDiscretionaryExpenses;
+  final double totalProjectedExpenses;
+  final double endingBalance;
+  final double netCashFlow;
+  final List<ProjectedItemDetail> items;
+  final Map<String, double> expensesByCategory;
+
+  const MonthlyForecastProjection({
+    required this.month,
+    required this.startingBalance,
+    required this.projectedIncome,
+    required this.projectedFixedExpenses,
+    required this.projectedScheduledExpenses,
+    required this.estimatedDiscretionaryExpenses,
+    required this.totalProjectedExpenses,
+    required this.endingBalance,
+    required this.netCashFlow,
+    required this.items,
+    required this.expensesByCategory,
+  });
+
+  bool get hasDeficit => endingBalance < 0 || netCashFlow < 0;
+}
+
+/// Estadísticas completas de previsión financiera y proyección de gastos
+class ExpenseForecastStats {
+  final double currentBalance;
+  final double totalSavingsBalance;
+  final double averageDailyExpenseHistorical;
+  final double averageMonthlyExpenseHistorical;
+  final double monthlyFixedCommitments;
+  final double upcoming30DaysExpenses;
+  final double upcoming30DaysIncome;
+  final int activeInstallmentsCount;
+  final int activeRecurringCount;
+  final List<MonthlyForecastProjection> monthlyProjections;
+
+  const ExpenseForecastStats({
+    required this.currentBalance,
+    required this.totalSavingsBalance,
+    required this.averageDailyExpenseHistorical,
+    required this.averageMonthlyExpenseHistorical,
+    required this.monthlyFixedCommitments,
+    required this.upcoming30DaysExpenses,
+    required this.upcoming30DaysIncome,
+    required this.activeInstallmentsCount,
+    required this.activeRecurringCount,
+    required this.monthlyProjections,
+  });
+}
+
+/// Provider principal que calcula el análisis de proyecciones y estadísticas de gastos futuros
+final expenseForecastStatsProvider = Provider<ExpenseForecastStats>((ref) {
+  final financeState = ref.watch(financeProvider);
+  final activeRecurring = ref.watch(activeRecurringProvider);
+  final allTransactions = financeState.transactions;
+  final categories = financeState.categories;
+
+  final now = DateTime.now();
+
+  // 1. Balance actual (histórico)
+  final pastTransactions = allTransactions.where((t) => !t.date.isAfter(now)).toList();
+  final pastIncome = pastTransactions
+      .where((t) => t.type == FinanceCategoryType.income)
+      .fold<double>(0.0, (sum, t) => sum + t.amount);
+  final pastExpenses = pastTransactions
+      .where((t) => t.type == FinanceCategoryType.expense)
+      .fold<double>(0.0, (sum, t) => sum + t.amount);
+  final currentBalance = pastIncome - pastExpenses;
+
+  // 2. Gasto promedio histórico diario y mensual
+  double avgDaily = 0.0;
+  if (pastTransactions.where((t) => t.isExpense).isNotEmpty) {
+    final expenseTxs = pastTransactions.where((t) => t.isExpense).toList();
+    DateTime minDate = expenseTxs.map((t) => t.date).reduce((a, b) => a.isBefore(b) ? a : b);
+    final daysSpan = (now.difference(minDate).inDays + 1).clamp(30, 365);
+    avgDaily = pastExpenses / daysSpan;
+  }
+  final avgMonthly = avgDaily * 30.416;
+
+  // 3. Compromisos fijos mensuales (cuotas + servicios recurrentes)
+  final activeInstallments = activeRecurring.where((t) => t.hasFixedInstallments && !t.isCompleted).toList();
+  final activeIndefinite = activeRecurring.where((t) => !t.hasFixedInstallments).toList();
+  final monthlyFixedCommitments = activeRecurring
+      .where((t) => t.isExpense && !t.isCompleted)
+      .fold<double>(0.0, (sum, t) => sum + t.monthlyEquivalent);
+
+  // 4. Transacciones futuras puntuales ya programadas (gastos o ingresos a futuro)
+  final futureTransactions = allTransactions.where((t) => t.date.isAfter(now)).toList();
+
+  // 5. Próximos 30 días
+  final next30DaysEnd = now.add(const Duration(days: 30));
+  double upcoming30DaysExp = 0.0;
+  double upcoming30DaysInc = 0.0;
+
+  for (final rt in activeRecurring) {
+    final occs = rt.getOccurrencesBetween(now, next30DaysEnd);
+    for (final _ in occs) {
+      if (rt.isExpense) {
+        upcoming30DaysExp += rt.amount;
+      } else {
+        upcoming30DaysInc += rt.amount;
+      }
+    }
+  }
+  for (final ft in futureTransactions) {
+    if (!ft.date.isAfter(next30DaysEnd)) {
+      if (ft.isExpense) {
+        upcoming30DaysExp += ft.amount;
+      } else {
+        upcoming30DaysInc += ft.amount;
+      }
+    }
+  }
+
+  // 6. Proyección mes a mes para los próximos 12 meses
+  final monthlyProjections = <MonthlyForecastProjection>[];
+  double runningBalance = currentBalance;
+
+  for (int i = 0; i < 12; i++) {
+    final monthDate = DateTime(now.year, now.month + i, 1);
+    final monthStart = i == 0 ? now : DateTime(monthDate.year, monthDate.month, 1);
+    final monthEnd = DateTime(monthDate.year, monthDate.month + 1, 0, 23, 59, 59);
+    final daysInMonth = monthEnd.difference(monthStart).inDays + 1;
+
+    final items = <ProjectedItemDetail>[];
+    final Map<String, double> catMap = {};
+
+    double projIncome = 0.0;
+    double projFixedExpenses = 0.0;
+    double projScheduledExpenses = 0.0;
+
+    // Recurrentes y Cuotas
+    for (final rt in activeRecurring) {
+      final occs = rt.getOccurrencesBetween(monthStart, monthEnd);
+      for (final occ in occs) {
+        final cat = categories.firstWhere(
+          (c) => c.id == rt.categoryId,
+          orElse: () => FinanceCategory(
+            id: rt.categoryId ?? 'other',
+            name: 'General',
+            icon: 'help',
+            color: '#607D8B',
+            type: rt.type,
+          ),
+        );
+
+        if (rt.isIncome) {
+          projIncome += rt.amount;
+        } else {
+          projFixedExpenses += rt.amount;
+          catMap[cat.name] = (catMap[cat.name] ?? 0.0) + rt.amount;
+        }
+
+        items.add(ProjectedItemDetail(
+          title: rt.title,
+          amount: rt.amount,
+          dueDate: occ,
+          isExpense: rt.isExpense,
+          categoryId: rt.categoryId,
+          categoryName: cat.name,
+          categoryColor: cat.color,
+          source: rt.hasFixedInstallments ? 'installment' : 'recurring',
+          installmentSummary: rt.hasFixedInstallments ? rt.installmentSummary : null,
+        ));
+      }
+    }
+
+    // Transacciones futuras puntuales en este mes
+    for (final ft in futureTransactions) {
+      if (!ft.date.isBefore(monthStart) && !ft.date.isAfter(monthEnd)) {
+        final cat = categories.firstWhere(
+          (c) => c.id == ft.categoryId,
+          orElse: () => FinanceCategory(
+            id: ft.categoryId ?? 'other',
+            name: 'General',
+            icon: 'help',
+            color: '#607D8B',
+            type: ft.type,
+          ),
+        );
+
+        if (ft.isIncome) {
+          projIncome += ft.amount;
+        } else {
+          projScheduledExpenses += ft.amount;
+          catMap[cat.name] = (catMap[cat.name] ?? 0.0) + ft.amount;
+        }
+
+        items.add(ProjectedItemDetail(
+          title: ft.title,
+          amount: ft.amount,
+          dueDate: ft.date,
+          isExpense: ft.isExpense,
+          categoryId: ft.categoryId,
+          categoryName: cat.name,
+          categoryColor: cat.color,
+          source: 'future_transaction',
+        ));
+      }
+    }
+
+    items.sort((a, b) => a.dueDate.compareTo(b.dueDate));
+
+    final estimatedDiscretionary = avgDaily * daysInMonth;
+    final totalProjExp = projFixedExpenses + projScheduledExpenses;
+    final netFlow = projIncome - totalProjExp;
+    final endBal = runningBalance + netFlow;
+
+    monthlyProjections.add(MonthlyForecastProjection(
+      month: monthDate,
+      startingBalance: runningBalance,
+      projectedIncome: projIncome,
+      projectedFixedExpenses: projFixedExpenses,
+      projectedScheduledExpenses: projScheduledExpenses,
+      estimatedDiscretionaryExpenses: estimatedDiscretionary,
+      totalProjectedExpenses: totalProjExp,
+      endingBalance: endBal,
+      netCashFlow: netFlow,
+      items: items,
+      expensesByCategory: catMap,
+    ));
+
+    runningBalance = endBal;
+  }
+
+  return ExpenseForecastStats(
+    currentBalance: currentBalance,
+    totalSavingsBalance: 0.0,
+    averageDailyExpenseHistorical: avgDaily,
+    averageMonthlyExpenseHistorical: avgMonthly,
+    monthlyFixedCommitments: monthlyFixedCommitments,
+    upcoming30DaysExpenses: upcoming30DaysExp,
+    upcoming30DaysIncome: upcoming30DaysInc,
+    activeInstallmentsCount: activeInstallments.length,
+    activeRecurringCount: activeIndefinite.length,
+    monthlyProjections: monthlyProjections,
+  );
+});
+
 
 

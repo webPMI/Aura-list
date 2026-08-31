@@ -8,15 +8,21 @@ import '../models/recurring_transaction.dart';
 import '../providers/finance_provider.dart';
 import '../providers/forecast_provider.dart';
 
-/// Modal unificado y responsivo para registrar gastos e ingresos (puntuales o recurrentes).
+import '../models/transaction.dart';
+
+/// Modal unificado y responsivo para registrar o editar gastos e ingresos (puntuales o recurrentes).
 class UnifiedTransactionDialog extends ConsumerStatefulWidget {
   final FinanceCategoryType initialType;
   final bool? isBottomSheet;
+  final RecurringTransaction? existingRecurringTransaction;
+  final Transaction? existingTransaction;
 
   const UnifiedTransactionDialog({
     super.key,
     this.initialType = FinanceCategoryType.expense,
     this.isBottomSheet,
+    this.existingRecurringTransaction,
+    this.existingTransaction,
   });
 
   /// Muestra el modal de manera adaptativa:
@@ -25,8 +31,14 @@ class UnifiedTransactionDialog extends ConsumerStatefulWidget {
   static Future<bool?> show(
     BuildContext context, {
     FinanceCategoryType initialType = FinanceCategoryType.expense,
+    RecurringTransaction? existingRecurringTransaction,
+    Transaction? existingTransaction,
   }) {
     final isMobile = MediaQuery.of(context).size.width < 600;
+    final effectiveType = existingTransaction?.type ??
+        existingRecurringTransaction?.type ??
+        initialType;
+
     if (isMobile) {
       return showModalBottomSheet<bool>(
         context: context,
@@ -34,16 +46,20 @@ class UnifiedTransactionDialog extends ConsumerStatefulWidget {
         backgroundColor: Colors.transparent,
         useSafeArea: true,
         builder: (ctx) => UnifiedTransactionDialog(
-          initialType: initialType,
+          initialType: effectiveType,
           isBottomSheet: true,
+          existingRecurringTransaction: existingRecurringTransaction,
+          existingTransaction: existingTransaction,
         ),
       );
     } else {
       return showDialog<bool>(
         context: context,
         builder: (ctx) => UnifiedTransactionDialog(
-          initialType: initialType,
+          initialType: effectiveType,
           isBottomSheet: false,
+          existingRecurringTransaction: existingRecurringTransaction,
+          existingTransaction: existingTransaction,
         ),
       );
     }
@@ -56,10 +72,58 @@ class UnifiedTransactionDialog extends ConsumerStatefulWidget {
 
 /// Frecuencias de registro disponibles
 enum TransactionFrequencyMode {
-  oneTime, // Puntual (por defecto)
-  daily,   // Diario
-  weekly,  // Semanal
-  monthly, // Mensual
+  oneTime,    // Puntual (por defecto)
+  daily,      // Diario
+  weekly,     // Semanal
+  biweekly,   // Quincenal (cada 2 semanas)
+  monthly,    // Mensual
+  quarterly,  // Trimestral (cada 3 meses)
+  semiannual, // Semestral (cada 6 meses / 2 veces al año)
+  yearly,     // Anual
+}
+
+extension TransactionFrequencyModeExtension on TransactionFrequencyMode {
+  String get label {
+    switch (this) {
+      case TransactionFrequencyMode.oneTime:
+        return 'Puntual';
+      case TransactionFrequencyMode.daily:
+        return 'Diario';
+      case TransactionFrequencyMode.weekly:
+        return 'Semanal';
+      case TransactionFrequencyMode.biweekly:
+        return 'Quincenal';
+      case TransactionFrequencyMode.monthly:
+        return 'Mensual';
+      case TransactionFrequencyMode.quarterly:
+        return 'Trimestral';
+      case TransactionFrequencyMode.semiannual:
+        return 'Semestral';
+      case TransactionFrequencyMode.yearly:
+        return 'Anual';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case TransactionFrequencyMode.oneTime:
+        return 'Un solo pago en la fecha indicada';
+      case TransactionFrequencyMode.daily:
+        return 'Todos los días';
+      case TransactionFrequencyMode.weekly:
+        return 'Cada semana';
+      case TransactionFrequencyMode.biweekly:
+        return 'Cada 2 semanas (quincenal)';
+      case TransactionFrequencyMode.monthly:
+        return 'Una vez al mes';
+      case TransactionFrequencyMode.quarterly:
+        return 'Cada 3 meses (4 veces al año)';
+      case TransactionFrequencyMode.semiannual:
+        return 'Cada 6 meses (2 veces al año)';
+      case TransactionFrequencyMode.yearly:
+        return 'Una vez al año';
+    }
+  }
 }
 
 class _UnifiedTransactionDialogState
@@ -69,6 +133,7 @@ class _UnifiedTransactionDialogState
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
   final _customInstallmentsController = TextEditingController();
+  final _paidInstallmentsController = TextEditingController();
   final _uuid = const Uuid();
 
   late FinanceCategoryType _selectedType;
@@ -82,6 +147,7 @@ class _UnifiedTransactionDialogState
 
   // Cuotas (installments)
   int? _totalInstallments; // null = indefinido
+  int _paidInstallments = 0;
   String _installmentPaymentMode = 'automatic';
   bool _showCustomInstallments = false;
 
@@ -90,10 +156,71 @@ class _UnifiedTransactionDialogState
   final _newCategoryName = TextEditingController();
   Color _newCategoryColor = const Color(0xFF66BB6A);
 
+  bool get _isEditing =>
+      widget.existingRecurringTransaction != null ||
+      widget.existingTransaction != null;
+
   @override
   void initState() {
     super.initState();
-    _selectedType = widget.initialType;
+    final existingRec = widget.existingRecurringTransaction;
+    final existingTx = widget.existingTransaction;
+
+    if (existingRec != null) {
+      _selectedType = existingRec.type;
+      _titleController.text = existingRec.title;
+      _amountController.text = existingRec.amount % 1 == 0
+          ? existingRec.amount.toInt().toString()
+          : existingRec.amount.toStringAsFixed(2);
+      _noteController.text = existingRec.note ?? '';
+      _selectedDate = existingRec.recurrence.startDate;
+      _totalInstallments = existingRec.totalInstallments;
+      _paidInstallments = existingRec.paidInstallments;
+      _paidInstallmentsController.text = _paidInstallments.toString();
+      _installmentPaymentMode = existingRec.installmentPaymentModeStr;
+
+      // Infer frequency mode
+      final rule = existingRec.recurrence;
+      if (rule.preset == 'biweekly' || (rule.frequency == RecurrenceFrequency.weekly && rule.interval == 2)) {
+        _frequencyMode = TransactionFrequencyMode.biweekly;
+      } else if (rule.preset == 'quarterly' || (rule.frequency == RecurrenceFrequency.monthly && rule.interval == 3)) {
+        _frequencyMode = TransactionFrequencyMode.quarterly;
+      } else if (rule.preset == 'semiannual' || (rule.frequency == RecurrenceFrequency.monthly && rule.interval == 6)) {
+        _frequencyMode = TransactionFrequencyMode.semiannual;
+      } else if (rule.frequency == RecurrenceFrequency.yearly) {
+        _frequencyMode = TransactionFrequencyMode.yearly;
+      } else if (rule.frequency == RecurrenceFrequency.daily) {
+        _frequencyMode = TransactionFrequencyMode.daily;
+      } else if (rule.frequency == RecurrenceFrequency.weekly) {
+        _frequencyMode = TransactionFrequencyMode.weekly;
+        if (rule.byDays.isNotEmpty) {
+          _selectedDayOfWeek = rule.byDays.first.isoValue;
+        }
+      } else {
+        _frequencyMode = TransactionFrequencyMode.monthly;
+        if (rule.byMonthDays.isNotEmpty) {
+          _selectedDayOfMonth = rule.byMonthDays.first;
+        }
+      }
+
+      if (_totalInstallments != null && ![3, 6, 12, 24, 36].contains(_totalInstallments)) {
+        _showCustomInstallments = true;
+        _customInstallmentsController.text = _totalInstallments.toString();
+      }
+    } else if (existingTx != null) {
+      _selectedType = existingTx.type;
+      _titleController.text = existingTx.title;
+      _amountController.text = existingTx.amount % 1 == 0
+          ? existingTx.amount.toInt().toString()
+          : existingTx.amount.toStringAsFixed(2);
+      _noteController.text = existingTx.note ?? '';
+      _selectedDate = existingTx.date;
+      _frequencyMode = TransactionFrequencyMode.oneTime;
+      _paidInstallmentsController.text = '0';
+    } else {
+      _selectedType = widget.initialType;
+      _paidInstallmentsController.text = '0';
+    }
   }
 
   @override
@@ -102,6 +229,7 @@ class _UnifiedTransactionDialogState
     _amountController.dispose();
     _noteController.dispose();
     _customInstallmentsController.dispose();
+    _paidInstallmentsController.dispose();
     _newCategoryName.dispose();
     super.dispose();
   }
@@ -133,6 +261,48 @@ class _UnifiedTransactionDialogState
     setState(() {});
   }
 
+  RecurrenceRule _buildRecurrenceRule() {
+    switch (_frequencyMode) {
+      case TransactionFrequencyMode.daily:
+        return RecurrenceRule(
+          frequency: RecurrenceFrequency.daily,
+          interval: 1,
+          startDate: _selectedDate,
+        );
+      case TransactionFrequencyMode.weekly:
+        return RecurrenceRule(
+          frequency: RecurrenceFrequency.weekly,
+          interval: 1,
+          startDate: _selectedDate,
+          byDays: [_intToWeekDay(_selectedDayOfWeek)],
+        );
+      case TransactionFrequencyMode.biweekly:
+        return RecurrenceRule.biweekly(
+          startDate: _selectedDate,
+        );
+      case TransactionFrequencyMode.quarterly:
+        return RecurrenceRule.quarterly(
+          startDate: _selectedDate,
+        );
+      case TransactionFrequencyMode.semiannual:
+        return RecurrenceRule.semiannual(
+          startDate: _selectedDate,
+        );
+      case TransactionFrequencyMode.yearly:
+        return RecurrenceRule.yearly(
+          startDate: _selectedDate,
+        );
+      case TransactionFrequencyMode.monthly:
+      case TransactionFrequencyMode.oneTime:
+        return RecurrenceRule(
+          frequency: RecurrenceFrequency.monthly,
+          interval: 1,
+          startDate: _selectedDate,
+          byMonthDays: [_selectedDayOfMonth],
+        );
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -140,8 +310,50 @@ class _UnifiedTransactionDialogState
     final title = _titleController.text.trim();
     final note = _noteController.text.trim().isEmpty ? null : _noteController.text.trim();
 
+    // 1. Modo Edición de Transacción Puntual
+    if (widget.existingTransaction != null) {
+      final updated = widget.existingTransaction!.copyWith(
+        title: title,
+        amount: amount,
+        date: _selectedDate,
+        categoryId: _selectedCategory?.id ?? widget.existingTransaction!.categoryId,
+        type: _selectedType,
+        note: note,
+        lastUpdatedAt: DateTime.now(),
+      );
+      await ref.read(financeProvider.notifier).updateTransaction(updated);
+      if (mounted) Navigator.of(context).pop(true);
+      return;
+    }
+
+    // 2. Modo Edición de Transacción Recurrente / Cuota
+    if (widget.existingRecurringTransaction != null) {
+      final rule = _buildRecurrenceRule();
+      final isNowComplete = _totalInstallments != null && _paidInstallments >= _totalInstallments!;
+
+      final updated = widget.existingRecurringTransaction!.copyWith(
+        title: title,
+        amount: amount,
+        categoryId: _selectedCategory?.id ?? widget.existingRecurringTransaction!.categoryId,
+        type: _selectedType,
+        recurrence: rule,
+        autoGenerate: _installmentPaymentMode == 'automatic',
+        installmentPaymentModeStr: _installmentPaymentMode,
+        totalInstallments: _totalInstallments,
+        paidInstallments: _paidInstallments,
+        active: !isNowComplete,
+        note: note,
+        lastUpdatedAt: DateTime.now(),
+      );
+
+      await ref.read(forecastProvider.notifier).updateRecurringTransaction(updated);
+      if (mounted) Navigator.of(context).pop(true);
+      return;
+    }
+
+    // 3. Creación Nueva: Puntual vs Recurrente
     if (_frequencyMode == TransactionFrequencyMode.oneTime) {
-      // 1. Registro puntual (por defecto)
+      // Registro puntual (en la fecha seleccionada, pasada, presente o futura)
       await ref.read(financeProvider.notifier).addTransaction(
             title: title,
             amount: amount,
@@ -151,29 +363,9 @@ class _UnifiedTransactionDialogState
             note: note,
           );
     } else {
-      // 2. Registro recurrente
-      late RecurrenceRule rule;
-      if (_frequencyMode == TransactionFrequencyMode.daily) {
-        rule = RecurrenceRule(
-          frequency: RecurrenceFrequency.daily,
-          interval: 1,
-          startDate: _selectedDate,
-        );
-      } else if (_frequencyMode == TransactionFrequencyMode.weekly) {
-        rule = RecurrenceRule(
-          frequency: RecurrenceFrequency.weekly,
-          interval: 1,
-          startDate: _selectedDate,
-          byDays: [_intToWeekDay(_selectedDayOfWeek)],
-        );
-      } else {
-        rule = RecurrenceRule(
-          frequency: RecurrenceFrequency.monthly,
-          interval: 1,
-          startDate: _selectedDate,
-          byMonthDays: [_selectedDayOfMonth],
-        );
-      }
+      // Registro recurrente o por cuotas
+      final rule = _buildRecurrenceRule();
+      final isNowComplete = _totalInstallments != null && _paidInstallments >= _totalInstallments!;
 
       final recurringTx = RecurringTransaction(
         id: _uuid.v4(),
@@ -183,12 +375,12 @@ class _UnifiedTransactionDialogState
         type: _selectedType,
         recurrence: rule,
         autoGenerate: _installmentPaymentMode == 'automatic',
-        active: true,
+        active: !isNowComplete,
         note: note,
-        lastGenerated: _selectedDate,
+        lastGenerated: _selectedDate.isAfter(DateTime.now()) ? null : _selectedDate,
         createdAt: DateTime.now(),
         totalInstallments: _totalInstallments,
-        paidInstallments: 0,
+        paidInstallments: _paidInstallments,
         deferredInstallments: 0,
         installmentPaymentModeStr: _installmentPaymentMode,
       );
@@ -196,15 +388,18 @@ class _UnifiedTransactionDialogState
       // Guardar regla recurrente
       await ref.read(forecastProvider.notifier).addRecurringTransaction(recurringTx);
 
-      // Registrar también la primera transacción del período actual
-      await ref.read(financeProvider.notifier).addTransaction(
-            title: title,
-            amount: amount,
-            date: _selectedDate,
-            categoryId: _selectedCategory?.id,
-            type: _selectedType,
-            note: note != null ? '$note (Recurrente)' : 'Inicio de recurrencia',
-          );
+      // Si la fecha de inicio no es en el futuro y NO se especificaron pagos previos, registrar el primer pago
+      final isFutureStart = _selectedDate.isAfter(DateTime.now().add(const Duration(days: 1)));
+      if (!isFutureStart && _paidInstallments == 0) {
+        await ref.read(financeProvider.notifier).addTransaction(
+              title: title,
+              amount: amount,
+              date: _selectedDate,
+              categoryId: _selectedCategory?.id,
+              type: _selectedType,
+              note: note != null ? '$note (Recurrente)' : 'Inicio de recurrencia',
+            );
+      }
     }
 
     if (mounted) Navigator.of(context).pop(true);
@@ -836,14 +1031,14 @@ class _UnifiedTransactionDialogState
 
           // 6. Configuración según frecuencia
           if (_frequencyMode == TransactionFrequencyMode.oneTime) ...[
-            // Selector de fecha puntual
+            // Selector de fecha puntual (pasada, presente o futura)
             InkWell(
               onTap: () async {
                 final picked = await showDatePicker(
                   context: context,
                   initialDate: _selectedDate,
                   firstDate: DateTime(2020),
-                  lastDate: DateTime(2030),
+                  lastDate: DateTime(2040),
                 );
                 if (picked != null) setState(() => _selectedDate = picked);
               },
@@ -870,10 +1065,17 @@ class _UnifiedTransactionDialogState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Fecha de registro',
+                            _selectedDate.isAfter(DateTime.now().add(const Duration(days: 1)))
+                                ? 'Fecha programada (Gasto a futuro)'
+                                : 'Fecha de registro',
                             style: TextStyle(
                               fontSize: 11,
-                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                              fontWeight: _selectedDate.isAfter(DateTime.now().add(const Duration(days: 1)))
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: _selectedDate.isAfter(DateTime.now().add(const Duration(days: 1)))
+                                  ? theme.colorScheme.primary
+                                  : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
                             ),
                           ),
                           Text(
@@ -909,34 +1111,48 @@ class _UnifiedTransactionDialogState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Periodicidad (Diario / Semanal / Mensual)
-                  Text(
-                    'Periodicidad',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
+                  // Periodicidad ampliada
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      for (final mode in [
-                        TransactionFrequencyMode.daily,
-                        TransactionFrequencyMode.weekly,
-                        TransactionFrequencyMode.monthly,
-                      ])
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 2),
+                      Text(
+                        'Periodicidad de pago',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                        ),
+                      ),
+                      Text(
+                        _frequencyMode.description,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (final mode in [
+                          TransactionFrequencyMode.daily,
+                          TransactionFrequencyMode.weekly,
+                          TransactionFrequencyMode.biweekly,
+                          TransactionFrequencyMode.monthly,
+                          TransactionFrequencyMode.quarterly,
+                          TransactionFrequencyMode.semiannual,
+                          TransactionFrequencyMode.yearly,
+                        ])
+                          Padding(
+                            padding: const EdgeInsets.only(right: 6),
                             child: ChoiceChip(
-                              label: Center(
-                                child: Text(
-                                  mode == TransactionFrequencyMode.daily
-                                      ? 'Diario'
-                                      : (mode == TransactionFrequencyMode.weekly ? 'Semanal' : 'Mensual'),
-                                  style: const TextStyle(fontSize: 12),
-                                ),
+                              label: Text(
+                                mode.label,
+                                style: const TextStyle(fontSize: 12),
                               ),
                               selected: _frequencyMode == mode,
                               onSelected: (_) => setState(() => _frequencyMode = mode),
@@ -946,8 +1162,55 @@ class _UnifiedTransactionDialogState
                               ),
                             ),
                           ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Fecha de inicio / primer cobro
+                  InkWell(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _selectedDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2040),
+                      );
+                      if (picked != null) setState(() => _selectedDate = picked);
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.grey.shade800.withValues(alpha: 0.5) : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
                         ),
-                    ],
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.event_available_rounded, size: 18, color: theme.colorScheme.primary),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Fecha de inicio / primer cobro',
+                                  style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                                ),
+                                Text(
+                                  DateFormat('d MMMM yyyy', 'es').format(_selectedDate),
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(Icons.edit_calendar_rounded, size: 16, color: theme.colorScheme.primary),
+                        ],
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 10),
 
@@ -972,11 +1235,13 @@ class _UnifiedTransactionDialogState
                       ],
                       onChanged: (val) => setState(() => _selectedDayOfWeek = val ?? 1),
                     )
-                  else if (_frequencyMode == TransactionFrequencyMode.monthly)
+                  else if (_frequencyMode == TransactionFrequencyMode.monthly ||
+                      _frequencyMode == TransactionFrequencyMode.quarterly ||
+                      _frequencyMode == TransactionFrequencyMode.semiannual)
                     DropdownButtonFormField<int>(
                       initialValue: _selectedDayOfMonth,
                       decoration: InputDecoration(
-                        labelText: 'Día del mes',
+                        labelText: 'Día del mes para el cobro',
                         prefixIcon: const Icon(Icons.calendar_month_rounded, size: 20),
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -984,7 +1249,7 @@ class _UnifiedTransactionDialogState
                       ),
                       items: [
                         for (int i = 1; i <= 31; i++)
-                          DropdownMenuItem(value: i, child: Text('Día $i de cada mes')),
+                          DropdownMenuItem(value: i, child: Text('Día $i')),
                       ],
                       onChanged: (val) => setState(() => _selectedDayOfMonth = val ?? 1),
                     ),
@@ -995,7 +1260,7 @@ class _UnifiedTransactionDialogState
 
                   // Cuotas
                   Text(
-                    'Número de cuotas',
+                    'Número total de cuotas',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -1063,6 +1328,29 @@ class _UnifiedTransactionDialogState
                     ),
                   ],
 
+                  // Campo para editar cuotas ya pagadas / adelantadas
+                  if (_totalInstallments != null || _isEditing) ...[
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: _paidInstallmentsController,
+                      decoration: InputDecoration(
+                        labelText: 'Cuotas ya pagadas / adelantadas',
+                        prefixIcon: const Icon(Icons.check_circle_outline, size: 20),
+                        helperText: 'Ajusta este número si ya adelantaste pagos',
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (val) {
+                        final parsed = int.tryParse(val);
+                        if (parsed != null && parsed >= 0) {
+                          setState(() => _paidInstallments = parsed);
+                        }
+                      },
+                    ),
+                  ],
+
                   const SizedBox(height: 10),
 
                   // Modo de pago
@@ -1081,8 +1369,8 @@ class _UnifiedTransactionDialogState
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
                                 color: _installmentPaymentMode == 'automatic'
-                                    ? theme.colorScheme.primary
-                                    : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+                                  ? theme.colorScheme.primary
+                                  : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
                               ),
                             ),
                             child: Row(
@@ -1110,8 +1398,8 @@ class _UnifiedTransactionDialogState
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
                                 color: _installmentPaymentMode == 'manual'
-                                    ? theme.colorScheme.primary
-                                    : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+                                  ? theme.colorScheme.primary
+                                  : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
                               ),
                             ),
                             child: Row(
@@ -1136,6 +1424,9 @@ class _UnifiedTransactionDialogState
                               _amountController.text.replaceAll(',', '.')) ??
                           0;
                       final total = amount * _totalInstallments!;
+                      final remaining = (_totalInstallments! - _paidInstallments).clamp(0, _totalInstallments!);
+                      final remainingAmt = remaining * amount;
+
                       return Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
@@ -1145,21 +1436,33 @@ class _UnifiedTransactionDialogState
                             color: theme.colorScheme.primary.withValues(alpha: 0.25),
                           ),
                         ),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.info_outline_rounded,
-                                size: 18, color: theme.colorScheme.primary),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Total: ${NumberFormat.simpleCurrency(locale: 'es_ES').format(total)} en $_totalInstallments cuotas',
-                                style: TextStyle(
-                                  color: theme.colorScheme.primary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
+                            Row(
+                              children: [
+                                Icon(Icons.info_outline_rounded,
+                                    size: 18, color: theme.colorScheme.primary),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Total: ${NumberFormat.simpleCurrency(locale: 'es_ES').format(total)} en $_totalInstallments cuotas',
+                                    style: TextStyle(
+                                      color: theme.colorScheme.primary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
+                            if (_paidInstallments > 0) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Pagado: $_paidInstallments cuotas (${NumberFormat.simpleCurrency(locale: 'es_ES').format(_paidInstallments * amount)}) | Restante: $remaining cuotas (${NumberFormat.simpleCurrency(locale: 'es_ES').format(remainingAmt)})',
+                                style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+                              ),
+                            ],
                           ],
                         ),
                       );
@@ -1206,9 +1509,11 @@ class _UnifiedTransactionDialogState
             onPressed: _submit,
             icon: const Icon(Icons.check_circle_rounded, color: Colors.white),
             label: Text(
-              _frequencyMode == TransactionFrequencyMode.oneTime
-                  ? (isExpense ? 'Registrar Gasto' : 'Registrar Ingreso')
-                  : 'Programar Recurrente',
+              _isEditing
+                  ? 'Guardar Cambios'
+                  : (_frequencyMode == TransactionFrequencyMode.oneTime
+                      ? (isExpense ? 'Registrar Gasto' : 'Registrar Ingreso')
+                      : 'Programar Recurrente'),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -1238,7 +1543,9 @@ class _UnifiedTransactionDialogState
         ),
         const SizedBox(width: 8),
         Text(
-          isExpense ? 'Nuevo Gasto' : 'Nuevo Ingreso',
+          _isEditing
+              ? 'Editar Compromiso'
+              : (isExpense ? 'Nuevo Gasto' : 'Nuevo Ingreso'),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,

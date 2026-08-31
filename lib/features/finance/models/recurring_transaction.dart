@@ -173,6 +173,78 @@ class RecurringTransaction extends HiveObject {
   /// Obtiene la frecuencia de la recurrencia.
   String get frequency => recurrence.frequency.name;
 
+  /// Nombre amigable de la periodicidad en español
+  String get frequencyDisplay {
+    if (recurrence.preset == 'biweekly' || (recurrence.frequency == RecurrenceFrequency.weekly && recurrence.interval == 2)) {
+      return 'Quincenal';
+    }
+    if (recurrence.preset == 'quarterly' || (recurrence.frequency == RecurrenceFrequency.monthly && recurrence.interval == 3)) {
+      return 'Trimestral';
+    }
+    if (recurrence.preset == 'semiannual' || (recurrence.frequency == RecurrenceFrequency.monthly && recurrence.interval == 6)) {
+      return 'Semestral';
+    }
+    if (recurrence.frequency == RecurrenceFrequency.yearly) {
+      return 'Anual';
+    }
+    if (recurrence.frequency == RecurrenceFrequency.daily) {
+      return recurrence.interval > 1 ? 'Cada ${recurrence.interval} días' : 'Diario';
+    }
+    if (recurrence.frequency == RecurrenceFrequency.weekly) {
+      return recurrence.interval > 1 ? 'Cada ${recurrence.interval} semanas' : 'Semanal';
+    }
+    if (recurrence.frequency == RecurrenceFrequency.monthly) {
+      return recurrence.interval > 1 ? 'Cada ${recurrence.interval} meses' : 'Mensual';
+    }
+    return recurrence.frequency.spanishName;
+  }
+
+  /// Monto mensual equivalente para cálculos y proyecciones
+  double get monthlyEquivalent {
+    if (recurrence.preset == 'biweekly' || (recurrence.frequency == RecurrenceFrequency.weekly && recurrence.interval == 2)) {
+      return amount * 2.166;
+    }
+    if (recurrence.preset == 'quarterly' || (recurrence.frequency == RecurrenceFrequency.monthly && recurrence.interval == 3)) {
+      return amount / 3.0;
+    }
+    if (recurrence.preset == 'semiannual' || (recurrence.frequency == RecurrenceFrequency.monthly && recurrence.interval == 6)) {
+      return amount / 6.0;
+    }
+    switch (recurrence.frequency) {
+      case RecurrenceFrequency.daily:
+        return (amount * 30.416) / recurrence.interval;
+      case RecurrenceFrequency.weekly:
+        return (amount * 4.333) / recurrence.interval;
+      case RecurrenceFrequency.monthly:
+        return amount / recurrence.interval;
+      case RecurrenceFrequency.yearly:
+        return (amount / 12.0) / recurrence.interval;
+    }
+  }
+
+  /// Obtiene todas las ocurrencias proyectadas dentro de un intervalo [start, end]
+  List<DateTime> getOccurrencesBetween(DateTime start, DateTime end) {
+    if (!active || deleted) return [];
+    if (isCompleted) return [];
+
+    final list = <DateTime>[];
+    final maxOccurrences = remainingInstallments ?? 120;
+    final candidates = recurrence.nextOccurrences(recurrence.startDate, maxOccurrences + (paidInstallments));
+
+    int currentPaidCount = 0;
+    for (final candidate in candidates) {
+      if (hasFixedInstallments && currentPaidCount < paidInstallments) {
+        currentPaidCount++;
+        continue;
+      }
+      if (candidate.isAfter(end)) break;
+      if (!candidate.isBefore(start) && !candidate.isAfter(end)) {
+        list.add(candidate);
+      }
+    }
+    return list;
+  }
+
   // ─────────────── CUOTAS / INSTALLMENTS ───────────────
 
   /// Si tiene un número fijo de cuotas (no es indefinida).

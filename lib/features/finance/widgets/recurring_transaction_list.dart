@@ -66,6 +66,10 @@ class RecurringTransactionList extends ConsumerWidget {
         final item = recurringList[index];
         return _RecurringTransactionTile(
           item: item,
+          onTap: () => UnifiedTransactionDialog.show(
+            context,
+            existingRecurringTransaction: item,
+          ),
           onDelete: () => ref.read(forecastProvider.notifier).deleteRecurringTransaction(item.id),
         );
       },
@@ -76,28 +80,14 @@ class RecurringTransactionList extends ConsumerWidget {
 /// Tile para mostrar cada transacción recurrente activa
 class _RecurringTransactionTile extends StatelessWidget {
   final RecurringTransaction item;
+  final VoidCallback onTap;
   final VoidCallback onDelete;
 
   const _RecurringTransactionTile({
     required this.item,
+    required this.onTap,
     required this.onDelete,
   });
-
-  String _formatFrequency(RecurringTransaction rt) {
-    final freq = rt.recurrence.frequency.name;
-    switch (freq) {
-      case 'daily':
-        return 'Diario';
-      case 'weekly':
-        return 'Semanal';
-      case 'monthly':
-        return 'Mensual';
-      case 'yearly':
-        return 'Anual';
-      default:
-        return 'Recurrente';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -109,80 +99,97 @@ class _RecurringTransactionTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withAlpha(30),
-          child: Icon(
-            isIncome ? Icons.arrow_upward : Icons.arrow_downward,
-            color: color,
-          ),
-        ),
-        title: Text(
-          item.title,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                _formatFrequency(item),
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade800, fontWeight: FontWeight.w600),
-              ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: color.withAlpha(30),
+            child: Icon(
+              isIncome ? Icons.arrow_upward : Icons.arrow_downward,
+              color: color,
             ),
-            if (item.note != null) ...[
-              const SizedBox(width: 8),
-              Expanded(
+          ),
+          title: Text(
+            item.title,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(6),
+                ),
                 child: Text(
-                  item.note!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  item.frequencyDisplay,
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade800, fontWeight: FontWeight.w600),
                 ),
               ),
-            ],
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '${isIncome ? '+' : '-'}${currencyFormat.format(item.amount)}',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
-              onPressed: () async {
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Eliminar recurrencia'),
-                    content: Text('¿Deseas eliminar la regla recurrente "${item.title}"?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: const Text('Cancelar'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(ctx, true),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                        child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
-                      ),
-                    ],
+              if (item.hasFixedInstallments) ...[
+                const SizedBox(width: 6),
+                Text(
+                  '(${item.installmentSummary})',
+                  style: const TextStyle(fontSize: 11, color: Colors.blueGrey, fontWeight: FontWeight.w500),
+                ),
+              ],
+              if (item.note != null && item.note!.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    item.note!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
-                );
-                if (confirm == true) onDelete();
-              },
-            ),
-          ],
+                ),
+              ],
+            ],
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '${isIncome ? '+' : '-'}${currencyFormat.format(item.amount)}',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 18, color: Colors.blueGrey),
+                tooltip: 'Editar',
+                onPressed: onTap,
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 18, color: Colors.grey),
+                tooltip: 'Eliminar',
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Eliminar recurrencia'),
+                      content: Text('¿Deseas eliminar la regla recurrente "${item.title}"?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Cancelar'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                          child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) onDelete();
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

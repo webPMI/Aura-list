@@ -83,6 +83,12 @@ class InstallmentsOverviewScreen extends ConsumerWidget {
                         context, ref, inProgress[i]),
                     onDefer: () =>
                         _handleDefer(context, ref, inProgress[i]),
+                    onEdit: () =>
+                        _handleEdit(context, ref, inProgress[i]),
+                    onAdjustPaid: () =>
+                        _handleAdjustPaid(context, ref, inProgress[i]),
+                    onDelete: () =>
+                        _handleDelete(context, ref, inProgress[i]),
                   ),
                   childCount: inProgress.length,
                 ),
@@ -100,6 +106,10 @@ class InstallmentsOverviewScreen extends ConsumerWidget {
                 delegate: SliverChildBuilderDelegate(
                   (context, i) => InstallmentProgressCard(
                     transaction: indefinite[i],
+                    onEdit: () =>
+                        _handleEdit(context, ref, indefinite[i]),
+                    onDelete: () =>
+                        _handleDelete(context, ref, indefinite[i]),
                   ),
                   childCount: indefinite.length,
                 ),
@@ -119,6 +129,12 @@ class InstallmentsOverviewScreen extends ConsumerWidget {
                     opacity: 0.65,
                     child: InstallmentProgressCard(
                       transaction: completed[i],
+                      onEdit: () =>
+                          _handleEdit(context, ref, completed[i]),
+                      onAdjustPaid: () =>
+                          _handleAdjustPaid(context, ref, completed[i]),
+                      onDelete: () =>
+                          _handleDelete(context, ref, completed[i]),
                     ),
                   ),
                   childCount: completed.length,
@@ -291,6 +307,134 @@ class InstallmentsOverviewScreen extends ConsumerWidget {
             content: Text('Cuota omitida'),
             backgroundColor: Colors.red,
           ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleEdit(
+    BuildContext context,
+    WidgetRef ref,
+    RecurringTransaction transaction,
+  ) async {
+    await UnifiedTransactionDialog.show(
+      context,
+      existingRecurringTransaction: transaction,
+    );
+  }
+
+  Future<void> _handleAdjustPaid(
+    BuildContext context,
+    WidgetRef ref,
+    RecurringTransaction transaction,
+  ) async {
+    int currentPaid = transaction.paidInstallments;
+    final total = transaction.totalInstallments;
+
+    final controller = TextEditingController(text: currentPaid.toString());
+
+    final updatedCount = await showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.tune_rounded, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('Ajustar cuotas pagadas'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Compromiso: ${transaction.title}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Total de cuotas: ${total ?? 'Indefinido'}',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Número de cuotas ya pagadas / adelantadas',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.check_circle_outline),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, null),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final n = int.tryParse(controller.text.trim());
+              if (n != null && n >= 0) {
+                Navigator.pop(ctx, n);
+              }
+            },
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+
+    if (updatedCount != null && context.mounted) {
+      final isNowComplete = total != null && updatedCount >= total;
+      final updated = transaction.copyWith(
+        paidInstallments: updatedCount,
+        active: !isNowComplete,
+        lastUpdatedAt: DateTime.now(),
+      );
+      await ref.read(forecastProvider.notifier).updateRecurringTransaction(updated);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Cuotas actualizadas: $updatedCount de ${total ?? '∞'}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleDelete(
+    BuildContext context,
+    WidgetRef ref,
+    RecurringTransaction transaction,
+  ) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Eliminar compromiso'),
+        content: Text('¿Deseas eliminar permanentemente el compromiso "${transaction.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && context.mounted) {
+      await ref.read(forecastProvider.notifier).deleteRecurringTransaction(transaction.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Compromiso eliminado')),
         );
       }
     }

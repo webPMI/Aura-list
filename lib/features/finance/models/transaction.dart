@@ -93,6 +93,34 @@ class Transaction extends HiveObject {
 
   bool get isIncome => type == FinanceCategoryType.income;
   bool get isExpense => type == FinanceCategoryType.expense;
+
+  Transaction copyWith({
+    String? id,
+    String? title,
+    double? amount,
+    DateTime? date,
+    String? categoryId,
+    FinanceCategoryType? type,
+    String? note,
+    DateTime? createdAt,
+    DateTime? lastUpdatedAt,
+    bool? deleted,
+    DateTime? deletedAt,
+  }) {
+    return Transaction(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      amount: amount ?? this.amount,
+      date: date ?? this.date,
+      categoryId: categoryId ?? this.categoryId,
+      type: type ?? this.type,
+      note: note ?? this.note,
+      createdAt: createdAt ?? this.createdAt,
+      lastUpdatedAt: lastUpdatedAt ?? this.lastUpdatedAt,
+      deleted: deleted ?? this.deleted,
+      deletedAt: deletedAt ?? this.deletedAt,
+    );
+  }
 }
 
 

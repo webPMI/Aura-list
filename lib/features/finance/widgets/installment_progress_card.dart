@@ -7,6 +7,9 @@ class InstallmentProgressCard extends StatelessWidget {
   final RecurringTransaction transaction;
   final VoidCallback? onPayInstallment;
   final VoidCallback? onDefer;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+  final VoidCallback? onAdjustPaid;
   final VoidCallback? onTap;
 
   const InstallmentProgressCard({
@@ -14,6 +17,9 @@ class InstallmentProgressCard extends StatelessWidget {
     required this.transaction,
     this.onPayInstallment,
     this.onDefer,
+    this.onEdit,
+    this.onDelete,
+    this.onAdjustPaid,
     this.onTap,
   });
 
@@ -36,7 +42,7 @@ class InstallmentProgressCard extends StatelessWidget {
     final hasFixed = transaction.hasFixedInstallments;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: onTap ?? onEdit,
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),
         decoration: BoxDecoration(
@@ -61,7 +67,7 @@ class InstallmentProgressCard extends StatelessWidget {
           children: [
             // ── Header ──────────────────────────────────────────
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: bgColor,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
@@ -70,8 +76,8 @@ class InstallmentProgressCard extends StatelessWidget {
                 children: [
                   // Icono
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: 42,
+                    height: 42,
                     decoration: BoxDecoration(
                       color: baseColor,
                       borderRadius: BorderRadius.circular(12),
@@ -82,7 +88,7 @@ class InstallmentProgressCard extends StatelessWidget {
                       size: 22,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   // Título y badge de estado
                   Expanded(
                     child: Column(
@@ -96,15 +102,25 @@ class InstallmentProgressCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
-                        Row(
+                        const SizedBox(height: 3),
+                        Wrap(
+                          spacing: 6,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             _StatusBadge(transaction: transaction),
-                            const SizedBox(width: 8),
-                            Text(
-                              transaction.recurrenceDescription,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: Colors.grey[600],
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.06),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                transaction.frequencyDisplay,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: Colors.grey[800],
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ],
@@ -112,7 +128,7 @@ class InstallmentProgressCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Monto mensual
+                  // Monto por cuota y menú de acciones
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -132,6 +148,57 @@ class InstallmentProgressCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  if (onEdit != null || onDelete != null || onAdjustPaid != null) ...[
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert_rounded, size: 20),
+                      padding: EdgeInsets.zero,
+                      tooltip: 'Opciones de cuota',
+                      onSelected: (value) {
+                        if (value == 'edit' && onEdit != null) {
+                          onEdit!();
+                        } else if (value == 'adjust' && onAdjustPaid != null) {
+                          onAdjustPaid!();
+                        } else if (value == 'delete' && onDelete != null) {
+                          onDelete!();
+                        }
+                      },
+                      itemBuilder: (ctx) => [
+                        if (onEdit != null)
+                          const PopupMenuItem(
+                            value: 'edit',
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit_outlined, size: 18),
+                                SizedBox(width: 8),
+                                Text('Editar compromiso'),
+                              ],
+                            ),
+                          ),
+                        if (onAdjustPaid != null)
+                          const PopupMenuItem(
+                            value: 'adjust',
+                            child: Row(
+                              children: [
+                                Icon(Icons.tune_rounded, size: 18),
+                                SizedBox(width: 8),
+                                Text('Ajustar cuotas pagadas'),
+                              ],
+                            ),
+                          ),
+                        if (onDelete != null)
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Eliminar', style: TextStyle(color: Colors.red)),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

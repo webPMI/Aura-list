@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../models/cash_flow_projection.dart' as models;
+import '../providers/forecast_provider.dart';
 
-/// Gráfico simple de proyección de flujo de caja
-/// Muestra balance proyectado para los próximos 3-6 meses
-/// Por ahora es una lista, se puede convertir a gráfico después
+/// Gráfico visual de proyección de flujo de caja
+/// Muestra balance proyectado, ingresos y gastos mes a mes
 class CashFlowChart extends StatelessWidget {
-  final List<models.CashFlowProjection> projections;
+  final List<MonthlyForecastProjection> projections;
   final double currentBalance;
 
   const CashFlowChart({
@@ -18,11 +17,13 @@ class CashFlowChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final currencyFormat = NumberFormat.simpleCurrency(locale: 'es_ES');
 
     if (projections.isEmpty) {
       return Card(
-        margin: const EdgeInsets.all(16),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -33,7 +34,7 @@ class CashFlowChart extends StatelessWidget {
                 size: 48,
                 color: Colors.grey[400],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Text(
                 'Sin datos de proyección',
                 style: TextStyle(
@@ -42,11 +43,11 @@ class CashFlowChart extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text(
-                'Agrega transacciones recurrentes para ver proyecciones',
+                'Agrega transacciones recurrentes o gastos futuros para ver proyecciones',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 13,
                   color: Colors.grey[500],
                 ),
                 textAlign: TextAlign.center,
@@ -58,132 +59,157 @@ class CashFlowChart extends StatelessWidget {
     }
 
     return Card(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Encabezado
             Row(
               children: [
-                Icon(
-                  Icons.trending_up,
-                  color: theme.colorScheme.primary,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.trending_up,
+                    color: theme.colorScheme.primary,
+                    size: 22,
+                  ),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'Proyección de Flujo de Caja',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Evolución del Balance Proyectado',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        'Balance actual: ${currencyFormat.format(currentBalance)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: currentBalance >= 0 ? Colors.green.shade700 : Colors.red.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Balance actual: ${currencyFormat.format(currentBalance)}',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: currentBalance >= 0 ? Colors.green : Colors.red,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
             const SizedBox(height: 16),
 
-            // Lista de proyecciones
+            // Lista de meses proyectados con barras de progreso y variación
             ...projections.map((projection) {
-              final isNegative = projection.projectedBalance < 0;
-              final changeFromCurrent = projection.projectedBalance - currentBalance;
-              final isIncrease = changeFromCurrent > 0;
+              final isNegative = projection.endingBalance < 0;
+              final changeFromStart = projection.netCashFlow;
+              final isIncrease = changeFromStart >= 0;
 
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Mes
-                    SizedBox(
-                      width: 80,
-                      child: Text(
-                        DateFormat('MMM yyyy', 'es_ES').format(projection.date),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              DateFormat('MMMM yyyy', 'es_ES').format(projection.month).capitalize(),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (projection.items.isNotEmpty) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  '${projection.items.length} pagos',
+                                  style: TextStyle(fontSize: 10, color: Colors.blue.shade700, fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
+                        Text(
+                          currencyFormat.format(projection.endingBalance),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: isNegative ? Colors.red : (isDark ? Colors.greenAccent : Colors.green.shade800),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    // Barra de progreso relativa
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: LinearProgressIndicator(
+                        value: _calculateProgressValue(projection.endingBalance, projections),
+                        backgroundColor: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          isNegative ? Colors.red : Colors.green.shade600,
+                        ),
+                        minHeight: 8,
                       ),
                     ),
-
-                    // Barra de visualización
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: LinearProgressIndicator(
-                                    value: _calculateProgressValue(
-                                      projection.projectedBalance,
-                                      projections,
-                                    ),
-                                    backgroundColor: Colors.grey.withValues(alpha: 0.2),
-                                    color: isNegative ? Colors.red : Colors.green,
-                                    minHeight: 8,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              // Indicador de cambio
-                              Icon(
-                                isIncrease ? Icons.arrow_upward : Icons.arrow_downward,
-                                size: 16,
-                                color: isIncrease ? Colors.green : Colors.red,
-                              ),
-                            ],
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Compromisos: -${currencyFormat.format(projection.totalProjectedExpenses)}',
+                          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                        ),
+                        Text(
+                          '${isIncrease ? '+' : ''}${currencyFormat.format(changeFromStart)} flujo neto',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isIncrease ? Colors.green.shade700 : Colors.red.shade700,
                           ),
-                          const SizedBox(height: 4),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                currencyFormat.format(projection.projectedBalance),
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: isNegative ? Colors.red : Colors.green,
-                                ),
-                              ),
-                              Text(
-                                '${isIncrease ? '+' : ''}${currencyFormat.format(changeFromCurrent)}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
+                    const Divider(height: 12),
                   ],
                 ),
               );
             }),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
 
-            // Resumen
+            // Resumen de Mejor y Peor Mes
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(8),
+                color: isDark ? Colors.grey.shade900 : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+                ),
               ),
               child: Row(
                 children: [
                   Expanded(
                     child: _SummaryItem(
-                      label: 'Mejor mes',
+                      label: 'Mayor Balance',
                       value: currencyFormat.format(_getBestMonth(projections)),
                       color: Colors.green,
                       icon: Icons.arrow_upward,
@@ -191,12 +217,12 @@ class CashFlowChart extends StatelessWidget {
                   ),
                   Container(
                     width: 1,
-                    height: 40,
+                    height: 36,
                     color: Colors.grey.withValues(alpha: 0.3),
                   ),
                   Expanded(
                     child: _SummaryItem(
-                      label: 'Peor mes',
+                      label: 'Menor Balance',
                       value: currencyFormat.format(_getWorstMonth(projections)),
                       color: Colors.red,
                       icon: Icons.arrow_downward,
@@ -205,81 +231,34 @@ class CashFlowChart extends StatelessWidget {
                 ],
               ),
             ),
-
-            // Advertencias
-            ..._buildWarnings(projections, theme, currencyFormat),
           ],
         ),
       ),
     );
   }
 
-  double _calculateProgressValue(double balance, List<models.CashFlowProjection> allProjections) {
+  double _calculateProgressValue(double balance, List<MonthlyForecastProjection> allProjections) {
     if (allProjections.isEmpty) return 0.5;
 
-    final max = allProjections.map((p) => p.projectedBalance).reduce((a, b) => a > b ? a : b);
-    final min = allProjections.map((p) => p.projectedBalance).reduce((a, b) => a < b ? a : b);
+    final balances = allProjections.map((p) => p.endingBalance).toList();
+    final max = balances.reduce((a, b) => a > b ? a : b);
+    final min = balances.reduce((a, b) => a < b ? a : b);
 
     if (max == min) return 0.5;
-
-    // Normalizar entre 0 y 1
-    return ((balance - min) / (max - min)).clamp(0.0, 1.0);
+    return ((balance - min) / (max - min)).clamp(0.05, 1.0);
   }
 
-  double _getBestMonth(List<models.CashFlowProjection> projections) {
+  double _getBestMonth(List<MonthlyForecastProjection> projections) {
     if (projections.isEmpty) return 0;
-    return projections.map((p) => p.projectedBalance).reduce((a, b) => a > b ? a : b);
+    return projections.map((p) => p.endingBalance).reduce((a, b) => a > b ? a : b);
   }
 
-  double _getWorstMonth(List<models.CashFlowProjection> projections) {
+  double _getWorstMonth(List<MonthlyForecastProjection> projections) {
     if (projections.isEmpty) return 0;
-    return projections.map((p) => p.projectedBalance).reduce((a, b) => a < b ? a : b);
-  }
-
-  List<Widget> _buildWarnings(
-    List<models.CashFlowProjection> projections,
-    ThemeData theme,
-    NumberFormat currencyFormat,
-  ) {
-    final warnings = <Widget>[];
-
-    // Advertencia si algún mes es negativo
-    final negativeMonths = projections.where((p) => p.projectedBalance < 0).toList();
-    if (negativeMonths.isNotEmpty) {
-      warnings.add(const SizedBox(height: 12));
-      warnings.add(
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.red.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.warning, color: Colors.red, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Atención: ${negativeMonths.length} ${negativeMonths.length == 1 ? 'mes con' : 'meses con'} balance negativo proyectado',
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return warnings;
+    return projections.map((p) => p.endingBalance).reduce((a, b) => a < b ? a : b);
   }
 }
 
-/// Widget auxiliar para mostrar resumen
 class _SummaryItem extends StatelessWidget {
   final String label;
   final String value;
@@ -300,22 +279,23 @@ class _SummaryItem extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 16, color: color),
+            Icon(icon, color: color, size: 14),
             const SizedBox(width: 4),
             Text(
               label,
               style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
+                fontSize: 11,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         Text(
           value,
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: FontWeight.bold,
             color: color,
           ),
@@ -325,5 +305,9 @@ class _SummaryItem extends StatelessWidget {
   }
 }
 
-
-
+extension StringExtension on String {
+  String capitalize() {
+    if (isEmpty) return this;
+    return '${this[0].toUpperCase()}${substring(1)}';
+  }
+}

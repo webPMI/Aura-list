@@ -1,94 +1,284 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../models/cash_flow_projection.dart' as models;
+import '../models/finance_category.dart';
 import '../providers/forecast_provider.dart';
 import '../widgets/cash_flow_chart.dart';
+import '../widgets/unified_transaction_dialog.dart';
+import '../widgets/metric_mini_card.dart';
+import '../widgets/hero_forecast_card.dart';
+import '../widgets/month_projection_card.dart';
+import '../widgets/category_distribution_card.dart';
 
-/// Pantalla de dashboard de previsiones financieras.
-/// Muestra proyecciones de flujo de efectivo, alertas y tendencias.
-class ForecastScreen extends ConsumerWidget {
+extension StringCasingExtension on String {
+  String capitalize() => length > 0 ? '${this[0].toUpperCase()}${substring(1)}' : '';
+}
+
+/// Pantalla integral de análisis de proyecciones y previsión de gastos futuros.
+class ForecastScreen extends ConsumerStatefulWidget {
   const ForecastScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ForecastScreen> createState() => _ForecastScreenState();
+}
+
+class _ForecastScreenState extends ConsumerState<ForecastScreen> {
+  int _selectedHorizonMonths = 3; // 1, 3, 6, 12 meses
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final currencyFormat = NumberFormat.simpleCurrency(locale: 'es_ES');
+
+    final forecastStats = ref.watch(expenseForecastStatsProvider);
     final forecastState = ref.watch(forecastProvider);
-    final projections = forecastState.projections
-        .where((p) => !p.deleted && !p.isHistorical)
+
+    // Filtrar proyecciones según el horizonte seleccionado
+    final horizonProjections = forecastStats.monthlyProjections
+        .take(_selectedHorizonMonths)
         .toList();
 
-    // Ordenar proyecciones por fecha
-    projections.sort((a, b) => a.date.compareTo(b.date));
+    // Total de gastos e ingresos acumulados en el horizonte
+    double totalHorizonExpenses = 0.0;
+    double totalHorizonIncome = 0.0;
+    final Map<String, double> horizonCategoryExpenses = {};
 
-    // Calcular balance actual (suma de todas las transacciones)
-    final currentBalance = _calculateCurrentBalance(projections);
+    for (final p in horizonProjections) {
+      totalHorizonExpenses += p.totalProjectedExpenses;
+      totalHorizonIncome += p.projectedIncome;
+      p.expensesByCategory.forEach((cat, amt) {
+        horizonCategoryExpenses[cat] = (horizonCategoryExpenses[cat] ?? 0.0) + amt;
+      });
+    }
+
+    final hasAnyDeficit = horizonProjections.any((p) => p.endingBalance < 0);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Previsiones Financieras'),
+        title: const Text(
+          'Previsión de Gastos',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => ref.read(forecastProvider.notifier).refreshAll(),
-            tooltip: 'Actualizar',
-          ),
-          IconButton(
-            icon: const Icon(Icons.info_outline),
+            icon: const Icon(Icons.info_outline_rounded),
             onPressed: () => _showInfo(context),
-            tooltip: 'Información',
+            tooltip: 'Acerca del análisis',
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => UnifiedTransactionDialog.show(context),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Programar Gasto'),
+      ),
       body: forecastState.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Balance actual
-                  _BalanceCard(balance: currentBalance),
-
-                  // Resumen de alertas activas
-                  if (forecastState.activeAlerts.isNotEmpty)
-                    _AlertsSummaryCard(
-                      alertCount: forecastState.activeAlerts.length,
-                    ),
-
-                  // Gráfico de proyecciones
-                  const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Text(
-                      'Proyección de Flujo de Efectivo',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+          : RefreshIndicator(
+              onRefresh: () async => ref.read(forecastProvider.notifier).refreshAll(),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(bottom: 90),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 1. Selector de Horizonte Temporal
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.grey.shade900 : Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            for (final entry in {
+                              1: '1 Mes',
+                              3: '3 Meses',
+                              6: '6 Meses',
+                              12: '1 Año',
+                            }.entries)
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () => setState(() => _selectedHorizonMonths = entry.key),
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: _selectedHorizonMonths == entry.key
+                                          ? theme.colorScheme.primary
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        entry.value,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: _selectedHorizonMonths == entry.key
+                                              ? Colors.white
+                                              : (isDark ? Colors.grey.shade400 : Colors.grey.shade700),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  CashFlowChart(
-                    projections: projections,
-                    currentBalance: currentBalance,
-                  ),
 
-                  // Resumen de transacciones recurrentes
-                  _RecurringSummary(),
+                    // 2. Alerta temprana si hay déficit proyectado
+                    if (hasAnyDeficit)
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade900.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.red.shade400),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Alerta de Saldo Proyectado',
+                                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Se proyecta un balance negativo en uno o más meses de este horizonte con los gastos programados actuales.',
+                                    style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade300 : Colors.black87),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
 
-                  // Resumen de presupuestos
-                  _BudgetsSummary(),
+                    // 3. Tarjeta Hero de Balance y Compromisos
+                    HeroForecastCard(
+                      currentBalance: forecastStats.currentBalance,
+                      monthlyFixedCommitments: forecastStats.monthlyFixedCommitments,
+                      horizonExpenses: totalHorizonExpenses,
+                      horizonMonths: _selectedHorizonMonths,
+                    ),
 
-                  const SizedBox(height: 80), // Espacio para FAB
-                ],
+                    // 4. Grid de Métricas Clave
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: GridView.count(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        childAspectRatio: 1.55,
+                        children: [
+                          MetricMiniCard(
+                            icon: Icons.calendar_today_rounded,
+                            title: 'Gasto Promedio Diario',
+                            value: currencyFormat.format(forecastStats.averageDailyExpenseHistorical),
+                            subtitle: 'Ritmo de consumo base',
+                            color: Colors.orange,
+                          ),
+                          MetricMiniCard(
+                            icon: Icons.date_range_rounded,
+                            title: 'Gasto Promedio Mensual',
+                            value: currencyFormat.format(forecastStats.averageMonthlyExpenseHistorical),
+                            subtitle: 'Gasto total habitual',
+                            color: Colors.blue,
+                          ),
+                          MetricMiniCard(
+                            icon: Icons.timelapse_rounded,
+                            title: 'Próximos 30 Días',
+                            value: currencyFormat.format(forecastStats.upcoming30DaysExpenses),
+                            subtitle: '${forecastStats.activeInstallmentsCount} cuotas activas',
+                            color: Colors.purple,
+                          ),
+                          MetricMiniCard(
+                            icon: Icons.repeat_rounded,
+                            title: 'Compromisos Fijos',
+                            value: currencyFormat.format(forecastStats.monthlyFixedCommitments),
+                            subtitle: '${forecastStats.activeRecurringCount} suscripciones',
+                            color: Colors.teal,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // 5. Gráfico Evolutivo de Flujo de Caja
+                    CashFlowChart(
+                      projections: horizonProjections,
+                      currentBalance: forecastStats.currentBalance,
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    // 6. Desglose Detallado de Gastos Programados por Mes
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      child: Row(
+                        children: [
+                          Icon(Icons.event_note_rounded, size: 20, color: theme.colorScheme.primary),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Próximos Gastos por Mes ($_selectedHorizonMonths ${_selectedHorizonMonths == 1 ? 'mes' : 'meses'})',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    for (final projection in horizonProjections)
+                      MonthProjectionCard(projection: projection),
+
+                    const SizedBox(height: 16),
+
+                    // 7. Distribución por Categorías en el Horizonte
+                    if (horizonCategoryExpenses.isNotEmpty) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        child: Row(
+                          children: [
+                            Icon(Icons.pie_chart_rounded, size: 20, color: theme.colorScheme.primary),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Gastos Previstos por Categoría',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      CategoryDistributionCard(
+                        categoryExpenses: horizonCategoryExpenses,
+                        totalExpenses: totalHorizonExpenses,
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
     );
-  }
-
-  double _calculateCurrentBalance(List<models.CashFlowProjection> projections) {
-    if (projections.isEmpty) return 0.0;
-
-    // Por ahora retornamos 0, en una implementación real
-    // esto debería calcularse sumando todas las transacciones
-    return 0.0;
   }
 
   void _showInfo(BuildContext context) {
@@ -97,157 +287,23 @@ class ForecastScreen extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Row(
           children: [
-            Icon(Icons.info_outline),
-            SizedBox(width: 12),
-            Text('Previsiones'),
+            Icon(Icons.auto_graph_rounded, color: Colors.blue),
+            SizedBox(width: 10),
+            Text('Motor de Previsión'),
           ],
         ),
         content: const Text(
-          'El sistema de previsiones analiza tus transacciones recurrentes '
-          'y presupuestos para proyectar tu flujo de efectivo futuro.\n\n'
-          'Te ayuda a:\n'
-          '• Anticipar períodos de balance negativo\n'
-          '• Planificar gastos grandes\n'
-          '• Identificar patrones de gasto\n'
-          '• Recibir alertas tempranas de problemas financieros',
+          'El análisis de previsión financiera calcula tu flujo de efectivo combinando:\n\n'
+          '• Tus saldos y transacciones actuales.\n'
+          '• Todas tus cuotas activas (número exacto de pagos restantes y pagos adelantados).\n'
+          '• Gastos e ingresos recurrentes (diarios, semanales, quincenales, mensuales, trimestrales, semestrales y anuales).\n'
+          '• Gastos puntuales programados a futuro (como inscripciones de cursos del próximo año).\n'
+          '• Tu ritmo de gasto diario histórico para darte visibilidad y tranquilidad.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Entendido'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BalanceCard extends StatelessWidget {
-  final double balance;
-
-  const _BalanceCard({required this.balance});
-
-  @override
-  Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.simpleCurrency(locale: 'es_ES');
-    final isPositive = balance >= 0;
-
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isPositive
-              ? [Colors.green[400]!, Colors.green[600]!]
-              : [Colors.red[400]!, Colors.red[600]!],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Balance Actual',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            currencyFormat.format(balance),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Icon(
-                isPositive ? Icons.trending_up : Icons.trending_down,
-                color: Colors.white,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                isPositive ? 'Balance positivo' : 'Balance negativo',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AlertsSummaryCard extends StatelessWidget {
-  final int alertCount;
-
-  const _AlertsSummaryCard({required this.alertCount});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.orange[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange[200]!),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.warning_amber_rounded,
-            color: Colors.orange[700],
-            size: 32,
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$alertCount ${alertCount == 1 ? 'Alerta Activa' : 'Alertas Activas'}',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.orange[900],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Revisa las alertas en la pestaña principal',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.orange[800],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Icon(
-            Icons.arrow_forward_ios,
-            color: Colors.orange[700],
-            size: 20,
           ),
         ],
       ),
@@ -392,7 +448,4 @@ class _SummaryCard extends StatelessWidget {
       ),
     );
   }
-}
-
-
 

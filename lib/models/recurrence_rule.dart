@@ -841,7 +841,11 @@ class RecurrenceRule extends HiveObject {
       case 'biweekly':
         return 'Cada dos semanas';
       case 'quarterly':
-        return 'Trimestralmente';
+        return 'Trimestralmente (cada 3 meses)';
+      case 'semiannual':
+        return 'Semestralmente (cada 6 meses)';
+      case 'yearly':
+        return 'Anualmente';
       default:
         return null;
     }
@@ -1271,6 +1275,28 @@ class RecurrenceRule extends HiveObject {
       startDate: startDate,
       endDate: endDate,
       preset: 'quarterly',
+    );
+  }
+
+  /// Crea una regla semestral (cada 6 meses / dos veces al año).
+  factory RecurrenceRule.semiannual({required DateTime startDate, DateTime? endDate}) {
+    return RecurrenceRule(
+      frequency: RecurrenceFrequency.monthly,
+      interval: 6,
+      startDate: startDate,
+      endDate: endDate,
+      preset: 'semiannual',
+    );
+  }
+
+  /// Crea una regla anual (cada año).
+  factory RecurrenceRule.yearly({required DateTime startDate, DateTime? endDate}) {
+    return RecurrenceRule(
+      frequency: RecurrenceFrequency.yearly,
+      interval: 1,
+      startDate: startDate,
+      endDate: endDate,
+      preset: 'yearly',
     );
   }
 

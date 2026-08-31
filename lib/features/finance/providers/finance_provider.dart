@@ -159,6 +159,12 @@ class FinanceNotifier extends StateNotifier<FinanceState> {
     await _repository.saveTransaction(transaction, userId);
   }
 
+  Future<void> updateTransaction(Transaction transaction) async {
+    final userId = _getUserId();
+    final updated = transaction.copyWith(lastUpdatedAt: DateTime.now());
+    await _repository.saveTransaction(updated, userId);
+  }
+
   Future<void> deleteTransaction(dynamic key) async {
     final userId = _getUserId();
     await _repository.deleteTransaction(key, userId);
